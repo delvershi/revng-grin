@@ -149,6 +149,10 @@ private:
   using interval_set = boost::icl::interval_set<uint64_t>;
   using interval = boost::icl::interval<uint64_t>;
 
+public:  
+  ///Determine whether to repeat to TB. 
+  unsigned int haveBB;
+
 public:
   using BlockWithAddress = std::pair<uint64_t, llvm::BasicBlock *>;
   static const BlockWithAddress NoMoreTargets;

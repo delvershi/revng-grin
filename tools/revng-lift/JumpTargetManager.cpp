@@ -430,6 +430,7 @@ JumpTargetManager::JumpTargetManager(Function *TheFunction,
   getOption<unsigned>(Options, "memdep-block-scan-limit")->setInitialValue(100);
   // getOption<bool>(Options, "enable-pre")->setInitialValue(false);
   // getOption<uint32_t>(Options, "max-recurse-depth")->setInitialValue(10);
+  haveBB = 0;
 }
 
 static bool isBetterThan(const Label *NewCandidate, const Label *OldCandidate) {
@@ -1129,6 +1130,7 @@ void JumpTargetManager::purgeTranslation(BasicBlock *Start) {
 // TODO: register Reason
 BasicBlock *
 JumpTargetManager::registerJT(uint64_t PC, JTReason::Values Reason) {
+  haveBB = 0;
   if (!isExecutableAddress(PC) || !isInstructionAligned(PC))
     return nullptr;
 
@@ -1142,6 +1144,9 @@ JumpTargetManager::registerJT(uint64_t PC, JTReason::Values Reason) {
     // Case 1: there's already a BasicBlock for that address, return it
     BasicBlock *BB = TargetIt->second.head();
     TargetIt->second.setReason(Reason);
+
+    haveBB = 1;
+    
     unvisit(BB);
     return BB;
   }

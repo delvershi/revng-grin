@@ -775,27 +775,31 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
                                    Binary.architecture(),
                                    TargetArchitecture);
   int jjj = 0;
+  uint64_t DynamicVirtualAddress;
   while (Entry != nullptr) {
     jjj++;
-    Builder.SetInsertPoint(Entry);
-
+    if(!JumpTargets.haveBB){
+      Builder.SetInsertPoint(Entry);
+    }
     // TODO: what if create a new instance of an InstructionTranslator here?
     Translator.reset();
-
+    
     // TODO: rename this type
     PTCInstructionListPtr InstructionList(new PTCInstructionList);
     size_t ConsumedSize = 0;
 
-    ConsumedSize = ptc.translate(VirtualAddress, InstructionList.get());
-
+    ConsumedSize = ptc.translate(VirtualAddress, InstructionList.get(),&DynamicVirtualAddress); 
+    if(JumpTargets.haveBB){
+      errs()<<JumpTargets.haveBB<<" appear repeat\n";
+    }
 //    while(VirtualAddress != 0x40028c){
-//        VirtualAddress = ptc.translate(VirtualAddress, InstructionList.get());
+//        VirtualAddress = ptc.translate(VirtualAddress, InstructionList.get(),&DynamicVirtualAddress);
 //	if(*(ptc.exception_syscall)==0x100){
 //		VirtualAddress = ptc.do_syscall2();
 //	//	std::cerr<<ptc.exception_syscall;
 //	}
 //    }
-////
+    if(!JumpTargets.haveBB){
     SmallSet<unsigned, 1> ToIgnore;
     ToIgnore = Translator.preprocess(InstructionList.get());
 
@@ -945,11 +949,20 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       // Something went wrong, probably a mistranslation
       Builder.CreateUnreachable();
     }
+    }////?end if(!JumpTargets.haveBB)
 
     // Obtain a new program counter to translate
     std::tie(VirtualAddress, Entry) = JumpTargets.peek();
-    if(jjj==1){
-      JumpTargets.registerJT(0x400d34,JTReason::GlobalData);
+    if(*ptc.exception_syscall == 0x100){
+      DynamicVirtualAddress = ptc.do_syscall2();
+    }
+    if(jjj<83){
+    auto tmpBB = JumpTargets.registerJT(DynamicVirtualAddress,JTReason::GlobalData);
+    if(JumpTargets.haveBB){
+      Entry = tmpBB;
+      VirtualAddress = DynamicVirtualAddress;
+    }
+    else
       std::tie(VirtualAddress, Entry) = JumpTargets.peek();  
     }
 
