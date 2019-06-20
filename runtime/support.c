@@ -442,7 +442,7 @@ int main(int argc, char *argv[]) {
   unsigned long fs_value;
   int result = arch_prctl(ARCH_GET_FS, &fs_value);
   assert(result == 0);
- // set_register(REGISTER_FS, fs_value);
+  set_register(REGISTER_FS, fs_value);
 #endif
 
   // Run the translated program

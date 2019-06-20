@@ -766,8 +766,6 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
   
   std::vector<BasicBlock *> Blocks;
 
-  std::cerr<<"sdsafsadfasgfdads\n";
-
   InstructionTranslator Translator(Builder,
                                    Variables,
                                    JumpTargets,
@@ -789,9 +787,9 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     size_t ConsumedSize = 0;
 
     ConsumedSize = ptc.translate(VirtualAddress, InstructionList.get(),&DynamicVirtualAddress); 
-    if(JumpTargets.haveBB){
-      errs()<<JumpTargets.haveBB<<" appear repeat\n";
-    }
+//    if(JumpTargets.haveBB){
+//      errs()<<JumpTargets.haveBB<<" appear repeat\n";
+//    }
 //    while(VirtualAddress != 0x40028c){
 //        VirtualAddress = ptc.translate(VirtualAddress, InstructionList.get(),&DynamicVirtualAddress);
 //	if(*(ptc.exception_syscall)==0x100){
@@ -956,8 +954,9 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     if(*ptc.exception_syscall == 0x100){
       DynamicVirtualAddress = ptc.do_syscall2();
     }
-    if(jjj<83){
+    if(jjj<378){
     auto tmpBB = JumpTargets.registerJT(DynamicVirtualAddress,JTReason::GlobalData);
+    std::cerr<<std::hex<<DynamicVirtualAddress<<" \n";
     if(JumpTargets.haveBB){
       Entry = tmpBB;
       VirtualAddress = DynamicVirtualAddress;
@@ -968,6 +967,8 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
 
   } // End translations loop
  
+  errs()<<"sdsafsadfasgfdads\n";
+
   importHelperFunctionDeclaration("cpu_loop");
 
   legacy::PassManager CpuLoopPM;
