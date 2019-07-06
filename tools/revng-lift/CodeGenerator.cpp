@@ -954,7 +954,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     if(*ptc.exception_syscall == 0x100){
       DynamicVirtualAddress = ptc.do_syscall2();
     }
-    if(jjj<378){
+    if(jjj<389){
     auto tmpBB = JumpTargets.registerJT(DynamicVirtualAddress,JTReason::GlobalData);
     std::cerr<<std::hex<<DynamicVirtualAddress<<" \n";
     if(JumpTargets.haveBB){
