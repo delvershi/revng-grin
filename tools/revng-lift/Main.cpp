@@ -175,7 +175,7 @@ static int loadPTCLibrary(LibraryPointer &PTCLibrary) {
   }
 
   // Initialize the ptc interface
-  if (ptc_load(LibraryHandle, &ptc) != 0) {
+  if (ptc_load(LibraryHandle, &ptc, InputPath.c_str()) != 0) {
     fprintf(stderr, "Couldn't find PTC functions.\n");
     return EXIT_FAILURE;
   }
