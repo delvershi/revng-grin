@@ -734,10 +734,12 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
   // Create an instance of JumpTargetManager
   JumpTargetManager JumpTargets(MainFunction, PCReg, Binary);
 
-  if (VirtualAddress == 0) {
-    JumpTargets.harvestGlobalData();
-    VirtualAddress = Binary.entryPoint();
-  }
+//  if (VirtualAddress == 0) {
+//    outs()<<"testetst\n";
+//    JumpTargets.harvestGlobalData();
+//    VirtualAddress = Binary.entryPoint();
+//  }
+  VirtualAddress = Binary.entryPoint();
   JumpTargets.registerJT(VirtualAddress, JTReason::GlobalData);
 
   // Initialize the program counter
