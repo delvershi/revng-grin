@@ -150,8 +150,9 @@ private:
   using interval = boost::icl::interval<uint64_t>;
 
 public:  
-  ///Determine whether to repeat to TB. 
+  /* Determine whether to repeat to TB.*/ 
   unsigned int haveBB;
+  void harvestBR(uint64_t destAddr, llvm::BasicBlock *thisBlock);
 
 public:
   using BlockWithAddress = std::pair<uint64_t, llvm::BasicBlock *>;

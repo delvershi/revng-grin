@@ -1432,12 +1432,12 @@ bool JumpTargetManager::hasPredecessors(BasicBlock *BB) const {
 // the CFG (not considering the dispatcher).
 void JumpTargetManager::harvest() {
 
-  if (empty()) {
-    for (uint64_t PC : SimpleLiterals)
-      registerJT(PC, JTReason::SimpleLiteral);
-    SimpleLiterals.clear();
-  }
-
+//  if (empty()) {
+//    for (uint64_t PC : SimpleLiterals)
+//      registerJT(PC, JTReason::SimpleLiteral);
+//    SimpleLiterals.clear();
+//  }
+//
 //  if (empty()) {
 //    // Purge all the generated basic blocks without predecessors
 //    std::vector<BasicBlock *> ToDelete;
@@ -1554,6 +1554,12 @@ void JumpTargetManager::harvest() {
   if (empty()) {
     revng_log(JTCountLog, "We're done looking for jump targets");
   }
+}
+
+void JumpTargetManager::harvestBR(uint64_t destAddr, llvm::BasicBlock *thisBlock){
+  outs()<<destAddr<<"\n";
+ // outs()<<*thisBlock<<"\n"; 
+
 }
 
 using BlockWithAddress = JumpTargetManager::BlockWithAddress;

@@ -957,15 +957,17 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       DynamicVirtualAddress = ptc.do_syscall2();
     }
     if(DynamicVirtualAddress){
-    auto tmpBB = JumpTargets.registerJT(DynamicVirtualAddress,JTReason::GlobalData);
-    std::cerr<<std::hex<<DynamicVirtualAddress<<" \n";
-    if(JumpTargets.haveBB){
-      // If have translated BB, give Entry an arbitrary value
-      Entry = tmpBB;
-      VirtualAddress = DynamicVirtualAddress;
-    }
-    else
-      std::tie(VirtualAddress, Entry) = JumpTargets.peek();  
+      auto tmpBB = JumpTargets.registerJT(DynamicVirtualAddress,JTReason::GlobalData);
+      std::cerr<<std::hex<<DynamicVirtualAddress<<" \n";
+      if(JumpTargets.haveBB){
+        // If have translated BB, give Entry an arbitrary value
+        Entry = tmpBB;
+        VirtualAddress = DynamicVirtualAddress;
+      }
+      else{
+        std::tie(VirtualAddress, Entry) = JumpTargets.peek();  
+        JumpTargets.harvestBR(VirtualAddress,Entry);
+      }
     }
 
   } // End translations loop
