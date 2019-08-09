@@ -1556,9 +1556,11 @@ void JumpTargetManager::harvest() {
   }
 }
 
-void JumpTargetManager::harvestBR(uint64_t destAddr, llvm::BasicBlock *thisBlock){
+void JumpTargetManager::harvestBR(uint64_t destAddr, std::vector<llvm::BasicBlock *> thisBlock){
   outs()<<destAddr<<"\n";
- // outs()<<*thisBlock<<"\n"; 
+  for(BasicBlock *Block : thisBlock){
+    outs()<<*Block<<"  ****** *****\n"; 
+  }
 
 }
 

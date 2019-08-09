@@ -776,10 +776,14 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
                                    TargetArchitecture);
   int jjj = 0;
   uint64_t DynamicVirtualAddress;
+  // To register branch inst of BB into vector
+  std::vector<BasicBlock *> BlockBRs; 
   while (Entry != nullptr) {
     jjj++;
     if(!JumpTargets.haveBB){
       Builder.SetInsertPoint(Entry);
+      BlockBRs.clear();
+      BlockBRs.push_back(Builder.GetInsertBlock());
     }
     // TODO: what if create a new instance of an InstructionTranslator here?
     Translator.reset();
@@ -934,7 +938,6 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
           I->setMetadata(PTCInstrMDKind, MDPTCInstr);
         }
       }
-
     } // End loop over instructions
 
     if (ForceNewBlock)
@@ -943,8 +946,8 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     // We might have a leftover block, probably due to the block created after
     // the last call to exit_tb
     auto *LastBlock = Builder.GetInsertBlock();
-    if (LastBlock->empty())
-      LastBlock->eraseFromParent();
+    if (LastBlock->empty()){
+      LastBlock->eraseFromParent();}
     else if (!LastBlock->rbegin()->isTerminator()) {
       // Something went wrong, probably a mistranslation
       Builder.CreateUnreachable();
@@ -966,7 +969,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       }
       else{
         std::tie(VirtualAddress, Entry) = JumpTargets.peek();  
-        JumpTargets.harvestBR(VirtualAddress,Entry);
+        JumpTargets.harvestBR(VirtualAddress,BlockBRs);
       }
     }
 
