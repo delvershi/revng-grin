@@ -152,9 +152,11 @@ private:
 public:  
   /* Determine whether to repeat to TB.*/ 
   unsigned int haveBB;
-  void harvestbranchBasicBlock(uint64_t destAddr); 
- 
-  void testing();
+  void harvestbranchBasicBlock(uint64_t destAddr, 
+                     llvm::BasicBlock *thisBlock, 
+                     uint32_t size, 
+        std::map<std::string, llvm::BasicBlock *> &branchlabeledBasicBlock
+                              ); 
 
 public:
   using BlockWithAddress = std::pair<uint64_t, llvm::BasicBlock *>;

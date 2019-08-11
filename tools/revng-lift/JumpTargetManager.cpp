@@ -1556,11 +1556,11 @@ void JumpTargetManager::harvest() {
   }
 }
 
-void testing(){
-  outs()<<"hhhhhhheeeejskskks++++\n";
-}
-
-void harvestbranchBasicBlock(uint64_t destAddr){
+void JumpTargetManager::harvestbranchBasicBlock(uint64_t destAddr, 
+       llvm::BasicBlock *thisBlock, 
+       uint32_t size, 
+       std::map<std::string, llvm::BasicBlock *> &branchlabeledBasicBlock){
+  
   outs()<<destAddr<<"\n";
 //  outs()<<thisBlock->getName()<<"  ****+-+-+-+\n";
  // outs()<<size<<"\n";

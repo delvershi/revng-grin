@@ -119,7 +119,9 @@ public:
   
   void branchreset() { BranchLabeledBasicBlocks.clear(); }
   uint32_t branchsize() { return BranchLabeledBasicBlocks.size(); }
-  std::map<std::string, llvm::BasicBlock *> branchcontent() { return BranchLabeledBasicBlocks; }
+  std::map<std::string, llvm::BasicBlock *> &branchcontent() { 
+    return BranchLabeledBasicBlocks; 
+  }
 
   /// \brief Preprocess the translated instructions
   ///
