@@ -152,7 +152,7 @@ private:
 public:  
   /* Determine whether to repeat to TB.*/ 
   unsigned int haveBB;
-  void harvestBR(uint64_t destAddr, std::vector<llvm::BasicBlock *> thisBlock);
+  void harvestbranchBasicBlock(uint64_t destAddr);
 
 public:
   using BlockWithAddress = std::pair<uint64_t, llvm::BasicBlock *>;

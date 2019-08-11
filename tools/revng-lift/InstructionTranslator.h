@@ -116,6 +116,10 @@ public:
 
   /// \brief Notifies InstructionTranslator about a new PTC translation
   void reset() { LabeledBasicBlocks.clear(); }
+  
+  void branchreset() { BranchLabeledBasicBlocks.clear(); }
+  uint32_t branchsize() { return BranchLabeledBasicBlocks.size(); }
+  std::map<std::string, llvm::BasicBlock *> branchcontent() { return BranchLabeledBasicBlocks; }
 
   /// \brief Preprocess the translated instructions
   ///
@@ -137,6 +141,8 @@ private:
   std::map<std::string, llvm::BasicBlock *> LabeledBasicBlocks;
   std::vector<llvm::BasicBlock *> Blocks;
   llvm::Module &TheModule;
+
+  std::map<std::string, llvm::BasicBlock *> BranchLabeledBasicBlocks;
 
   llvm::Function *TheFunction;
 

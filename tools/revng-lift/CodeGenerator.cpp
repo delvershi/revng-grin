@@ -777,16 +777,16 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
   int jjj = 0;
   uint64_t DynamicVirtualAddress;
   // To register branch inst of BB into vector
-  std::vector<BasicBlock *> BlockBRs; 
+//  BasicBlock *BlockBRs; 
   while (Entry != nullptr) {
     jjj++;
     if(!JumpTargets.haveBB){
       Builder.SetInsertPoint(Entry);
-      BlockBRs.clear();
-      BlockBRs.push_back(Builder.GetInsertBlock());
+//      BlockBRs = Builder.GetInsertBlock();
     }
     // TODO: what if create a new instance of an InstructionTranslator here?
     Translator.reset();
+    Translator.branchreset();
     
     // TODO: rename this type
     PTCInstructionListPtr InstructionList(new PTCInstructionList);
@@ -968,8 +968,11 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
         VirtualAddress = DynamicVirtualAddress;
       }
       else{
-        std::tie(VirtualAddress, Entry) = JumpTargets.peek();  
-        JumpTargets.harvestBR(VirtualAddress,BlockBRs);
+        std::tie(VirtualAddress, Entry) = JumpTargets.peek();
+     //   auto labeledBBsize = Translator.branchsize();
+     //   auto branchlabeledBBmap = Translator.branchcontent();
+        JumpTargets.harvestbranchBasicBlock(VirtualAddress);//(BlockBRs);
+        outs()<<JumpTargets.haveBB<<"\n";  
       }
     }
 

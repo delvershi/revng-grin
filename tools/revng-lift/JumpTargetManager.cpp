@@ -1556,12 +1556,14 @@ void JumpTargetManager::harvest() {
   }
 }
 
-void JumpTargetManager::harvestBR(uint64_t destAddr, std::vector<llvm::BasicBlock *> thisBlock){
+void harvestbranchBasicBlock(uint64_t destAddr){
   outs()<<destAddr<<"\n";
-  for(BasicBlock *Block : thisBlock){
-    outs()<<*Block<<"  ****** *****\n"; 
-  }
-
+//  outs()<<thisBlock->getName()<<"  ****+-+-+-+\n";
+ // outs()<<size<<"\n";
+  
+//  outs()<<branchlabeledBasicBlock.begin()->second<<"\n\n";
+ // Function::iterator BB(thisBlock);
+ // outs()<<*(++BB)<<"  ****** *****\n"; 
 }
 
 using BlockWithAddress = JumpTargetManager::BlockWithAddress;

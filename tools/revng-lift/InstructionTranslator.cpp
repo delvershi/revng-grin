@@ -1292,6 +1292,7 @@ IT::translateOpcode(PTCOpcode Opcode,
       Fallthrough = BasicBlock::Create(Context, Label, TheFunction);
       Fallthrough->moveAfter(Builder.GetInsertBlock());
       LabeledBasicBlocks[Label] = Fallthrough;
+      BranchLabeledBasicBlocks[Label] = Fallthrough;
     } else {
       // A basic block with that label already exist
       Fallthrough = LabeledBasicBlocks[Label];
@@ -1337,6 +1338,8 @@ IT::translateOpcode(PTCOpcode Opcode,
     if (ExistingBasicBlock == LabeledBasicBlocks.end()) {
       Target = BasicBlock::Create(Context, Label, TheFunction);
       LabeledBasicBlocks[Label] = Target;
+      //Adding create label to BranchLabeledBasicBlocks
+      BranchLabeledBasicBlocks[Label] = Target;
     } else {
       Target = LabeledBasicBlocks[Label];
     }
@@ -1352,6 +1355,7 @@ IT::translateOpcode(PTCOpcode Opcode,
                                   InArguments[0],
                                   InArguments[1]);
       Builder.CreateCondBr(Compare, Target, Fallthrough);
+      BranchLabeledBasicBlocks[Fallthrough->getName()] = Fallthrough;
     } else {
       revng_unreachable("Unhandled opcode");
     }
