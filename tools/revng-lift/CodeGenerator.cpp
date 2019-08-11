@@ -971,7 +971,8 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
         std::tie(VirtualAddress, Entry) = JumpTargets.peek();
      //   auto labeledBBsize = Translator.branchsize();
      //   auto branchlabeledBBmap = Translator.branchcontent();
-        JumpTargets.harvestbranchBasicBlock(VirtualAddress);//(BlockBRs);
+       // JumpTargets.harvestbranchBasicBlock(VirtualAddress);//(BlockBRs);
+        JumpTargets.testing();
         outs()<<JumpTargets.haveBB<<"\n";  
       }
     }

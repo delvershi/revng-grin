@@ -1556,6 +1556,10 @@ void JumpTargetManager::harvest() {
   }
 }
 
+void testing(){
+  outs()<<"hhhhhhheeeejskskks++++\n";
+}
+
 void harvestbranchBasicBlock(uint64_t destAddr){
   outs()<<destAddr<<"\n";
 //  outs()<<thisBlock->getName()<<"  ****+-+-+-+\n";
