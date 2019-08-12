@@ -783,10 +783,10 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     if(!JumpTargets.haveBB){
       Builder.SetInsertPoint(Entry);
       BlockBRs = Builder.GetInsertBlock();
+     // TODO: what if create a new instance of an InstructionTranslator here?
+     Translator.reset();
+     Translator.branchreset();    
     }
-    // TODO: what if create a new instance of an InstructionTranslator here?
-    Translator.reset();
-    Translator.branchreset();    
 
     // TODO: rename this type
     PTCInstructionListPtr InstructionList(new PTCInstructionList);
@@ -969,6 +969,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       }
       else{
         std::tie(VirtualAddress, Entry) = JumpTargets.peek();
+        //This is the last block of repeated BasicBlock's  
         auto branchLabeledcontent = Translator.branchcontent();  
         JumpTargets.harvestbranchBasicBlock(VirtualAddress,
                                    BlockBRs,

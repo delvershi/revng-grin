@@ -1560,12 +1560,21 @@ void JumpTargetManager::harvestbranchBasicBlock(uint64_t destAddr,
        llvm::BasicBlock *thisBlock, 
        uint32_t size, 
        std::map<std::string, llvm::BasicBlock *> &branchlabeledBasicBlock){
-  
+
   outs()<<destAddr<<"\n";
-//  outs()<<thisBlock->getName()<<"  ****+-+-+-+\n";
- // outs()<<size<<"\n";
-  
-//  outs()<<branchlabeledBasicBlock.begin()->second<<"\n\n";
+  if(size>1){
+    outs()<<thisBlock->getName()<<"\n";
+    auto endInst = thisBlock->end();
+    outs()<<*(--endInst)<<" ++-+++-++\n";
+  }
+  outs()<<size<<"\n\n"; 
+ // case 1: New block is belong to part of original block, so to split
+ //         original block and occure a no condition branch.
+ //     eg:   size >= 2
+ //           label = 1
+
+ // case 2: ....     
+
  // Function::iterator BB(thisBlock);
  // outs()<<*(++BB)<<"  ****** *****\n"; 
 }
