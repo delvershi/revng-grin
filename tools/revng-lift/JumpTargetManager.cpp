@@ -1562,22 +1562,29 @@ void JumpTargetManager::harvestbranchBasicBlock(uint64_t destAddr,
        std::map<std::string, llvm::BasicBlock *> &branchlabeledBasicBlock){
 
   outs()<<destAddr<<"\n";
-  if(size>1){
-    outs()<<thisBlock->getName()<<"\n";
-    auto endInst = thisBlock->end();
-    outs()<<*(--endInst)<<" ++-+++-++\n";
+  outs()<<size<<"\n"; 
+  // case 1: New block is belong to part of original block, so to split
+  //         original block and occure a unconditional branch.
+  //     eg:   size  >= 2
+  //           label = 1
+
+  // case 2: New block have a conditional branch, and 
+  //         contains mutiple label.
+  //     eg:   size  >= 2
+  //           label >= 2     
+  BasicBlock::iterator I = --(thisBlock->end());
+ // Instruction *endInst = &*I;
+  if(auto branch = dyn_cast<BranchInst>(I)){
+    if(branch->isConditional()){
+      revng_assert(size>1,"This br block should have many labels!");
+      outs()<<*I<<"  *+*+++*\n";
+    }
   }
-  outs()<<size<<"\n\n"; 
- // case 1: New block is belong to part of original block, so to split
- //         original block and occure a no condition branch.
- //     eg:   size >= 2
- //           label = 1
-
- // case 2: ....     
-
- // Function::iterator BB(thisBlock);
- // outs()<<*(++BB)<<"  ****** *****\n"; 
 }
+
+//bool JumpTargetManager::haveTranslatedPC(){
+
+//}
 
 using BlockWithAddress = JumpTargetManager::BlockWithAddress;
 using JTM = JumpTargetManager;
