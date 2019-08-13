@@ -1560,9 +1560,7 @@ void JumpTargetManager::harvestbranchBasicBlock(uint64_t destAddr,
        llvm::BasicBlock *thisBlock, 
        uint32_t size, 
        std::map<std::string, llvm::BasicBlock *> &branchlabeledBasicBlock){
-
-  outs()<<destAddr<<"\n";
-  outs()<<size<<"\n"; 
+  std::vector<int64_t> branchJT;
   // case 1: New block is belong to part of original block, so to split
   //         original block and occure a unconditional branch.
   //     eg:   size  >= 2
@@ -1576,11 +1574,39 @@ void JumpTargetManager::harvestbranchBasicBlock(uint64_t destAddr,
  // Instruction *endInst = &*I;
   if(auto branch = dyn_cast<BranchInst>(I)){
     if(branch->isConditional()){
-      revng_assert(size>1,"This br block should have many labels!");
-      outs()<<*I<<"  *+*+++*\n";
+      outs()<<*I<<"\n";
+      revng_assert(size==branchlabeledBasicBlock.size(),
+                   "This br block should have many labels!");
+      for(auto pair : branchlabeledBasicBlock){
+        if(getDestBRPCWrite(pair.second)){
+          branchJT.push_back(getDestBRPCWrite(pair.second));
+        }   
+      } 
     }
   }
+  for (auto dest : branchJT){
+    outs()<<dest<<" ***++*+\n";
+  }
 }
+
+int64_t JumpTargetManager::getDestBRPCWrite(llvm::BasicBlock *block) {
+  BasicBlock::iterator current(block->end());
+  BasicBlock::iterator Begin(block->begin());
+  while(current!=Begin) {
+    current--;
+    auto Store = dyn_cast<StoreInst>(current);
+    if(Store){
+      auto constantvalue = dyn_cast<ConstantInt>(Store->getValueOperand());
+      if(constantvalue && constantvalue->getSExtValue()>0x400000){
+        auto value = constantvalue->getSExtValue();
+        // outs()<<value<<" ***++*+\n";  
+        return value;
+      }
+    }
+  }
+  return 0;
+}
+
 
 //bool JumpTargetManager::haveTranslatedPC(){
 
