@@ -157,7 +157,8 @@ public:
                      uint32_t size, 
         std::map<std::string, llvm::BasicBlock *> &branchlabeledBasicBlock
                               );
-  int64_t getDestBRPCWrite(llvm::BasicBlock *block); 
+  int64_t getDestBRPCWrite(llvm::BasicBlock *block);
+  bool haveTranslatedPC(); 
 
 public:
   using BlockWithAddress = std::pair<uint64_t, llvm::BasicBlock *>;

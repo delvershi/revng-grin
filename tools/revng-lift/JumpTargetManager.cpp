@@ -1584,9 +1584,16 @@ void JumpTargetManager::harvestbranchBasicBlock(uint64_t destAddr,
       } 
     }
   }
-  for (auto dest : branchJT){
+  if(!branchJT.empty()){
+    revng_assert(branchJT.size()==2,"There should have tow jump targets!");
+    /***
+    * TODO: check in registerJT
+    */ 
+   for (auto dest : branchJT){
     outs()<<dest<<" ***++*+\n";
+  } 
   }
+
 }
 
 int64_t JumpTargetManager::getDestBRPCWrite(llvm::BasicBlock *block) {
@@ -1608,9 +1615,9 @@ int64_t JumpTargetManager::getDestBRPCWrite(llvm::BasicBlock *block) {
 }
 
 
-//bool JumpTargetManager::haveTranslatedPC(){
-
-//}
+bool JumpTargetManager::haveTranslatedPC(){
+  return 1;
+}
 
 using BlockWithAddress = JumpTargetManager::BlockWithAddress;
 using JTM = JumpTargetManager;
