@@ -1556,7 +1556,7 @@ void JumpTargetManager::harvest() {
   }
 }
 
-void JumpTargetManager::harvestbranchBasicBlock(uint64_t destAddr, 
+void JumpTargetManager::harvestbranchBasicBlock(uint64_t nextAddr, 
        llvm::BasicBlock *thisBlock, 
        uint32_t size, 
        std::map<std::string, llvm::BasicBlock *> &branchlabeledBasicBlock){
@@ -1584,14 +1584,19 @@ void JumpTargetManager::harvestbranchBasicBlock(uint64_t destAddr,
       } 
     }
   }
+
   if(!branchJT.empty()){
     revng_assert(branchJT.size()==2,"There should have tow jump targets!");
     /***
     * TODO: check in registerJT
     */ 
-   for (auto dest : branchJT){
-    outs()<<dest<<" ***++*+\n";
-  } 
+    for (auto dest : branchJT){
+      if(!haveTranslatedPC(dest, nextAddr)){
+      
+       // dest
+        outs()<<dest<<" ***++*+\n";
+      }
+    } 
   }
 
 }
@@ -1615,8 +1620,18 @@ int64_t JumpTargetManager::getDestBRPCWrite(llvm::BasicBlock *block) {
 }
 
 
-bool JumpTargetManager::haveTranslatedPC(){
-  return 1;
+bool JumpTargetManager::haveTranslatedPC(uint64_t pc, uint64_t next){
+  if(!isExecutableAddress(pc) || !isInstructionAligned(pc))
+    return 1;
+  if(pc == next)
+    return 1;
+  // Do we already have a BasicBlock for this pc?
+  BlockMap::iterator TargetIt = JumpTargets.find(pc);
+  if(TargetIt != JumpTargets.end()) {
+    return 1;
+  }
+
+  return 0;
 }
 
 using BlockWithAddress = JumpTargetManager::BlockWithAddress;

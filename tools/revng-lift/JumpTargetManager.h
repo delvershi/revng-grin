@@ -152,13 +152,13 @@ private:
 public:  
   /* Determine whether to repeat to TB.*/ 
   unsigned int haveBB;
-  void harvestbranchBasicBlock(uint64_t destAddr, 
+  void harvestbranchBasicBlock(uint64_t nextAddr, 
                      llvm::BasicBlock *thisBlock, 
                      uint32_t size, 
         std::map<std::string, llvm::BasicBlock *> &branchlabeledBasicBlock
                               );
   int64_t getDestBRPCWrite(llvm::BasicBlock *block);
-  bool haveTranslatedPC(); 
+  bool haveTranslatedPC(uint64_t pc, uint64_t next); 
 
 public:
   using BlockWithAddress = std::pair<uint64_t, llvm::BasicBlock *>;
