@@ -965,7 +965,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
         jtVirtualAddress = JumpTargets.BranchTargets.front();
         JumpTargets.BranchTargets.erase(JumpTargets.BranchTargets.begin());
         DynamicVirtualAddress = jtVirtualAddress;  
-        outs()<<"syscall--------------------\n";        
+        errs()<<"syscall--------------------\n";        
       }
     }
   
@@ -989,13 +989,13 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       }
     }
     else if(DynamicVirtualAddress == 0 && !JumpTargets.BranchTargets.empty()){
-      //traverseFLAG = 1; 
+      traverseFLAG = 1; 
       // Initial traverse branch PC
       JumpTargets.haveBB = 0;
       jtVirtualAddress = JumpTargets.BranchTargets.front();
       JumpTargets.BranchTargets.erase(JumpTargets.BranchTargets.begin());
       DynamicVirtualAddress = jtVirtualAddress;
-      outs()<<"Init--------------------\n";
+      errs()<<"Init--------------------\n";
 
     }
     }////?end if(!traverseFLAG)
@@ -1004,7 +1004,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     if(JumpTargets.haveBB){
       // if occure a translated BB, traversing next branch
       jtVirtualAddress = JumpTargets.BranchTargets.front();
-      outs()<<"--------------------\n";
+      errs()<<"--------------------\n";
       JumpTargets.BranchTargets.erase(JumpTargets.BranchTargets.begin());
       DynamicVirtualAddress = jtVirtualAddress;
     }

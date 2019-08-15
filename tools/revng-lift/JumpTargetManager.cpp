@@ -1598,7 +1598,7 @@ void JumpTargetManager::harvestbranchBasicBlock(uint64_t nextAddr,
         //outs()<<format_hex(dest,0)<<" ***++*+\n";
       }
     }
-    outs()<<"Branch targets numbers: "<<BranchTargets.size()<<" 888\n"; 
+    errs()<<"Branch targets numbers: "<<BranchTargets.size()<<" 888\n"; 
   }
 
 }
