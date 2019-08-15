@@ -158,7 +158,9 @@ public:
         std::map<std::string, llvm::BasicBlock *> &branchlabeledBasicBlock
                               );
   int64_t getDestBRPCWrite(llvm::BasicBlock *block);
-  bool haveTranslatedPC(uint64_t pc, uint64_t next); 
+  bool haveTranslatedPC(uint64_t pc, uint64_t next);
+
+  std::vector<uint64_t> BranchTargets;  
 
 public:
   using BlockWithAddress = std::pair<uint64_t, llvm::BasicBlock *>;

@@ -1569,12 +1569,13 @@ void JumpTargetManager::harvestbranchBasicBlock(uint64_t nextAddr,
   // case 2: New block have a conditional branch, and 
   //         contains mutiple label.
   //     eg:   size  >= 2
-  //           label >= 2     
+  //           label >= 2    
+  //outs()<<"next  "<<format_hex(nextAddr,0)<<"\n"; 
   BasicBlock::iterator I = --(thisBlock->end());
- // Instruction *endInst = &*I;
+  
   if(auto branch = dyn_cast<BranchInst>(I)){
     if(branch->isConditional()){
-      outs()<<*I<<"\n";
+      //outs()<<*I<<"\n";
       revng_assert(size==branchlabeledBasicBlock.size(),
                    "This br block should have many labels!");
       for(auto pair : branchlabeledBasicBlock){
@@ -1592,11 +1593,12 @@ void JumpTargetManager::harvestbranchBasicBlock(uint64_t nextAddr,
     */ 
     for (auto dest : branchJT){
       if(!haveTranslatedPC(dest, nextAddr)){
-      
-       // dest
-        outs()<<dest<<" ***++*+\n";
+        // ptc add cpu status
+        BranchTargets.push_back(dest);  
+        //outs()<<format_hex(dest,0)<<" ***++*+\n";
       }
-    } 
+    }
+    outs()<<"Branch targets numbers: "<<BranchTargets.size()<<" 888\n"; 
   }
 
 }
