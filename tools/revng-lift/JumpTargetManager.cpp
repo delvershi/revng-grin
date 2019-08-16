@@ -1593,7 +1593,8 @@ void JumpTargetManager::harvestbranchBasicBlock(uint64_t nextAddr,
     */ 
     for (auto dest : branchJT){
       if(!haveTranslatedPC(dest, nextAddr)){
-        // ptc add cpu status
+        /* Recording current CPU state */
+        ptc.storeCPUState();
         BranchTargets.push_back(dest);  
         //outs()<<format_hex(dest,0)<<" ***++*+\n";
       }

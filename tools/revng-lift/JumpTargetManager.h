@@ -27,6 +27,8 @@
 // Local includes
 #include "BinaryFile.h"
 #include "NoReturnAnalysis.h"
+ 
+#include "PTCInterface.h"
 
 // Forward declarations
 namespace llvm {
