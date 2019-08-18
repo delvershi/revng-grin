@@ -1596,7 +1596,7 @@ void JumpTargetManager::harvestbranchBasicBlock(uint64_t nextAddr,
         /* Recording current CPU state */
         ptc.storeCPUState();
         BranchTargets.push_back(dest);  
-        //outs()<<format_hex(dest,0)<<" ***++*+\n";
+        errs()<<format_hex(dest,0)<<" ***++*+\n";
       }
     }
     errs()<<"Branch targets numbers: "<<BranchTargets.size()<<" 888\n"; 

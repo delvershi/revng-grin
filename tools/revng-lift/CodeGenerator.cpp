@@ -964,6 +964,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
         JumpTargets.haveBB = 0;
         jtVirtualAddress = JumpTargets.BranchTargets.front();
         JumpTargets.BranchTargets.erase(JumpTargets.BranchTargets.begin());
+        ptc.deletCPULINEState();
         DynamicVirtualAddress = jtVirtualAddress;  
         errs()<<"syscall--------------------\n";        
       }
@@ -989,11 +990,12 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       }
     }
     else if(DynamicVirtualAddress == 0 && !JumpTargets.BranchTargets.empty()){
-      //traverseFLAG = 1; 
+      traverseFLAG = 1; 
       // Initial traverse branch PC
       JumpTargets.haveBB = 0;
       jtVirtualAddress = JumpTargets.BranchTargets.front();
       JumpTargets.BranchTargets.erase(JumpTargets.BranchTargets.begin());
+      ptc.deletCPULINEState();
       DynamicVirtualAddress = jtVirtualAddress;
       errs()<<"Init--------------------\n";
       ptc.getBranchCPUeip();
@@ -1007,6 +1009,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       jtVirtualAddress = JumpTargets.BranchTargets.front();
       errs()<<"--------------------\n";
       JumpTargets.BranchTargets.erase(JumpTargets.BranchTargets.begin());
+      ptc.deletCPULINEState();
       DynamicVirtualAddress = jtVirtualAddress;
     }
     if(DynamicVirtualAddress){
