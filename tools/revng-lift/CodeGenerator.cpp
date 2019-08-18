@@ -996,6 +996,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       JumpTargets.BranchTargets.erase(JumpTargets.BranchTargets.begin());
       DynamicVirtualAddress = jtVirtualAddress;
       errs()<<"Init--------------------\n";
+      ptc.getBranchCPUeip();
 
     }
     }////?end if(!traverseFLAG)
