@@ -792,9 +792,21 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
 
     // TODO: rename this type
     PTCInstructionListPtr InstructionList(new PTCInstructionList);
-    size_t ConsumedSize = 0;
+    size_t ConsumedSize = 0; 
 
-    ConsumedSize = ptc.translate(VirtualAddress, InstructionList.get(),&DynamicVirtualAddress); 
+    if(!traverseFLAG){
+      ConsumedSize = ptc.translate(VirtualAddress, InstructionList.get(),&DynamicVirtualAddress);
+    }
+
+    if(traverseFLAG && !JumpTargets.haveBB){
+      //errs()<<"Nop execute!\n";
+      ConsumedSize = ptc.translate(VirtualAddress, InstructionList.get(),&DynamicVirtualAddress);
+    }
+    if(traverseFLAG && JumpTargets.haveBB){
+      ptc_instruction_list_malloc(InstructionList.get()); 
+      errs()<<"Nop execute!\n";
+    } 
+
 //    if(JumpTargets.haveBB){
 //      errs()<<JumpTargets.haveBB<<" appear repeat\n";
 //    }
