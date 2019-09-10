@@ -17,6 +17,8 @@
 #include <utility>
 #include <vector>
 
+#include <exception>
+
 // Boost includes
 #include <boost/icl/interval_map.hpp>
 #include <boost/icl/right_open_interval.hpp>
@@ -782,6 +784,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
   uint64_t jtVirtualAddress; 
   while (Entry != nullptr) {
     jjj++;
+    BlockBRs = nullptr;
     if(!JumpTargets.haveBB){
       Builder.SetInsertPoint(Entry);
       BlockBRs = Builder.GetInsertBlock();
@@ -799,7 +802,6 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     }
 
     if(traverseFLAG && !JumpTargets.haveBB){
-      //errs()<<"Nop execute!\n";
       ConsumedSize = ptc.translate(VirtualAddress, InstructionList.get(),&DynamicVirtualAddress);
     }
     if(traverseFLAG && JumpTargets.haveBB){
@@ -974,6 +976,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       DynamicVirtualAddress = ptc.do_syscall2();
       if(DynamicVirtualAddress == 0 && traverseFLAG && !JumpTargets.BranchTargets.empty()){
         JumpTargets.haveBB = 0;
+        BlockBRs = nullptr;
         jtVirtualAddress = JumpTargets.BranchTargets.front();
         JumpTargets.BranchTargets.erase(JumpTargets.BranchTargets.begin());
         ptc.deletCPULINEState();
@@ -985,7 +988,6 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     if(!traverseFLAG){
     if(DynamicVirtualAddress){
       auto tmpBB = JumpTargets.registerJT(DynamicVirtualAddress,JTReason::GlobalData);
-      std::cerr<<std::hex<<DynamicVirtualAddress<<" \n";
       if(JumpTargets.haveBB){
         // If have translated BB, give Entry an arbitrary value
         Entry = tmpBB;
@@ -993,17 +995,20 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       }
       else{
         std::tie(VirtualAddress, Entry) = JumpTargets.peek();
-        //This is the last block of repeated BasicBlock's  
+      }
+      if(BlockBRs != nullptr){
         auto branchLabeledcontent = Translator.branchcontent();  
         JumpTargets.harvestbranchBasicBlock(VirtualAddress,
                                    BlockBRs,
                                    Translator.branchsize(), 
                                    branchLabeledcontent);
       }
+      std::cerr<<std::hex<<DynamicVirtualAddress<<" \n";
     }
     else if(DynamicVirtualAddress == 0 && !JumpTargets.BranchTargets.empty()){
       traverseFLAG = 1; 
       // Initial traverse branch PC
+      BlockBRs = nullptr;
       JumpTargets.haveBB = 0;
       jtVirtualAddress = JumpTargets.BranchTargets.front();
       JumpTargets.BranchTargets.erase(JumpTargets.BranchTargets.begin());
@@ -1017,6 +1022,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     
     if(traverseFLAG){
     if(JumpTargets.haveBB){
+      BlockBRs = nullptr;
       // if occure a translated BB, traversing next branch
       jtVirtualAddress = JumpTargets.BranchTargets.front();
       errs()<<"--------------------\n";
@@ -1026,7 +1032,6 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     }
     if(DynamicVirtualAddress){
       auto tmpBB = JumpTargets.registerJT(DynamicVirtualAddress,JTReason::GlobalData);
-      std::cerr<<std::hex<<DynamicVirtualAddress<<" \n";
       if(JumpTargets.haveBB){
         // If have translated BB, give Entry an arbitrary value
         Entry = tmpBB;
@@ -1034,13 +1039,15 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       }
       else{
         std::tie(VirtualAddress, Entry) = JumpTargets.peek();
-        //This is the last block of repeated BasicBlock's  
-        auto branchLabeledcontent = Translator.branchcontent();  
+      }
+      if(BlockBRs != nullptr){  
+        auto branchLabeledcontent = Translator.branchcontent(); 
         JumpTargets.harvestbranchBasicBlock(VirtualAddress,
                                    BlockBRs,
                                    Translator.branchsize(), 
                                    branchLabeledcontent);
       }
+      std::cerr<<std::hex<<DynamicVirtualAddress<<" \n";
     }
     }////?end if(traverseFLAG)
     

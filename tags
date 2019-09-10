@@ -184,6 +184,8 @@ Branch	lib/StackAnalysis/BasicBlockInstructionPair.h	/^  Branch() : BasicBlockIn
 Branch	lib/StackAnalysis/BasicBlockInstructionPair.h	/^  Branch(llvm::BasicBlock *BB, llvm::Instruction *I) :$/;"	f	class:StackAnalysis::Branch
 Branch	lib/StackAnalysis/BasicBlockInstructionPair.h	/^class Branch : public BasicBlockInstructionPair {$/;"	c	namespace:StackAnalysis
 BranchConditionNumberMap	include/revng/ReachingDefinitions/ReachingDefinitionsPass.h	/^  std::map<llvm::TerminatorInst *, int32_t> BranchConditionNumberMap;$/;"	m	class:ConditionNumberingPass
+BranchLabeledBasicBlocks	tools/revng-lift/InstructionTranslator.h	/^  std::map<std::string, llvm::BasicBlock *> BranchLabeledBasicBlocks;$/;"	m	class:InstructionTranslator
+BranchTargets	tools/revng-lift/JumpTargetManager.h	/^  std::vector<uint64_t> BranchTargets;  $/;"	m	class:JumpTargetManager
 BranchType	include/revng/StackAnalysis/FunctionsSummary.h	/^namespace BranchType {$/;"	n	namespace:StackAnalysis
 BranchesType	lib/StackAnalysis/InterproceduralAnalysis.h	/^  map<Branch, BranchType::Values> BranchesType;$/;"	m	class:StackAnalysis::ResultsPool
 BranchesType	lib/StackAnalysis/Intraprocedural.h	/^  std::map<llvm::BasicBlock *, BranchType::Values> BranchesType;$/;"	m	class:StackAnalysis::Intraprocedural::Analysis
@@ -1665,6 +1667,9 @@ boundedValue	tools/revng-lift/OSRA.h	/^    const BoundedValue *boundedValue() co
 bounds	tools/revng-lift/OSRA.cpp	/^BoundedValue::BoundsVector BoundedValue::bounds() const {$/;"	f	class:BoundedValue
 bounds	tools/revng-lift/OSRA.h	/^    Bounds bounds(llvm::Type *T) const {$/;"	f	class:OSRAPass::OSR
 branch	lib/StackAnalysis/BasicBlockInstructionPair.h	/^  llvm::Instruction *branch() const { return I; }$/;"	f	class:StackAnalysis::Branch
+branchcontent	tools/revng-lift/InstructionTranslator.h	/^  std::map<std::string, llvm::BasicBlock *> &branchcontent() { $/;"	f	class:InstructionTranslator
+branchreset	tools/revng-lift/InstructionTranslator.h	/^  void branchreset() { BranchLabeledBasicBlocks.clear(); }$/;"	f	class:InstructionTranslator
+branchsize	tools/revng-lift/InstructionTranslator.h	/^  uint32_t branchsize() { return BranchLabeledBasicBlocks.size(); }$/;"	f	class:InstructionTranslator
 buildBackLinks	include/revng/BasicAnalyses/CustomCFG.h	/^  void buildBackLinks() {$/;"	f	class:CustomCFG
 buildEmptyExecutableSegmentsList	tools/revng-lift/ExternalJumpsHandler.cpp	/^void ExternalJumpsHandler::buildEmptyExecutableSegmentsList() {$/;"	f	class:ExternalJumpsHandler
 buildEnvOffsetValue	tools/revng-lift/CPUStateAccessAnalysisPass.cpp	/^static Value *buildEnvOffsetValue(IRBuilder<> Builder,$/;"	f	file:
@@ -2276,6 +2281,7 @@ getContext	include/revng/Support/IRHelpers.h	/^inline llvm::LLVMContext &getCont
 getContext	include/revng/Support/IRHelpers.h	/^inline llvm::LLVMContext &getContext(const llvm::Module *M) {$/;"	f
 getContext	include/revng/Support/IRHelpers.h	/^inline llvm::LLVMContext &getContext(const llvm::Value *I) {$/;"	f
 getCurSourceRootCall	tools/revng-lift/CPUStateAccessAnalysisPass.cpp	/^getCurSourceRootCall(const WorkItem &Item, const Function *Root) {$/;"	f	file:
+getDestBRPCWrite	tools/revng-lift/JumpTargetManager.cpp	/^int64_t JumpTargetManager::getDestBRPCWrite(llvm::BasicBlock *block) {$/;"	f	class:JumpTargetManager
 getEdge	tools/revng-lift/OSRA.cpp	/^  getEdge(BasicBlock *BB, BasicBlock *Predecessor, const Value *V) {$/;"	f	class:BVMap
 getEdgeColor	include/revng/ReachingDefinitions/ReachingDefinitionsAnalysisImpl.h	/^  getEdgeColor(llvm::BasicBlock *Source, llvm::BasicBlock *Destination) const {$/;"	f	class:RDA::Analysis
 getEdgeColor	include/revng/ReachingDefinitions/ReachingDefinitionsAnalysisImpl.h	/^  static int32_t getEdgeColor(const NullColorsProvider &CP,$/;"	f	struct:RDA::ColorsProviderTraits
@@ -2414,6 +2420,7 @@ handleUnaryOperator	tools/revng-lift/OSRA.cpp	/^void OSRA::handleUnaryOperator(I
 handle_sigsegv	runtime/support.c	/^void handle_sigsegv(int signo, siginfo_t *info, void *opaque_context) {$/;"	f
 harvest	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::harvest() {$/;"	f	class:JumpTargetManager
 harvestGlobalData	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::harvestGlobalData() {$/;"	f	class:JumpTargetManager
+harvestbranchBasicBlock	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::harvestbranchBasicBlock(uint64_t nextAddr, $/;"	f	class:JumpTargetManager
 hasDirectContent	lib/StackAnalysis/Element.h	/^  bool hasDirectContent() const { return !DirectContent.isInvalid(); }$/;"	f	class:StackAnalysis::Intraprocedural::Value
 hasEnv	tools/revng-lift/VariableManager.h	/^  bool hasEnv() const { return Env != nullptr; }$/;"	f	class:VariableManager
 hasIndirectTailCall	lib/StackAnalysis/Intraprocedural.h	/^  bool hasIndirectTailCall() const {$/;"	f	class:StackAnalysis::Intraprocedural::Analysis
@@ -2445,6 +2452,7 @@ hash	lib/StackAnalysis/Element.h	/^struct hash<StackAnalysis::Intraprocedural::A
 hash	lib/StackAnalysis/Element.h	/^struct hash<StackAnalysis::Intraprocedural::Element> {$/;"	s	namespace:std
 hash	lib/StackAnalysis/Element.h	/^struct hash<StackAnalysis::Intraprocedural::Value> {$/;"	s	namespace:std
 haveBB	tools/revng-lift/JumpTargetManager.h	/^  unsigned int haveBB;$/;"	m	class:JumpTargetManager
+haveTranslatedPC	tools/revng-lift/JumpTargetManager.cpp	/^bool JumpTargetManager::haveTranslatedPC(uint64_t pc, uint64_t next){$/;"	f	class:JumpTargetManager
 head	include/revng/ADT/Queue.h	/^  T head() const { return Queue.front(); }$/;"	f	class:QueueImpl
 head	include/revng/Support/MonotoneFramework.h	/^  Iterated head() const { return Queue.head(); }$/;"	f	class:MonotoneFrameworkWorkList
 head	include/revng/Support/MonotoneFramework.h	/^  Iterated head() const {$/;"	f	class:MonotoneFrameworkWorkList
