@@ -1021,7 +1021,16 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     }////?end if(!traverseFLAG)
     
     if(traverseFLAG){
-    if(JumpTargets.haveBB){
+   
+    //handle invalid address
+    auto invalidaddr = DynamicVirtualAddress >> 0x18;
+    if(invalidaddr)
+      DynamicVirtualAddress = 0;
+    if(DynamicVirtualAddress<0x400000)
+      DynamicVirtualAddress = 0;
+    
+    // Some branch destination addr is 0 
+    if(JumpTargets.haveBB || (DynamicVirtualAddress == 0 && !JumpTargets.BranchTargets.empty())){
       BlockBRs = nullptr;
       // if occure a translated BB, traversing next branch
       jtVirtualAddress = JumpTargets.BranchTargets.front();
