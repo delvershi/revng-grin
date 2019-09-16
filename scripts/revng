@@ -243,17 +243,17 @@ def run_translate(args):
     if args.base:
       lift_options += ["--base", args.base]
 
-    lift_log = "{}.log".format(output)
-    with open(lift_log, "w") as log_file:
-      subprocess.check_call(log_command([get_command("revng"), "lift",
-                                         "-g", "ll",
-                                         "--debug-log", "jtcount",
-                                         "--debug-log", "new-edges",
-                                         "--use-debug-symbols"]
-                                        + lift_options
-                                        + [input, output]),
-                            stdout=log_file,
-                            stderr=log_file)
+#    lift_log = "{}.log".format(output)
+#    with open(lift_log, "w") as log_file:
+#      subprocess.check_call(log_command([get_command("revng"), "lift",
+#                                         "-g", "ll",
+#                                         "--debug-log", "jtcount",
+#                                         "--debug-log", "new-edges",
+#                                         "--use-debug-symbols"]
+#                                        + lift_options
+#                                        + [input, output]),
+#                            stdout=log_file,
+#                            stderr=log_file)
 
   # Perform function isolation
   if args.isolate:
