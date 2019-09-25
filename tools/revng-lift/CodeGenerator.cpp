@@ -984,6 +984,10 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
         errs()<<"syscall--------------------\n";        
       }
     }
+    if(*ptc.exception_syscall == 11){
+      JumpTargets.analysisUseDef(BlockBRs);//TODO modify later.
+      *ptc.exception_syscall = -1;//TODO modify later.
+    }
   
     if(!traverseFLAG){
     if(DynamicVirtualAddress){

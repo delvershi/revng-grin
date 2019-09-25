@@ -1556,6 +1556,20 @@ void JumpTargetManager::harvest() {
   }
 }
 
+void JumpTargetManager::analysisUseDef(llvm::BasicBlock *thisBlock){
+  BasicBlock::iterator I = thisBlock->begin();
+  auto endInst = thisBlock->end();
+  for(;I!=endInst;I++){
+  for(Use &U : I->operands()){
+    Value *v = U.get();
+    errs()<<v->getName()<<"+++++++\n";
+  }
+  errs()<<I->getOpcodeName()<<"           ---------------\n";
+  }
+  errs()<<*thisBlock<<"---------------\n"; 
+   
+}
+
 void JumpTargetManager::harvestbranchBasicBlock(uint64_t nextAddr, 
        llvm::BasicBlock *thisBlock, 
        uint32_t size, 

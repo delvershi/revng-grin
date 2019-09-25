@@ -164,6 +164,8 @@ public:
 
   std::vector<uint64_t> BranchTargets;  
 
+  void analysisUseDef(llvm::BasicBlock *thisBlock);
+
 public:
   using BlockWithAddress = std::pair<uint64_t, llvm::BasicBlock *>;
   static const BlockWithAddress NoMoreTargets;
