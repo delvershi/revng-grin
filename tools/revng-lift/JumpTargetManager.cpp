@@ -1560,13 +1560,17 @@ void JumpTargetManager::analysisUseDef(llvm::BasicBlock *thisBlock){
   BasicBlock::iterator I = thisBlock->begin();
   auto endInst = thisBlock->end();
   for(;I!=endInst;I++){
-  for(Use &U : I->operands()){
-    Value *v = U.get();
-    errs()<<v->getName()<<"+++++++\n";
+    if(I->getOpcode() == Instruction::Load){
+      errs()<<*I<<"         <-Load \n";
+      for(Use &U : I->operands()){
+        Value *v = U.get();
+      //  if(dyn_cast<Instruction>(v))
+          errs()<<*v<<"   ++++++++++++\n";
+      }
+    }
+  
   }
-  errs()<<I->getOpcodeName()<<"           ---------------\n";
-  }
-  errs()<<*thisBlock<<"---------------\n"; 
+ // errs()<<*thisBlock<<"---------------\n"; 
    
 }
 
