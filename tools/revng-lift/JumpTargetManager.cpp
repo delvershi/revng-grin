@@ -1563,14 +1563,22 @@ void JumpTargetManager::analysisUseDef(llvm::BasicBlock *thisBlock){
     if(I->getOpcode() == Instruction::Load){
       errs()<<*I<<"         <-Load \n";
       for(Use &U : I->operands()){
+
         Value *v = U.get();
-      //  if(dyn_cast<Instruction>(v))
-          errs()<<*v<<"   ++++++++++++\n";
+        /* Handle 'if', by exitTB or br instruction that is end of the BasicBlock */
+        if(dyn_cast<Instruction>(v)){
+        for(User *Uu : v->users()){
+
+       // if(dyn_cast<Instruction>(v))
+          errs()<<*Uu<<"   ++++++++++++\n";
+        }
+        }
       }
+
     }
   
   }
- // errs()<<*thisBlock<<"---------------\n"; 
+//  errs()<<*thisBlock<<"---------------\n"; 
    
 }
 

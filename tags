@@ -1586,6 +1586,7 @@ again	tests/Analysis/arm/memset.S	/^again:$/;"	l
 aliasAnalysis	tools/revng-lift/VariableManager.cpp	/^void VariableManager::aliasAnalysis() {$/;"	f	class:VariableManager
 align	runtime/support.c	/^static const unsigned align = sizeof(target_reg);$/;"	v	file:
 alloc	include/revng/ADT/LazySmallBitVector.h	/^  void alloc(size_t NewSize) {$/;"	f	class:LazySmallBitVector
+analysisUseDef	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::analysisUseDef(llvm::BasicBlock *thisBlock){$/;"	f	class:JumpTargetManager
 analyze	lib/StackAnalysis/FunctionABI.cpp	/^void FunctionABI::analyze(const ABIFunction &TheFunction) {$/;"	f	class:StackAnalysis::FunctionABI
 analyzeAccess	tools/revng-lift/CPUStateAccessAnalysisPass.cpp	/^void CPUSAOA::analyzeAccess(Instruction *LoadOrStore, bool IsLoad) {$/;"	f	class:CPUSAOA
 annotator	lib/Support/DebugHelper.cpp	/^DAW *DebugHelper::annotator(bool DebugInfo) {$/;"	f	class:DebugHelper
