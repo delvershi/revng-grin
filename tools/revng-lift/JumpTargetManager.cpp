@@ -1565,21 +1565,29 @@ void JumpTargetManager::analysisUseDef(llvm::BasicBlock *thisBlock){
       for(Use &U : I->operands()){
 
         Value *v = U.get();
+        errs()<<*v<<"\n";
         /* Handle 'if', by exitTB or br instruction that is end of the BasicBlock */
         if(dyn_cast<Instruction>(v)){
-        for(User *Uu : v->users()){
-
-       // if(dyn_cast<Instruction>(v))
-          errs()<<*Uu<<"   ++++++++++++\n";
-        }
+          int i = 0;
+          int flag= 0;
+          std::vector<llvm::Instruction *> Defuse;
+          for(User *Uu : v->users()){
+            Instruction *Inst = dyn_cast<Instruction>(Uu);
+            if(I->isSameOperationAs(Inst))
+              flag = i;
+            Defuse.push_back(Inst);
+            errs()<<*Inst<<"   ++++++++++++\n";
+            i++;
+          }
+          for(unsigned int j = flag;j<Defuse.size();j++){
+            errs()<<*Defuse[j]<<"\n";
+          }
         }
       }
 
     }
   
   }
-//  errs()<<*thisBlock<<"---------------\n"; 
-   
 }
 
 void JumpTargetManager::harvestbranchBasicBlock(uint64_t nextAddr, 
