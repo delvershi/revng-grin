@@ -1565,29 +1565,25 @@ void JumpTargetManager::analysisUseDef(llvm::BasicBlock *thisBlock){
       for(Use &U : I->operands()){
 
         Value *v = U.get();
-        errs()<<*v<<"\n";
+        //errs()<<*v<<"\n";
         /* Handle 'if', by exitTB or br instruction that is end of the BasicBlock */
         if(dyn_cast<Instruction>(v)){
           int i = 0;
           int flag= 0;
           std::vector<llvm::Instruction *> Defuse;
-          for(User *Uu : v->users()){
-            Instruction *Inst = dyn_cast<Instruction>(Uu);
+          for(User *vu : v->users()){
+            Instruction *Inst = dyn_cast<Instruction>(vu);
             if(I->isIdenticalTo(Inst)){
-              auto *LoadIns = dyn_cast<LoadInst>(Inst);
-              auto *LoadI = dyn_cast<LoadInst>(I);
-              Instruction *ende = dyn_cast<Instruction>(thisBlock->end());
-              Instruction *Ie = dyn_cast<Instruction>(I);
-              errs()<<Inst-ende<<"\n";              
-              errs()<<Ie-ende<<"    "<<*I<<"\n";
-              errs()<<LoadIns->getPointerAddressSpace()<<"  "<<LoadI->getPointerAddressSpace()<<"\n";
-              flag = i;
+              Instruction *BlockEnd = dyn_cast<Instruction>(thisBlock->end());
+              Instruction *ILoad = dyn_cast<Instruction>(I);
+	      if((Inst-BlockEnd)-(ILoad-BlockEnd) == 0)
+                flag = i;
             }
             Defuse.push_back(Inst);
-            errs()<<*Inst<<"   ++++++++++++\n";
+            //errs()<<*Inst<<"   ++++++++++++\n";
             i++;
           }
-          for(unsigned int j = flag+1;j<Defuse.size();j++){
+          for(unsigned int j = flag;j<Defuse.size();j++){
             errs()<<*Defuse[j]<<"  "<<flag<<"\n";
           }
         }
