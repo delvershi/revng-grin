@@ -1573,14 +1573,22 @@ void JumpTargetManager::analysisUseDef(llvm::BasicBlock *thisBlock){
           std::vector<llvm::Instruction *> Defuse;
           for(User *Uu : v->users()){
             Instruction *Inst = dyn_cast<Instruction>(Uu);
-            if(I->isSameOperationAs(Inst))
+            if(I->isIdenticalTo(Inst)){
+              auto *LoadIns = dyn_cast<LoadInst>(Inst);
+              auto *LoadI = dyn_cast<LoadInst>(I);
+              Instruction *ende = dyn_cast<Instruction>(thisBlock->end());
+              Instruction *Ie = dyn_cast<Instruction>(I);
+              errs()<<Inst-ende<<"\n";              
+              errs()<<Ie-ende<<"    "<<*I<<"\n";
+              errs()<<LoadIns->getPointerAddressSpace()<<"  "<<LoadI->getPointerAddressSpace()<<"\n";
               flag = i;
+            }
             Defuse.push_back(Inst);
             errs()<<*Inst<<"   ++++++++++++\n";
             i++;
           }
-          for(unsigned int j = flag;j<Defuse.size();j++){
-            errs()<<*Defuse[j]<<"\n";
+          for(unsigned int j = flag+1;j<Defuse.size();j++){
+            errs()<<*Defuse[j]<<"  "<<flag<<"\n";
           }
         }
       }
