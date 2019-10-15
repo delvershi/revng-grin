@@ -1565,8 +1565,8 @@ void JumpTargetManager::analysisUseDef(llvm::BasicBlock *thisBlock){
       for(Use &U : I->operands()){
 
         Value *v = U.get();
-        //errs()<<*v<<"\n";
-        /* Handle 'if', by exitTB or br instruction that is end of the BasicBlock */
+        //errs()<<v->getName()<<" <-name\n";
+        
         if(dyn_cast<Instruction>(v)){
           int i = 0;
           int flag= 0;
@@ -1587,6 +1587,18 @@ void JumpTargetManager::analysisUseDef(llvm::BasicBlock *thisBlock){
             errs()<<*Defuse[j]<<"  "<<flag<<"\n";
           }
         }
+	/* Value's definition that don't exist in current BasicBlock */
+	else{
+	  StringRef Iargs = v->getName();
+	  
+	  switch(Iargs){
+	    case "rax":
+              errs()<<Iargs<<"\n";
+            break;
+	    default:
+	      errs()<<"No match register arguments! \n";
+	  }
+	}
       }
 
     }
