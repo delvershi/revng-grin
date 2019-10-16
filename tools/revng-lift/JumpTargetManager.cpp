@@ -1590,10 +1590,12 @@ void JumpTargetManager::analysisUseDef(llvm::BasicBlock *thisBlock){
 	/* Value's definition that don't exist in current BasicBlock */
 	else{
 	  StringRef Iargs = v->getName();
-	  
-	  switch(Iargs){
-	    case "rax":
-              errs()<<Iargs<<"\n";
+          
+          auto op = StrToInt(Iargs.data());
+	  //errs()<<op<<"+++\n"; 
+	  switch(op){
+	    case RAX:
+              errs()<<ptc.regs[R_EAX]<<" ++\n";
             break;
 	    default:
 	      errs()<<"No match register arguments! \n";
@@ -1604,6 +1606,11 @@ void JumpTargetManager::analysisUseDef(llvm::BasicBlock *thisBlock){
     }
   
   }
+}
+
+unsigned int JumpTargetManager::StrToInt(const char *str){
+  unsigned int dest =  (str[1]*1000)+str[2];
+  return dest;
 }
 
 void JumpTargetManager::harvestbranchBasicBlock(uint64_t nextAddr, 

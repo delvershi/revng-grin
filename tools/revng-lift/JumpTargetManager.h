@@ -165,6 +165,7 @@ public:
   std::vector<uint64_t> BranchTargets;  
 
   void analysisUseDef(llvm::BasicBlock *thisBlock);
+  unsigned int StrToInt(const char *str);
 
 public:
   using BlockWithAddress = std::pair<uint64_t, llvm::BasicBlock *>;
