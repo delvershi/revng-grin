@@ -1565,14 +1565,15 @@ void JumpTargetManager::analysisUseDef(llvm::BasicBlock *thisBlock){
       for(Use &U : I->operands()){
 
         Value *v = U.get();
-        //errs()<<v->getName()<<" <-name\n";
         
         if(dyn_cast<Instruction>(v)){
           int i = 0;
           int flag= 0;
           std::vector<llvm::Instruction *> Defuse;
+          /* Get arguments of 'I' use chain */
           for(User *vu : v->users()){
             Instruction *Inst = dyn_cast<Instruction>(vu);
+            /* match the same as Instruction with 'I' */
             if(I->isIdenticalTo(Inst)){
               Instruction *BlockEnd = dyn_cast<Instruction>(thisBlock->end());
               Instruction *ILoad = dyn_cast<Instruction>(I);
@@ -1580,7 +1581,6 @@ void JumpTargetManager::analysisUseDef(llvm::BasicBlock *thisBlock){
                 flag = i;
             }
             Defuse.push_back(Inst);
-            //errs()<<*Inst<<"   ++++++++++++\n";
             i++;
           }
           for(unsigned int j = flag;j<Defuse.size();j++){
@@ -1600,6 +1600,12 @@ void JumpTargetManager::analysisUseDef(llvm::BasicBlock *thisBlock){
 	    default:
 	      errs()<<"No match register arguments! \n";
 	  }
+
+          BasicBlock *BB = I->getParent();
+          llvm::Function::iterator it(BB);
+          it--;
+          errs()<<BB->getName()<<"  <-BasicBlock \n";
+          errs()<<it->getName()<<"  <-BasicBlock \n";
 	}
       }
 
