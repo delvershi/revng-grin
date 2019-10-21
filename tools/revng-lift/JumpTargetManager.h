@@ -167,6 +167,9 @@ public:
   void analysisUseDef(llvm::BasicBlock *thisBlock);
   unsigned int StrToInt(const char *str);
 
+  /* Not executing branch of CFG */
+  std::vector<std::pair<uint64_t, llvm::BasicBlock *>> partCFG;
+
 public:
   using BlockWithAddress = std::pair<uint64_t, llvm::BasicBlock *>;
   static const BlockWithAddress NoMoreTargets;

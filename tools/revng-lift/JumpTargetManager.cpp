@@ -1625,7 +1625,7 @@ void JumpTargetManager::harvestbranchBasicBlock(uint64_t nextAddr,
        llvm::BasicBlock *thisBlock, 
        uint32_t size, 
        std::map<std::string, llvm::BasicBlock *> &branchlabeledBasicBlock){
-  std::vector<int64_t> branchJT;
+  std::map<int64_t, llvm::BasicBlock *> branchJT;
   // case 1: New block is belong to part of original block, so to split
   //         original block and occure a unconditional branch.
   //     eg:   size  >= 2
@@ -1645,7 +1645,7 @@ void JumpTargetManager::harvestbranchBasicBlock(uint64_t nextAddr,
                    "This br block should have many labels!");
       for(auto pair : branchlabeledBasicBlock){
         if(getDestBRPCWrite(pair.second)){
-          branchJT.push_back(getDestBRPCWrite(pair.second));
+          branchJT[getDestBRPCWrite(pair.second)] = pair.second;
         }   
       } 
     }
@@ -1656,12 +1656,14 @@ void JumpTargetManager::harvestbranchBasicBlock(uint64_t nextAddr,
     /***
     * TODO: check in registerJT
     */ 
-    for (auto dest : branchJT){
-      if(!haveTranslatedPC(dest, nextAddr)){
+    for (auto destPair : branchJT){
+      if(!haveTranslatedPC(destPair.first, nextAddr)){
         /* Recording current CPU state */
         ptc.storeCPUState();
-        BranchTargets.push_back(dest);  
-        errs()<<format_hex(dest,0)<<" <- Jmp target add\n";
+        BranchTargets.push_back(destPair.first); 
+        /* Recording not execute branch relationship with destibnation of CFG */ 
+        partCFG.push_back(std::pair<uint64_t, llvm::BasicBlock *>(destPair.first,destPair.second));
+        errs()<<format_hex(destPair.first,0)<<" <- Jmp target add\n";
       }
     }
     errs()<<"Branch targets total numbers: "<<BranchTargets.size()<<" 888\n"; 
