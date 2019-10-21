@@ -1550,6 +1550,8 @@ void JumpTargetManager::harvest() {
 //
 //    } while (empty() && NewBranches > 0);
 //  }
+  
+ // setCFGForm(CFGForm::RecoveredOnlyCFG);
 
   if (empty()) {
     revng_log(JTCountLog, "We're done looking for jump targets");

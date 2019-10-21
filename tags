@@ -1086,13 +1086,19 @@ RAI_H	include/revng/Support/RandomAccessIterator.h	2;"	d
 RANGE_H	include/revng/Support/Range.h	2;"	d
 RAOFC	lib/StackAnalysis/FunctionABI.h	/^  RegisterArgumentsOfFunctionCall RAOFC;$/;"	m	class:StackAnalysis::CallSiteRegisterState
 RAOFC	lib/StackAnalysis/FunctionABI.h	/^  RegisterArgumentsOfFunctionCall RAOFC;$/;"	m	class:StackAnalysis::RegisterState
+RAX	tools/revng-lift/PTCInterface.h	29;"	d
+RBP	tools/revng-lift/PTCInterface.h	34;"	d
+RBX	tools/revng-lift/PTCInterface.h	32;"	d
+RCX	tools/revng-lift/PTCInterface.h	30;"	d
 RDA	include/revng/ReachingDefinitions/ReachingDefinitionsAnalysisImpl.h	/^namespace RDA {$/;"	n
 RDA	lib/ReachingDefinitions/ReachingDefinitionsPass.cpp	/^namespace RDA {$/;"	n	file:
 RDA	tests/Unit/ReachingDefinitionsPass.cpp	/^namespace RDA {$/;"	n	file:
+RDI	tools/revng-lift/PTCInterface.h	36;"	d
 RDP	lib/ReachingDefinitions/ReachingDefinitionsPass.cpp	/^  ReachingDefinitionsPass &RDP;$/;"	m	class:ConditionEqualTo	file:
 RDP	lib/ReachingDefinitions/ReachingDefinitionsPass.cpp	/^  ReachingDefinitionsPass &RDP;$/;"	m	class:ConditionHash	file:
 RDP	tools/revng-lift/OSRA.cpp	/^  ConditionalReachedLoadsPass &RDP;$/;"	m	class:OSRA	file:
 RDP	tools/revng-lift/SimplifyComparisonsPass.h	/^  ReachingDefinitionsPass *RDP;$/;"	m	class:SimplifyComparisonsPass
+RDX	tools/revng-lift/PTCInterface.h	31;"	d
 REACHINGDEFINITIONSANALYSISIMPL_H	include/revng/ReachingDefinitions/ReachingDefinitionsAnalysisImpl.h	2;"	d
 REACHINGDEFINITIONSPASS_H	include/revng/ReachingDefinitions/ReachingDefinitionsPass.h	2;"	d
 REGISTER_FS	runtime/support.h	/^  REGISTER_FS = 0x8370,$/;"	e	enum:__anon4
@@ -1126,6 +1132,16 @@ REVNG_UNREACHABLE_0	include/revng/Support/Assert.h	179;"	d
 REVNG_UNREACHABLE_1	include/revng/Support/Assert.h	180;"	d
 RHS	tools/revng-lift/SimplifyComparisonsPass.h	/^    llvm::Value *RHS;$/;"	m	struct:SimplifyComparisonsPass::Comparison
 ROA	lib/StackAnalysis/ASSlot.h	250;"	d
+RSI	tools/revng-lift/PTCInterface.h	35;"	d
+RSP	tools/revng-lift/PTCInterface.h	33;"	d
+R_EAX	tools/revng-lift/PTCInterface.h	38;"	d
+R_EBP	tools/revng-lift/PTCInterface.h	43;"	d
+R_EBX	tools/revng-lift/PTCInterface.h	41;"	d
+R_ECX	tools/revng-lift/PTCInterface.h	39;"	d
+R_EDI	tools/revng-lift/PTCInterface.h	45;"	d
+R_EDX	tools/revng-lift/PTCInterface.h	40;"	d
+R_ESI	tools/revng-lift/PTCInterface.h	44;"	d
+R_ESP	tools/revng-lift/PTCInterface.h	42;"	d
 R_MIPS_IMPLICIT_RELATIVE	tools/revng-lift/BinaryFile.cpp	/^const unsigned char R_MIPS_IMPLICIT_RELATIVE = 255;$/;"	v
 RaiseException	lib/FunctionIsolation/IsolateFunctions.cpp	/^  Function *RaiseException;$/;"	m	class:IsolateFunctionsImpl	file:
 RandomAccessIterator	include/revng/Support/RandomAccessIterator.h	/^  RandomAccessIterator() : Index(0) {}$/;"	f	class:RandomAccessIterator
@@ -1308,6 +1324,7 @@ Storage	include/revng/ADT/LazySmallBitVector.h	/^  uintptr_t Storage;$/;"	m	clas
 Store	lib/StackAnalysis/ABIIR.h	/^  enum Opcode { Load, Store, DirectCall, IndirectCall };$/;"	e	enum:StackAnalysis::ABIIRInstruction::Opcode
 StoreCallSiteOffsets	tools/revng-lift/CPUStateAccessAnalysisPass.cpp	/^  ValueCallSiteOffsetMap StoreCallSiteOffsets;$/;"	m	class:CPUStateAccessOffsetAnalysis	file:
 StoreOffsets	tools/revng-lift/CPUStateAccessAnalysisPass.cpp	/^  AccessOffsetMap &StoreOffsets; \/\/ result, maps store or store-memcpy to$/;"	m	class:CPUStateAccessOffsetAnalysis	file:
+StrToInt	tools/revng-lift/JumpTargetManager.cpp	/^unsigned int JumpTargetManager::StrToInt(const char *str){$/;"	f	class:JumpTargetManager
 Stream	include/revng/Support/Debug.h	/^  O &Stream;$/;"	m	class:StreamWrapper
 StreamWrapper	include/revng/Support/Debug.h	/^  StreamWrapper(O &Stream) : Stream(Stream) {}$/;"	f	class:StreamWrapper
 StreamWrapper	include/revng/Support/Debug.h	/^class StreamWrapper : public StreamWrapperBase {$/;"	c
