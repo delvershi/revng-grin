@@ -1558,6 +1558,15 @@ void JumpTargetManager::harvest() {
   }
 }
 
+void JumpTargetManager::node_ofpCFG(uint64_t addr, llvm::BasicBlock *dest){
+  for(auto node : partCFG){
+    if(node.first == addr){
+      nodepCFG.first = dest;
+      nodepCFG.second = node.second;
+    }
+  }
+}
+
 void JumpTargetManager::analysisUseDef(llvm::BasicBlock *thisBlock){
   BasicBlock::iterator I = thisBlock->begin();
   auto endInst = thisBlock->end();
@@ -1603,11 +1612,12 @@ void JumpTargetManager::analysisUseDef(llvm::BasicBlock *thisBlock){
 	      errs()<<"No match register arguments! \n";
 	  }
 
-          BasicBlock *BB = I->getParent();
+	  llvm::BasicBlock *BB = I->getParent();
           llvm::Function::iterator it(BB);
-          it--;
-          errs()<<BB->getName()<<"  <-BasicBlock \n";
-          errs()<<it->getName()<<"  <-BasicBlock \n";
+          if((nodepCFG.first-BB) == 0){
+            errs()<<BB->getName()<<"  <- BasicBlock \n";
+            errs()<<nodepCFG.first->getName()<<"  <- part CFG \n";
+	  }
 	}
       }
 

@@ -1055,6 +1055,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       }
       else{
         std::tie(VirtualAddress, Entry) = JumpTargets.peek();
+	JumpTargets.node_ofpCFG(VirtualAddress, Entry);
       }
       if(BlockBRs != nullptr){  
         auto branchLabeledcontent = Translator.branchcontent(); 

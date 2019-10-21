@@ -169,6 +169,9 @@ public:
 
   /* Not executing branch of CFG */
   std::vector<std::pair<uint64_t, llvm::BasicBlock *>> partCFG;
+  // <destination branch BB,source BB> 
+  std::pair<llvm::BasicBlock *, llvm::BasicBlock *> nodepCFG;
+  void node_ofpCFG(uint64_t addr, llvm::BasicBlock *dest);
 
 public:
   using BlockWithAddress = std::pair<uint64_t, llvm::BasicBlock *>;
