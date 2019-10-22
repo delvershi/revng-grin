@@ -1567,61 +1567,100 @@ void JumpTargetManager::node_ofpCFG(uint64_t addr, llvm::BasicBlock *dest){
   }
 }
 
+bool JumpTargetManager::islegalAddr(llvm::Value *v){
+  uint64_t va = 0;
+  StringRef Iargs = v->getName();
+  
+  auto op = StrToInt(Iargs.data());
+  //errs()<<op<<"+++\n"; 
+  switch(op){
+    case RAX:
+      va = ptc.regs[R_EAX];
+      errs()<<va<<" ++\n";
+    //  if(!ptc.is_image_addr(va))
+        return 0;
+    break;
+    case RCX:
+      errs()<<ptc.regs[R_ECX]<<" ++\n";
+      return 0;
+    break;
+    case RDX:
+      errs()<<ptc.regs[R_EDX]<<" ++\n";
+      return 0;
+    break;
+    case RBX:
+      errs()<<ptc.regs[R_EBX]<<" ++\n";
+      return 0;
+    break;
+    case RSP:
+      errs()<<ptc.regs[R_ESP]<<" ++\n";
+      return 0;
+    break;
+    case RBP:
+      errs()<<ptc.regs[R_EBP]<<" ++\n";
+      return 0;
+    break;
+    case RSI:
+      errs()<<ptc.regs[R_ESI]<<" ++\n";
+      return 0;
+    break;
+    case RDI:
+      errs()<<ptc.regs[R_EDI]<<" ++\n";
+      return 0;
+    break;
+    default:
+      errs()<<"No match register arguments! \n";
+  }
+  return 0;
+
+//illegal_addr:
+//  return 0;
+}
+
 void JumpTargetManager::analysisUseDef(llvm::BasicBlock *thisBlock){
   BasicBlock::iterator I = thisBlock->begin();
   auto endInst = thisBlock->end();
   for(;I!=endInst;I++){
+    // case 1: load instruction
     if(I->getOpcode() == Instruction::Load){
       errs()<<*I<<"         <-Load \n";
       for(Use &U : I->operands()){
-
         Value *v = U.get();
-        
-        if(dyn_cast<Instruction>(v)){
-          int i = 0;
-          int flag= 0;
-          std::vector<llvm::Instruction *> Defuse;
-          /* Get arguments of 'I' use chain */
-          for(User *vu : v->users()){
-            Instruction *Inst = dyn_cast<Instruction>(vu);
-            /* match the same as Instruction with 'I' */
-            if(I->isIdenticalTo(Inst)){
-              Instruction *BlockEnd = dyn_cast<Instruction>(thisBlock->end());
-              Instruction *ILoad = dyn_cast<Instruction>(I);
-	      if((Inst-BlockEnd)-(ILoad-BlockEnd) == 0)
-                flag = i;
+       
+        if(!islegalAddr(v)){ 
+          if(dyn_cast<Instruction>(v)){
+            int i = 0;
+            int flag= 0;
+            std::vector<llvm::Instruction *> Defuse;
+            /* Get arguments of 'I' use chain */
+            for(User *vu : v->users()){
+              Instruction *Inst = dyn_cast<Instruction>(vu);
+              /* match the same as Instruction with 'I' */
+              if(I->isIdenticalTo(Inst)){
+                Instruction *BlockEnd = dyn_cast<Instruction>(thisBlock->end());
+                Instruction *ILoad = dyn_cast<Instruction>(I);
+  	      if((Inst-BlockEnd)-(ILoad-BlockEnd) == 0)
+                  flag = i;
+              }
+              Defuse.push_back(Inst);
+              i++;
             }
-            Defuse.push_back(Inst);
-            i++;
+            for(unsigned int j = flag;j<Defuse.size();j++){
+              errs()<<*Defuse[j]<<"  "<<flag<<"\n";
+            }
           }
-          for(unsigned int j = flag;j<Defuse.size();j++){
-            errs()<<*Defuse[j]<<"  "<<flag<<"\n";
-          }
-        }
-	/* Value's definition that don't exist in current BasicBlock */
-	else{
-	  StringRef Iargs = v->getName();
-          
-          auto op = StrToInt(Iargs.data());
-	  //errs()<<op<<"+++\n"; 
-	  switch(op){
-	    case RAX:
-              errs()<<ptc.regs[R_EAX]<<" ++\n";
-            break;
-	    default:
-	      errs()<<"No match register arguments! \n";
-	  }
+	  /* Value's definition don't exist in current BasicBlock */
+//          llvm::BasicBlock *BB = I->getParent();
+//          llvm::Function::iterator it(BB);
+//          if((nodepCFG.first-BB) == 0)
+//            errs()<<BB->getName()<<"  <- BasicBlock \n";
+//            errs()<<nodepCFG.first->getName()<<"  <- part CFG \n";
 
-	  llvm::BasicBlock *BB = I->getParent();
-          llvm::Function::iterator it(BB);
-          if((nodepCFG.first-BB) == 0){
-            errs()<<BB->getName()<<"  <- BasicBlock \n";
-            errs()<<nodepCFG.first->getName()<<"  <- part CFG \n";
-	  }
-	}
+        }////?end if(!islegalAddr(v)) 
+
       }
 
-    }
+    }////?end if(I->getOpcode()...Load)
   
   }
 }

@@ -165,6 +165,7 @@ public:
   std::vector<uint64_t> BranchTargets;  
 
   void analysisUseDef(llvm::BasicBlock *thisBlock);
+  bool islegalAddr(llvm::Value *v);
   unsigned int StrToInt(const char *str);
 
   /* Not executing branch of CFG */
