@@ -1570,48 +1570,62 @@ void JumpTargetManager::node_ofpCFG(uint64_t addr, llvm::BasicBlock *dest){
 bool JumpTargetManager::islegalAddr(llvm::Value *v){
   uint64_t va = 0;
   StringRef Iargs = v->getName();
-  
+ 
   auto op = StrToInt(Iargs.data());
   //errs()<<op<<"+++\n"; 
   switch(op){
     case RAX:
       va = ptc.regs[R_EAX];
-      errs()<<va<<" ++\n";
-    //  if(!ptc.is_image_addr(va))
+      //errs()<<va<<" :eax\n";
+      if(!ptc.is_image_addr(va))
         return 0;
     break;
     case RCX:
-      errs()<<ptc.regs[R_ECX]<<" ++\n";
-      return 0;
+      va = ptc.regs[R_ECX];
+      //errs()<<ptc.regs[R_ECX]<<" ++\n";
+      if(!ptc.is_image_addr(va))
+        return 0;
     break;
     case RDX:
-      errs()<<ptc.regs[R_EDX]<<" ++\n";
-      return 0;
+      va = ptc.regs[R_EDX];
+      //errs()<<ptc.regs[R_EDX]<<" ++\n";
+      if(!ptc.is_image_addr(va))
+        return 0;
     break;
     case RBX:
-      errs()<<ptc.regs[R_EBX]<<" ++\n";
-      return 0;
+      va = ptc.regs[R_EBX];
+      //errs()<<ptc.regs[R_EBX]<<" ++\n";
+      if(!ptc.is_image_addr(va))
+        return 0;
     break;
     case RSP:
-      errs()<<ptc.regs[R_ESP]<<" ++\n";
-      return 0;
+      va = ptc.regs[R_ESP];
+      //errs()<<ptc.regs[R_ESP]<<" ++\n";
+      if(!ptc.is_image_addr(va))
+        return 0;
     break;
     case RBP:
-      errs()<<ptc.regs[R_EBP]<<" ++\n";
-      return 0;
+      va = ptc.regs[R_EBP];
+      //errs()<<ptc.regs[R_EBP]<<" ++\n";
+      if(!ptc.is_image_addr(va))
+        return 0;
     break;
     case RSI:
-      errs()<<ptc.regs[R_ESI]<<" ++\n";
-      return 0;
+      va = ptc.regs[R_ESI];
+      //errs()<<ptc.regs[R_ESI]<<" ++\n";
+      if(!ptc.is_image_addr(va))
+        return 0;
     break;
     case RDI:
-      errs()<<ptc.regs[R_EDI]<<" ++\n";
-      return 0;
+      va = ptc.regs[R_EDI];
+      //errs()<<ptc.regs[R_EDI]<<" ++\n";
+      if(!ptc.is_image_addr(va))
+        return 0;
     break;
     default:
       errs()<<"No match register arguments! \n";
   }
-  return 0;
+  return 1;
 
 //illegal_addr:
 //  return 0;
@@ -1634,12 +1648,12 @@ void JumpTargetManager::analysisUseDef(llvm::BasicBlock *thisBlock){
             std::vector<llvm::Instruction *> Defuse;
             /* Get arguments of 'I' use chain */
             for(User *vu : v->users()){
-              Instruction *Inst = dyn_cast<Instruction>(vu);
+              llvm::Instruction *Inst = dyn_cast<Instruction>(vu);
               /* match the same as Instruction with 'I' */
               if(I->isIdenticalTo(Inst)){
                 Instruction *BlockEnd = dyn_cast<Instruction>(thisBlock->end());
                 Instruction *ILoad = dyn_cast<Instruction>(I);
-  	      if((Inst-BlockEnd)-(ILoad-BlockEnd) == 0)
+  	        if((Inst-BlockEnd)-(ILoad-BlockEnd) == 0)
                   flag = i;
               }
               Defuse.push_back(Inst);
@@ -1650,6 +1664,12 @@ void JumpTargetManager::analysisUseDef(llvm::BasicBlock *thisBlock){
             }
           }
 	  /* Value's definition don't exist in current BasicBlock */
+          else{
+            for(User *gvu : v->users()){
+              llvm::Instruction *gInst = dyn_cast<Instruction>(gvu);
+              errs()<<*gInst<<"   <------------Global\n";
+            }
+          }
 //          llvm::BasicBlock *BB = I->getParent();
 //          llvm::Function::iterator it(BB);
 //          if((nodepCFG.first-BB) == 0)
