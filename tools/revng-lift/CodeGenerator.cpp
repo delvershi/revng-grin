@@ -985,7 +985,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       }
     }
     if(*ptc.exception_syscall == 11){
-      JumpTargets.analysisUseDef(BlockBRs);//TODO modify later.
+      //JumpTargets.analysisUseDef(BlockBRs);//TODO modify later.
       *ptc.exception_syscall = -1;//TODO modify later.
     }
   
