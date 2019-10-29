@@ -1641,9 +1641,14 @@ void JumpTargetManager::analysisUseDef(llvm::BasicBlock *thisBlock){
       for(Use &U : I->operands()){
         Value *v = U.get();
        
-        if(!islegalAddr(v)){ 
-          for(User * all_user v->getUser()){
-            
+        if(islegalAddr(v)){ 
+          //std::vector<llvm::Instruction 
+          for(User * userI_ofall : v->users()){
+            llvm::Instruction *userI = dyn_cast<Instruction>(userI_ofall);
+            userI//
+            if instruction of user in thisBlock
+	      if intruction in front of Load
+	         record	      
           }  
 //          if(dyn_cast<Instruction>(v)){
 //            int i = 0;
