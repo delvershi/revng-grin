@@ -1642,40 +1642,45 @@ void JumpTargetManager::analysisUseDef(llvm::BasicBlock *thisBlock){
         Value *v = U.get();
        
         if(!islegalAddr(v)){ 
-          if(dyn_cast<Instruction>(v)){
-            int i = 0;
-            int flag= 0;
-            std::vector<llvm::Instruction *> Defuse;
-            /* Get arguments of 'I' use chain */
-            for(User *vu : v->users()){
-              llvm::Instruction *Inst = dyn_cast<Instruction>(vu);
-              /* match the same as Instruction with 'I' */
-              if(I->isIdenticalTo(Inst)){
-                Instruction *BlockEnd = dyn_cast<Instruction>(thisBlock->end());
-                Instruction *ILoad = dyn_cast<Instruction>(I);
-  	        if((Inst-BlockEnd)-(ILoad-BlockEnd) == 0)
-                  flag = i;
-              }
-              Defuse.push_back(Inst);
-              i++;
-            }
-            for(unsigned int j = flag;j<Defuse.size();j++){
-              errs()<<*Defuse[j]<<"  "<<flag<<"\n";
-            }
-          }
-	  /* Value's definition don't exist in current BasicBlock */
-          else{
-            for(User *gvu : v->users()){
-              llvm::Instruction *gInst = dyn_cast<Instruction>(gvu);
-              errs()<<*gInst<<"   <------------Global\n";
-            }
-          }
-//          llvm::BasicBlock *BB = I->getParent();
-//          llvm::Function::iterator it(BB);
-//          if((nodepCFG.first-BB) == 0)
-//            errs()<<BB->getName()<<"  <- BasicBlock \n";
-//            errs()<<nodepCFG.first->getName()<<"  <- part CFG \n";
+          for(User * all_user v->getUser()){
+            
+          }  
+//          if(dyn_cast<Instruction>(v)){
+//            int i = 0;
+//            int flag= 0;
+//            std::vector<llvm::Instruction *> Defuse;
+//            /* Get arguments of 'I' use chain */
+//            for(User *vu : v->users()){
+//              llvm::Instruction *Inst = dyn_cast<Instruction>(vu);
+//              /* match the same as Instruction with 'I' */
+//              if(I->isIdenticalTo(Inst)){
+//                Instruction *BlockEnd = dyn_cast<Instruction>(thisBlock->end());
+//                Instruction *ILoad = dyn_cast<Instruction>(I);
+//  	        if((Inst-BlockEnd)-(ILoad-BlockEnd) == 0)
+//                  flag = i;
+//              }
+//              Defuse.push_back(Inst);
+//              errs()<<*Inst<<" +++\n";
+//              i++;
+//            }
+//            for(unsigned int j = flag;j<Defuse.size();j++){
+//              errs()<<*Defuse[j]<<"  "<<flag<<"\n";
+//            }
+//          }
+//	  /* Value's definition don't exist in current BasicBlock */
+//          else{
+//            for(User *gvu : v->users()){
+//              llvm::Instruction *gInst = dyn_cast<Instruction>(gvu);
+//              errs()<<*gInst<<" <-----Global"<<gInst->getParent()->getName()<<"\n";
+//            }
+//            
+//            if(v->isUsedInBasicBlock(nodepCFG.second)){
+//
+//              errs()<<"this value is used in the basic block\n";
+//            }
+//          }
 
+          //goto Finished;  
         }////?end if(!islegalAddr(v)) 
 
       }
@@ -1683,6 +1688,8 @@ void JumpTargetManager::analysisUseDef(llvm::BasicBlock *thisBlock){
     }////?end if(I->getOpcode()...Load)
   
   }
+//Finished:
+//  errs()<<"Finished and reassignment.\n";
 }
 
 unsigned int JumpTargetManager::StrToInt(const char *str){
