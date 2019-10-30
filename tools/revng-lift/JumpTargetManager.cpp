@@ -1638,17 +1638,22 @@ void JumpTargetManager::analysisUseDef(llvm::BasicBlock *thisBlock){
     // case 1: load instruction
     if(I->getOpcode() == Instruction::Load){
       errs()<<*I<<"         <-Load \n";
+      llvm::User *Luser = dyn_cast<User>(I); 
       for(Use &U : I->operands()){
         Value *v = U.get();
        
-        if(islegalAddr(v)){ 
-          //std::vector<llvm::Instruction 
-          for(User * userI_ofall : v->users()){
-            llvm::Instruction *userI = dyn_cast<Instruction>(userI_ofall);
-            userI//
-            if instruction of user in thisBlock
-	      if intruction in front of Load
-	         record	      
+        if(!islegalAddr(v)){ 
+          bool bar = 0;
+          for(User *vu : v->users()){
+            if((vu - Luser) == 0)
+            	bar = 1;
+            auto *vui = dyn_cast<Instruction>(vu);
+            if(bar && ((vui->getParent() - thisBlock) == 0)){
+            	errs()<<*vu<<" userI****\n";
+            }
+            if(bar && ((vui->getParent() - thisBlock) != 0))
+            	break;
+           
           }  
 //          if(dyn_cast<Instruction>(v)){
 //            int i = 0;
