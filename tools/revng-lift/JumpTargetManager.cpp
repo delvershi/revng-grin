@@ -1657,43 +1657,49 @@ void JumpTargetManager::analysisUseDef(llvm::BasicBlock *thisBlock){
             if(bar && ((vui->getParent() - thisBlock) != 0))
             	break;
             */
+          }
+          auto def = dyn_cast<Instruction>(v);
+          if(vDefUse.size() == 1){
+                if(def){
+                  errs()<<*def<<"return def instruction\n";
+                }
+                else{
+                  errs()<<" explort next BasicBlock! return v\n";
+                }
+          }
+          else if(vDefUse.size() > 1){
+          	for(auto last : vDefUse){
+                  /* As user, only store is assigned to Value */ 
+                  switch(last->getOpcode())
+                  {
+                    case llvm::Instruction::Store:{
+                      auto lastS = dyn_cast<llvm::StoreInst>(last);
+                      if((lastS->getPointerOperand() - v) == 0)
+                          errs()<<*last<<"   return last assignment\n";
+                      break;
+                    } 
+                    case llvm::Instruction::Load:
+                      continue;
+                    break;
+                    default:
+                      errs()<<"Unkonw instruction: "<<*last<<"\n";
+                      revng_assert("Unkonw instruction!");
+                    break;
+                  }
+                }
+                if(def){
+                    errs()<<*def<<"many user, return def instruction\n";
+                }
+                else{
+                    errs()<<" no assignment explort next BasicBlock! return v\n";
+                }
           }  
-//          if(dyn_cast<Instruction>(v)){
-//            int i = 0;
-//            int flag= 0;
-//            std::vector<llvm::Instruction *> Defuse;
-//            /* Get arguments of 'I' use chain */
-//            for(User *vu : v->users()){
-//              llvm::Instruction *Inst = dyn_cast<Instruction>(vu);
-//              /* match the same as Instruction with 'I' */
-//              if(I->isIdenticalTo(Inst)){
-//                Instruction *BlockEnd = dyn_cast<Instruction>(thisBlock->end());
-//                Instruction *ILoad = dyn_cast<Instruction>(I);
-//  	        if((Inst-BlockEnd)-(ILoad-BlockEnd) == 0)
-//                  flag = i;
-//              }
-//              Defuse.push_back(Inst);
-//              errs()<<*Inst<<" +++\n";
-//              i++;
-//            }
-//            for(unsigned int j = flag;j<Defuse.size();j++){
-//              errs()<<*Defuse[j]<<"  "<<flag<<"\n";
-//            }
-//          }
-//	  /* Value's definition don't exist in current BasicBlock */
-//          else{
-//            for(User *gvu : v->users()){
-//              llvm::Instruction *gInst = dyn_cast<Instruction>(gvu);
-//              errs()<<*gInst<<" <-----Global"<<gInst->getParent()->getName()<<"\n";
-//            }
-//            
 //            if(v->isUsedInBasicBlock(nodepCFG.second)){
 //
 //              errs()<<"this value is used in the basic block\n";
 //            }
-//          }
 
-          //goto Finished;  
+          goto Finished;  
         }////?end if(!islegalAddr(v)) 
 
       }
@@ -1701,8 +1707,8 @@ void JumpTargetManager::analysisUseDef(llvm::BasicBlock *thisBlock){
     }////?end if(I->getOpcode()...Load)
   
   }
-//Finished:
-//  errs()<<"Finished and reassignment.\n";
+Finished:
+  errs()<<"Finished and reassignment.\n";
 }
 
 unsigned int JumpTargetManager::StrToInt(const char *str){
