@@ -1644,16 +1644,19 @@ void JumpTargetManager::analysisUseDef(llvm::BasicBlock *thisBlock){
        
         if(!islegalAddr(v)){ 
           bool bar = 0;
+          std::vector<llvm::Instruction *> vDefUse;
           for(User *vu : v->users()){
             if((vu - Luser) == 0)
             	bar = 1;
             auto *vui = dyn_cast<Instruction>(vu);
             if(bar && ((vui->getParent() - thisBlock) == 0)){
             	errs()<<*vu<<" userI****\n";
+                vDefUse.push_back(vui);
             }
+            /*
             if(bar && ((vui->getParent() - thisBlock) != 0))
             	break;
-           
+            */
           }  
 //          if(dyn_cast<Instruction>(v)){
 //            int i = 0;
