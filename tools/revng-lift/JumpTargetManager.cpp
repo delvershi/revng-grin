@@ -1691,7 +1691,7 @@ JumpTargetManager:: getLastAssignment(llvm::Value *v, llvm::User *userInst, llvm
             return NextBlockOperating;
         }
   }
-  return ResultUnknow;   
+  return UnknowResult;   
 }
 
 void JumpTargetManager::analysisUseDef(llvm::BasicBlock *thisBlock){
@@ -1705,8 +1705,10 @@ void JumpTargetManager::analysisUseDef(llvm::BasicBlock *thisBlock){
       for(Use &U : I->operands()){
         Value *v = U.get();
        
-        if(!islegalAddr(v)){ 
-          switch(getLastAssignment(v,Luser,thisBlock))
+        if(!islegalAddr(v)){
+          auto v1 = v;
+          auto thisBlock1 = thisBlock; 
+          switch(getLastAssignment(v1,Luser,thisBlock1))
           {
             case CurrentBlockValueDef:
             	errs()<<"11111111111\n";
@@ -1717,7 +1719,7 @@ void JumpTargetManager::analysisUseDef(llvm::BasicBlock *thisBlock){
             case CurrentBlockLastAssign:
                 errs()<<"333333333333\n";
             break;
-            case ResultUnknow:
+            case UnknowResult:
             	revng_abort("Unknow of result!");
             break;
           } 

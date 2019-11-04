@@ -173,7 +173,7 @@ public:
                          *   value but no assign operating, explorting next 
                          *   BasicBlock of operating this value */
     CurrentBlockLastAssign, // Return last assignment of current of BasicBlock 
-    ResultUnknow 
+    UnknowResult 
   }; 
   void analysisUseDef(llvm::BasicBlock *thisBlock);
   LastAssignmentResult getLastAssignment(llvm::Value *v, llvm::User *userInst, llvm::BasicBlock *currentBB);
