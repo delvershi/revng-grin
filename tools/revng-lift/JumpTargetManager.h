@@ -164,7 +164,19 @@ public:
 
   std::vector<uint64_t> BranchTargets;  
 
+  enum LastAssignmentResult{
+    CurrentBlockValueDef, /* Case 1: Return value def instruction
+                           * Case 2: Current BasicBlock have many use of 
+                           *   value but no assign operating, return def instruction */
+    NextBlockOperating, /* Case 1: Explort next BasicBlock of operating this value
+                         * Case 2: Current BasicBlock have many use of
+                         *   value but no assign operating, explorting next 
+                         *   BasicBlock of operating this value */
+    CurrentBlockLastAssign, // Return last assignment of current of BasicBlock 
+    ResultUnknow 
+  }; 
   void analysisUseDef(llvm::BasicBlock *thisBlock);
+  LastAssignmentResult getLastAssignment(llvm::Value *v, llvm::User *userInst, llvm::BasicBlock *currentBB);
   bool islegalAddr(llvm::Value *v);
   unsigned int StrToInt(const char *str);
 

@@ -1631,6 +1631,69 @@ bool JumpTargetManager::islegalAddr(llvm::Value *v){
 //  return 0;
 }
 
+JumpTargetManager::LastAssignmentResult 
+JumpTargetManager:: getLastAssignment(llvm::Value *v, llvm::User *userInst, llvm::BasicBlock *currentBB){
+  bool bar = 0;
+  std::vector<llvm::Instruction *> vDefUse;
+  for(User *vu : v->users()){
+    if((vu - userInst) == 0)
+    	bar = 1;
+    auto *vui = dyn_cast<Instruction>(vu);
+    if(bar && ((vui->getParent() - currentBB) == 0)){
+    	errs()<<*vu<<" userI****\n";
+        vDefUse.push_back(vui);
+    }
+    /*
+    if(bar && ((vui->getParent() - thisBlock) != 0))
+    	break;
+    */
+  }
+
+  auto def = dyn_cast<Instruction>(v);
+//  if(vDefUse.size() == 1){
+//        //vDefUse[0]->getOpcode() == llvm::Instruction::Store
+//        if(def){
+//          errs()<<*def<<"return def instruction\n";
+//          return CurrentBlockValueDef;
+//        }
+//        else{
+//          errs()<<" explort next BasicBlock! return v\n";
+//          return NextBlockOperating;
+//        }
+//  }
+  if(vDefUse.size() >= 1){
+  	for(auto last : vDefUse){
+          /* As user, only store is assigned to Value */ 
+          switch(last->getOpcode())
+          {
+            case llvm::Instruction::Store:{
+              auto lastS = dyn_cast<llvm::StoreInst>(last);
+              if((lastS->getPointerOperand() - v) == 0)
+                  errs()<<*last<<" --last assignment\n";
+                  return CurrentBlockLastAssign;
+              break;
+            } 
+            case llvm::Instruction::Load:
+              continue;
+            break;
+            default:
+              errs()<<"Unkonw instruction: "<<*last<<"\n";
+              revng_assert("Unkonw instruction!");
+            break;
+          }
+        }
+        if(def){
+            errs()<<*def<<"--many or one user, return def instruction\n";
+            return CurrentBlockValueDef;
+        }
+        else{
+            errs()<<" --no assignment, to explort next BasicBlock of Value's users\n";
+            return NextBlockOperating;
+        }
+  }
+  return ResultUnknow;   
+}
+
 void JumpTargetManager::analysisUseDef(llvm::BasicBlock *thisBlock){
   BasicBlock::iterator I = thisBlock->begin();
   auto endInst = thisBlock->end();
@@ -1643,57 +1706,21 @@ void JumpTargetManager::analysisUseDef(llvm::BasicBlock *thisBlock){
         Value *v = U.get();
        
         if(!islegalAddr(v)){ 
-          bool bar = 0;
-          std::vector<llvm::Instruction *> vDefUse;
-          for(User *vu : v->users()){
-            if((vu - Luser) == 0)
-            	bar = 1;
-            auto *vui = dyn_cast<Instruction>(vu);
-            if(bar && ((vui->getParent() - thisBlock) == 0)){
-            	errs()<<*vu<<" userI****\n";
-                vDefUse.push_back(vui);
-            }
-            /*
-            if(bar && ((vui->getParent() - thisBlock) != 0))
-            	break;
-            */
-          }
-          auto def = dyn_cast<Instruction>(v);
-          if(vDefUse.size() == 1){
-                if(def){
-                  errs()<<*def<<"return def instruction\n";
-                }
-                else{
-                  errs()<<" explort next BasicBlock! return v\n";
-                }
-          }
-          else if(vDefUse.size() > 1){
-          	for(auto last : vDefUse){
-                  /* As user, only store is assigned to Value */ 
-                  switch(last->getOpcode())
-                  {
-                    case llvm::Instruction::Store:{
-                      auto lastS = dyn_cast<llvm::StoreInst>(last);
-                      if((lastS->getPointerOperand() - v) == 0)
-                          errs()<<*last<<"   return last assignment\n";
-                      break;
-                    } 
-                    case llvm::Instruction::Load:
-                      continue;
-                    break;
-                    default:
-                      errs()<<"Unkonw instruction: "<<*last<<"\n";
-                      revng_assert("Unkonw instruction!");
-                    break;
-                  }
-                }
-                if(def){
-                    errs()<<*def<<"many user, return def instruction\n";
-                }
-                else{
-                    errs()<<" no assignment explort next BasicBlock! return v\n";
-                }
-          }  
+          switch(getLastAssignment(v,Luser,thisBlock))
+          {
+            case CurrentBlockValueDef:
+            	errs()<<"11111111111\n";
+            break;
+            case NextBlockOperating:
+            	errs()<<"2222222222222\n";
+            break;
+            case CurrentBlockLastAssign:
+                errs()<<"333333333333\n";
+            break;
+            case ResultUnknow:
+            	revng_abort("Unknow of result!");
+            break;
+          } 
 //            if(v->isUsedInBasicBlock(nodepCFG.second)){
 //
 //              errs()<<"this value is used in the basic block\n";
