@@ -1704,25 +1704,33 @@ void JumpTargetManager::analysisUseDef(llvm::BasicBlock *thisBlock){
       llvm::User *Luser = dyn_cast<User>(I); 
       for(Use &U : I->operands()){
         Value *v = U.get();
-       
         if(!islegalAddr(v)){
           auto v1 = v;
           auto thisBlock1 = thisBlock; 
+          llvm::Function::iterator nodeBB(thisBlock);
+          llvm::Function::iterator begin(thisBlock->getParent()->begin());
+          for(;nodeBB != begin;nodeBB--){  
+            if(v->isUsedInBasicBlock(dyn_cast<llvm::BasicBlock>(nodeBB))){
+            //	errs()<<nodeBB->getName()<<"-------this value is used in the basic block\n";
+            
+          
           switch(getLastAssignment(v1,Luser,thisBlock1))
           {
             case CurrentBlockValueDef:
             	errs()<<"11111111111\n";
             break;
-            case NextBlockOperating:
+            case NextBlockOperating:{
             	errs()<<"2222222222222\n";
-            break;
+                break;
+            }
             case CurrentBlockLastAssign:
                 errs()<<"333333333333\n";
             break;
             case UnknowResult:
             	revng_abort("Unknow of result!");
             break;
-          } 
+          }
+          } }
 //            if(v->isUsedInBasicBlock(nodepCFG.second)){
 //
 //              errs()<<"this value is used in the basic block\n";
