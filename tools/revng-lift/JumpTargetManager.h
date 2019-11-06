@@ -176,7 +176,10 @@ public:
     UnknowResult 
   }; 
   void analysisUseDef(llvm::BasicBlock *thisBlock);
-  LastAssignmentResult getLastAssignment(llvm::Value *v, llvm::User *userInst, llvm::BasicBlock *currentBB);
+  using LastAssignmentResultWithInst = std::pair<enum LastAssignmentResult, llvm::Instruction *>;
+  LastAssignmentResultWithInst getLastAssignment(llvm::Value *v, 
+                                         llvm::User *userInst, 
+                                         llvm::BasicBlock *currentBB);
   bool islegalAddr(llvm::Value *v);
   unsigned int StrToInt(const char *str);
 

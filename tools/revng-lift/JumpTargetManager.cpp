@@ -1631,8 +1631,11 @@ bool JumpTargetManager::islegalAddr(llvm::Value *v){
 //  return 0;
 }
 
-JumpTargetManager::LastAssignmentResult 
-JumpTargetManager:: getLastAssignment(llvm::Value *v, llvm::User *userInst, llvm::BasicBlock *currentBB){
+JumpTargetManager::LastAssignmentResultWithInst 
+JumpTargetManager:: getLastAssignment(llvm::Value *v, 
+                                      llvm::User *userInst, 
+                                      llvm::BasicBlock *currentBB){
+  LastAssignmentResultWithInst result;
   bool bar = 0;
   std::vector<llvm::Instruction *> vDefUse;
   for(User *vu : v->users()){
@@ -1668,9 +1671,12 @@ JumpTargetManager:: getLastAssignment(llvm::Value *v, llvm::User *userInst, llvm
           {
             case llvm::Instruction::Store:{
               auto lastS = dyn_cast<llvm::StoreInst>(last);
-              if((lastS->getPointerOperand() - v) == 0)
-                  errs()<<*last<<" --last assignment\n";
-                  return CurrentBlockLastAssign;
+              if((lastS->getPointerOperand() - v) == 0){
+                  errs()<<*last<<"\n^--last assignment\n";
+                  result.first = CurrentBlockLastAssign;
+                  result.second = last;
+                  return result;
+              }
               break;
             } 
             case llvm::Instruction::Load:
@@ -1683,54 +1689,91 @@ JumpTargetManager:: getLastAssignment(llvm::Value *v, llvm::User *userInst, llvm
           }
         }
         if(def){
-            errs()<<*def<<"--many or one user, return def instruction\n";
-            return CurrentBlockValueDef;
+            errs()<<*def<<"\n^--many or one user, return def instruction\n";
+            result.first = CurrentBlockValueDef;
+            result.second = nullptr;
+            return result;
         }
         else{
-            errs()<<" --no assignment, to explort next BasicBlock of Value's users\n";
-            return NextBlockOperating;
+            errs()<<"--no assignment, to explort next BasicBlock of Value's users\n";
+            result.first = NextBlockOperating;
+            result.second = nullptr;
+            return result;
         }
   }
-  return UnknowResult;   
+  result.first = UnknowResult;
+  result.second = nullptr;
+  return result;   
 }
 
 void JumpTargetManager::analysisUseDef(llvm::BasicBlock *thisBlock){
   BasicBlock::iterator I = thisBlock->begin();
   auto endInst = thisBlock->end();
+
   for(;I!=endInst;I++){
     // case 1: load instruction
     if(I->getOpcode() == Instruction::Load){
       errs()<<*I<<"         <-Load \n";
-      llvm::User *Luser = dyn_cast<User>(I); 
       for(Use &U : I->operands()){
         Value *v = U.get();
         if(!islegalAddr(v)){
-          auto v1 = v;
-          auto thisBlock1 = thisBlock; 
+          
           llvm::Function::iterator nodeBB(thisBlock);
           llvm::Function::iterator begin(thisBlock->getParent()->begin());
-          for(;nodeBB != begin;nodeBB--){  
-            if(v->isUsedInBasicBlock(dyn_cast<llvm::BasicBlock>(nodeBB))){
+          llvm::User *operateUser = dyn_cast<User>(I);
+          llvm::Value *v1 = nullptr;
+          LastAssignmentResult result;
+          llvm::Instruction *lastInst = nullptr;
+          std::vector<llvm::Value *> vs;
+          vs.push_back(v);
+          while(!vs.empty()){
+            v1 = vs.front();
+            vs.erase(vs.begin());
+
+          for(;nodeBB != begin;){  
+            auto bb = dyn_cast<llvm::BasicBlock>(nodeBB);
+            if(v1->isUsedInBasicBlock(bb)){
             //	errs()<<nodeBB->getName()<<"-------this value is used in the basic block\n";
-            
-          
-          switch(getLastAssignment(v1,Luser,thisBlock1))
+            std::tie(result,lastInst) = getLastAssignment(v1,operateUser,bb);
+          switch(result)
           {
             case CurrentBlockValueDef:
             	errs()<<"11111111111\n";
             break;
             case NextBlockOperating:{
+                if((nodepCFG.first - bb) == 0){
+                  llvm::Function::iterator it(nodepCFG.second);
+                  nodeBB = it;
+                  goto BranchNode;
+                }
             	errs()<<"2222222222222\n";
                 break;
             }
-            case CurrentBlockLastAssign:
+            case CurrentBlockLastAssign:{
+             //errs()<<*lastInst<<" --last assignment\n";   
+                for(Use &lastU : lastInst->operands()){
+                  Value *lastv = lastU.get();
+                  vs.push_back(lastv);
+                }
+                v1 = vs.front();
+                vs.erase(vs.begin());
+                operateUser = dyn_cast<User>(lastInst);
+                nodeBB++;
                 errs()<<"333333333333\n";
-            break;
+                break;
+            }
             case UnknowResult:
             	revng_abort("Unknow of result!");
             break;
           }
-          } }
+              
+            }///?if(v->...? 
+            nodeBB--;
+BranchNode:
+            continue;
+          }////?for(;nodeBB != begin;nodeBB--)?
+          }
+
 //            if(v->isUsedInBasicBlock(nodepCFG.second)){
 //
 //              errs()<<"this value is used in the basic block\n";
