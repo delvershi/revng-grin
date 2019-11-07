@@ -1691,7 +1691,7 @@ JumpTargetManager:: getLastAssignment(llvm::Value *v,
         if(def){
             errs()<<*def<<"\n^--many or one user, return def instruction\n";
             result.first = CurrentBlockValueDef;
-            result.second = nullptr;
+            result.second = def;
             return result;
         }
         else{
@@ -1737,9 +1737,18 @@ void JumpTargetManager::analysisUseDef(llvm::BasicBlock *thisBlock){
             std::tie(result,lastInst) = getLastAssignment(v1,operateUser,bb);
           switch(result)
           {
-            case CurrentBlockValueDef:
+            case CurrentBlockValueDef:{
+                for(Use &lastD : lastInst->operands()){
+                  Value *lastvD = lastD.get();
+                  vs.push_back(lastvD);
+                }
+                v1 = vs.front();
+                vs.erase(vs.begin());
+                operateUser = dyn_cast<User>(lastInst);
+                nodeBB++;
             	errs()<<"11111111111\n";
-            break;
+                break;
+            }
             case NextBlockOperating:{
                 if((nodepCFG.first - bb) == 0){
                   llvm::Function::iterator it(nodepCFG.second);
