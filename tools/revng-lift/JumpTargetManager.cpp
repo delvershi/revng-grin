@@ -1567,6 +1567,9 @@ void JumpTargetManager::node_ofpCFG(uint64_t addr, llvm::BasicBlock *dest){
   }
 }
 
+/* TODO: In the future, there will be modify by 
+ *       orignal Inst is judged access memory rather than judge LLVM IR 
+ */
 bool JumpTargetManager::islegalAddr(llvm::Value *v){
   uint64_t va = 0;
   StringRef Iargs = v->getName();
@@ -1636,6 +1639,13 @@ JumpTargetManager:: getLastAssignment(llvm::Value *v,
                                       llvm::User *userInst, 
                                       llvm::BasicBlock *currentBB){
   LastAssignmentResultWithInst result;
+ 
+  if(dyn_cast<ConstantInt>(v)){
+    result.first = ConstantValueAssign;
+    result.second = nullptr;
+    return result;
+  }
+
   bool bar = 0;
   std::vector<llvm::Instruction *> vDefUse;
   for(User *vu : v->users()){
@@ -1680,11 +1690,17 @@ JumpTargetManager:: getLastAssignment(llvm::Value *v,
               break;
             } 
             case llvm::Instruction::Load:
+            case llvm::Instruction::Select:
+            case llvm::Instruction::ICmp:
+            case llvm::Instruction::IntToPtr:
+            case llvm::Instruction::Add:
+            case llvm::Instruction::ZExt:
+            case llvm::Instruction::Trunc:
               continue;
             break;
             default:
               errs()<<"Unkonw instruction: "<<*last<<"\n";
-              revng_assert("Unkonw instruction!");
+              revng_abort("Unkonw instruction!");
             break;
           }
         }
@@ -1733,48 +1749,59 @@ void JumpTargetManager::analysisUseDef(llvm::BasicBlock *thisBlock){
           for(;nodeBB != begin;){  
             auto bb = dyn_cast<llvm::BasicBlock>(nodeBB);
             if(v1->isUsedInBasicBlock(bb)){
-            //	errs()<<nodeBB->getName()<<"-------this value is used in the basic block\n";
-            std::tie(result,lastInst) = getLastAssignment(v1,operateUser,bb);
-          switch(result)
-          {
-            case CurrentBlockValueDef:{
-                for(Use &lastD : lastInst->operands()){
-                  Value *lastvD = lastD.get();
-                  vs.push_back(lastvD);
+              //	errs()<<nodeBB->getName()<<"-------this value is used in the basic block\n";
+              std::tie(result,lastInst) = getLastAssignment(v1,operateUser,bb);
+              switch(result)
+              {
+                case CurrentBlockValueDef:
+                {
+                    if(lastInst->getOpcode() == Instruction::Select){
+                      auto select = dyn_cast<llvm::SelectInst>(lastInst);
+                      //v1 = select->getTrueValue();
+                      //vs.push_back(select->getFalseValue());
+                      v1 = select->getFalseValue();
+                      
+                    }
+                    else{
+                      auto nums = lastInst->getNumOperands();
+                      for(Use &lastD : lastInst->operands()){
+                        Value *lastvD = lastD.get();
+                        vs.push_back(lastvD);
+                      }
+                      v1 = vs[vs.size()-nums];
+                      vs.erase(vs.begin()+vs.size()-nums);
+                    }
+                    operateUser = dyn_cast<User>(lastInst);
+                    nodeBB++;
+                	errs()<<"11111111111\n";
+                    break;
                 }
-                v1 = vs.front();
-                vs.erase(vs.begin());
-                operateUser = dyn_cast<User>(lastInst);
-                nodeBB++;
-            	errs()<<"11111111111\n";
-                break;
-            }
-            case NextBlockOperating:{
-                if((nodepCFG.first - bb) == 0){
-                  llvm::Function::iterator it(nodepCFG.second);
-                  nodeBB = it;
-                  goto BranchNode;
+                case NextBlockOperating:
+                {
+                    if((nodepCFG.first - bb) == 0){
+                      llvm::Function::iterator it(nodepCFG.second);
+                      nodeBB = it;
+                      goto BranchNode;
+                    }
+                	errs()<<"2222222222222\n";
+                    break;
                 }
-            	errs()<<"2222222222222\n";
-                break;
-            }
-            case CurrentBlockLastAssign:{
-             //errs()<<*lastInst<<" --last assignment\n";   
-                for(Use &lastU : lastInst->operands()){
-                  Value *lastv = lastU.get();
-                  vs.push_back(lastv);
+                case CurrentBlockLastAssign:
+                {
+                    // Only Store instruction can assign a value for Value rather than defined
+                    auto store = dyn_cast<llvm::StoreInst>(lastInst);
+                    v1 = store->getValueOperand();
+                    operateUser = dyn_cast<User>(lastInst);
+                    nodeBB++;
+                    errs()<<"333333333333\n";
+                    break;
                 }
-                v1 = vs.front();
-                vs.erase(vs.begin());
-                operateUser = dyn_cast<User>(lastInst);
-                nodeBB++;
-                errs()<<"333333333333\n";
+                case ConstantValueAssign:
+               
+                case UnknowResult:
+                	revng_abort("Unknow of result!");
                 break;
-            }
-            case UnknowResult:
-            	revng_abort("Unknow of result!");
-            break;
-          }
+              }
               
             }///?if(v->...? 
             nodeBB--;

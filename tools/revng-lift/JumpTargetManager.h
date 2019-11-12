@@ -172,7 +172,9 @@ public:
                          * Case 2: Current BasicBlock have many use of
                          *   value but no assign operating, explorting next 
                          *   BasicBlock of operating this value */
-    CurrentBlockLastAssign, // Return last assignment of current of BasicBlock 
+    CurrentBlockLastAssign, // Return last assignment of current of BasicBlock
+
+    ConstantValueAssign, 
     UnknowResult 
   }; 
   void analysisUseDef(llvm::BasicBlock *thisBlock);
