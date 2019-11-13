@@ -1694,6 +1694,8 @@ JumpTargetManager:: getLastAssignment(llvm::Value *v,
             case llvm::Instruction::ICmp:
             case llvm::Instruction::IntToPtr:
             case llvm::Instruction::Add:
+            case llvm::Instruction::Sub:
+            case llvm::Instruction::And:
             case llvm::Instruction::ZExt:
             case llvm::Instruction::Trunc:
               continue;
@@ -1734,16 +1736,17 @@ void JumpTargetManager::analysisUseDef(llvm::BasicBlock *thisBlock){
         Value *v = U.get();
         if(!islegalAddr(v)){
           
-          llvm::Function::iterator nodeBB(thisBlock);
-          llvm::Function::iterator begin(thisBlock->getParent()->begin());
           llvm::User *operateUser = dyn_cast<User>(I);
           llvm::Value *v1 = nullptr;
           LastAssignmentResult result;
           llvm::Instruction *lastInst = nullptr;
-          std::vector<llvm::Value *> vs;
-          vs.push_back(v);
+          std::vector<std::pair<llvm::Value *,llvm::BasicBlock *>> vs;
+          vs.push_back(std::make_pair(v,thisBlock));
           while(!vs.empty()){
-            v1 = vs.front();
+            llvm::BasicBlock *tmpB = nullptr;
+            std::tie(v1,tmpB) = vs.front();
+            llvm::Function::iterator nodeBB(tmpB);
+            llvm::Function::iterator begin(tmpB->getParent()->begin());
             vs.erase(vs.begin());
 
           for(;nodeBB != begin;){  
@@ -1757,18 +1760,17 @@ void JumpTargetManager::analysisUseDef(llvm::BasicBlock *thisBlock){
                 {
                     if(lastInst->getOpcode() == Instruction::Select){
                       auto select = dyn_cast<llvm::SelectInst>(lastInst);
-                      //v1 = select->getTrueValue();
-                      //vs.push_back(select->getFalseValue());
-                      v1 = select->getFalseValue();
-                      
+                      v1 = select->getTrueValue();
+                      vs.push_back(std::make_pair(select->getFalseValue(),bb));
+                      //v1 = select->getFalseValue();
                     }
                     else{
                       auto nums = lastInst->getNumOperands();
-                      for(Use &lastD : lastInst->operands()){
-                        Value *lastvD = lastD.get();
-                        vs.push_back(lastvD);
+                      for(Use &lastU : lastInst->operands()){
+                        Value *lastv = lastU.get();
+                        vs.push_back(std::make_pair(lastv,bb));
                       }
-                      v1 = vs[vs.size()-nums];
+                      v1 = vs[vs.size()-nums].first;
                       vs.erase(vs.begin()+vs.size()-nums);
                     }
                     operateUser = dyn_cast<User>(lastInst);
@@ -1797,23 +1799,22 @@ void JumpTargetManager::analysisUseDef(llvm::BasicBlock *thisBlock){
                     break;
                 }
                 case ConstantValueAssign:
-               
+                    goto NextValue;
+                break;
                 case UnknowResult:
-                	revng_abort("Unknow of result!");
+                    revng_abort("Unknow of result!");
                 break;
               }
               
-            }///?if(v->...? 
+            }///?if(v1->isUsedInBasicBlock(bb))?
             nodeBB--;
 BranchNode:
             continue;
-          }////?for(;nodeBB != begin;nodeBB--)?
-          }
-
-//            if(v->isUsedInBasicBlock(nodepCFG.second)){
-//
-//              errs()<<"this value is used in the basic block\n";
-//            }
+          }///?for(;nodeBB != begin;)?
+NextValue:
+            errs()<<"Explore next Value of illegal Value of DFG!\n";
+            continue;
+          }///?while(!vs.empty())?
 
           goto Finished;  
         }////?end if(!islegalAddr(v)) 
