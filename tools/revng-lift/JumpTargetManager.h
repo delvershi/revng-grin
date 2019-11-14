@@ -184,6 +184,8 @@ public:
                                          llvm::BasicBlock *currentBB);
   bool islegalAddr(llvm::Value *v);
   unsigned int StrToInt(const char *str);
+ 
+  std::vector<llvm::Instruction *> DataFlow;
 
   /* Not executing branch of CFG */
   std::vector<std::pair<uint64_t, llvm::BasicBlock *>> partCFG;

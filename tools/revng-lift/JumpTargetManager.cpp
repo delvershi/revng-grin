@@ -1649,7 +1649,7 @@ JumpTargetManager:: getLastAssignment(llvm::Value *v,
     	bar = 1;
     auto *vui = dyn_cast<Instruction>(vu);
     if(bar && ((vui->getParent() - currentBB) == 0)){
-    	errs()<<*vu<<" userI****\n";
+    	//errs()<<*vu<<" userI****\n";
         vDefUse.push_back(vui);
     }
     /*
@@ -1716,12 +1716,14 @@ void JumpTargetManager::getIllegalAccessDFG(llvm::BasicBlock *thisBlock){
   BasicBlock::iterator I = thisBlock->begin();
   auto endInst = thisBlock->end();
 
+  DataFlow.clear();  
+
   for(;I!=endInst;I++){
     // case 1: load instruction
     if(I->getOpcode() == Instruction::Load){
         errs()<<*I<<"         <-Load \n";
-        auto it = dyn_cast<llvm::LoadInst>(I);
-        Value *v = it->getPointerOperand();
+        auto linst = dyn_cast<llvm::LoadInst>(I);
+        Value *v = linst->getPointerOperand();
 
         if(!islegalAddr(v)){
           llvm::User *operateUser = nullptr;
@@ -1730,6 +1732,7 @@ void JumpTargetManager::getIllegalAccessDFG(llvm::BasicBlock *thisBlock){
           llvm::Instruction *lastInst = nullptr;
           std::vector<std::tuple<llvm::Value *,llvm::User *,llvm::BasicBlock *>> vs;
           vs.push_back(std::make_tuple(v,dyn_cast<User>(I),thisBlock));
+          DataFlow.push_back(dyn_cast<llvm::Instruction>(I));
  
           // Get illegal access Value's DFG. 
           while(!vs.empty()){
@@ -1761,6 +1764,7 @@ void JumpTargetManager::getIllegalAccessDFG(llvm::BasicBlock *thisBlock){
                       v1 = std::get<0>(vs[vs.size()-nums]);
                       vs.erase(vs.begin()+vs.size()-nums);
                     }
+                    DataFlow.push_back(lastInst);
                     operateUser = dyn_cast<User>(lastInst);
                     nodeBB++;
                     break;
@@ -1779,6 +1783,7 @@ void JumpTargetManager::getIllegalAccessDFG(llvm::BasicBlock *thisBlock){
                     // Only Store instruction can assign a value for Value rather than defined
                     auto store = dyn_cast<llvm::StoreInst>(lastInst);
                     v1 = store->getValueOperand();
+                    DataFlow.push_back(lastInst);
                     operateUser = dyn_cast<User>(lastInst);
                     nodeBB++;
                     break;
@@ -1806,7 +1811,7 @@ NextValue:
     }///?end if(I->getOpcode()...Load) 
   }
 Finished:
-  errs()<<"Finished and reassignment.\n";
+  errs()<<"Finished ayalysis illegal access Data Flow!\n";
 }
 
 unsigned int JumpTargetManager::StrToInt(const char *str){
