@@ -1638,12 +1638,8 @@ JumpTargetManager::LastAssignmentResultWithInst
 JumpTargetManager:: getLastAssignment(llvm::Value *v, 
                                       llvm::User *userInst, 
                                       llvm::BasicBlock *currentBB){
-  LastAssignmentResultWithInst result;
- 
   if(dyn_cast<ConstantInt>(v)){
-    result.first = ConstantValueAssign;
-    result.second = nullptr;
-    return result;
+    return std::make_pair(ConstantValueAssign,nullptr);
   }
 
   bool bar = 0;
@@ -1683,9 +1679,7 @@ JumpTargetManager:: getLastAssignment(llvm::Value *v,
               auto lastS = dyn_cast<llvm::StoreInst>(last);
               if((lastS->getPointerOperand() - v) == 0){
                   errs()<<*last<<"\n^--last assignment\n";
-                  result.first = CurrentBlockLastAssign;
-                  result.second = last;
-                  return result;
+                  return std::make_pair(CurrentBlockLastAssign,last);
               }
               break;
             } 
@@ -1708,40 +1702,36 @@ JumpTargetManager:: getLastAssignment(llvm::Value *v,
         }
         if(def){
             errs()<<*def<<"\n^--many or one user, return def instruction\n";
-            result.first = CurrentBlockValueDef;
-            result.second = def;
-            return result;
+            return std::make_pair(CurrentBlockValueDef,def);
         }
         else{
             errs()<<"--no assignment, to explort next BasicBlock of Value's users\n";
-            result.first = NextBlockOperating;
-            result.second = nullptr;
-            return result;
+            return std::make_pair(NextBlockOperating,nullptr);
         }
   }
-  result.first = UnknowResult;
-  result.second = nullptr;
-  return result;   
+  return std::make_pair(UnknowResult,nullptr);   
 }
 
-void JumpTargetManager::analysisUseDef(llvm::BasicBlock *thisBlock){
+void JumpTargetManager::getIllegalAccessDFG(llvm::BasicBlock *thisBlock){
   BasicBlock::iterator I = thisBlock->begin();
   auto endInst = thisBlock->end();
 
   for(;I!=endInst;I++){
     // case 1: load instruction
     if(I->getOpcode() == Instruction::Load){
-      errs()<<*I<<"         <-Load \n";
-      for(Use &U : I->operands()){
-        Value *v = U.get();
+        errs()<<*I<<"         <-Load \n";
+        auto it = dyn_cast<llvm::LoadInst>(I);
+        Value *v = it->getPointerOperand();
+
         if(!islegalAddr(v)){
-          
           llvm::User *operateUser = nullptr;
           llvm::Value *v1 = nullptr;
           LastAssignmentResult result;
           llvm::Instruction *lastInst = nullptr;
           std::vector<std::tuple<llvm::Value *,llvm::User *,llvm::BasicBlock *>> vs;
           vs.push_back(std::make_tuple(v,dyn_cast<User>(I),thisBlock));
+ 
+          // Get illegal access Value's DFG. 
           while(!vs.empty()){
             llvm::BasicBlock *tmpB = nullptr;
             std::tie(v1,operateUser,tmpB) = vs.front();
@@ -1752,7 +1742,6 @@ void JumpTargetManager::analysisUseDef(llvm::BasicBlock *thisBlock){
           for(;nodeBB != begin;){  
             auto bb = dyn_cast<llvm::BasicBlock>(nodeBB);
             if(v1->isUsedInBasicBlock(bb)){
-              //	errs()<<nodeBB->getName()<<"-------this value is used in the basic block\n";
               std::tie(result,lastInst) = getLastAssignment(v1,operateUser,bb);
               switch(result)
               {
@@ -1762,7 +1751,6 @@ void JumpTargetManager::analysisUseDef(llvm::BasicBlock *thisBlock){
                       auto select = dyn_cast<llvm::SelectInst>(lastInst);
                       v1 = select->getTrueValue();
                       vs.push_back(std::make_tuple(select->getFalseValue(),dyn_cast<User>(lastInst),bb));
-                      //v1 = select->getFalseValue();
                     }
                     else{
                       auto nums = lastInst->getNumOperands();
@@ -1775,7 +1763,6 @@ void JumpTargetManager::analysisUseDef(llvm::BasicBlock *thisBlock){
                     }
                     operateUser = dyn_cast<User>(lastInst);
                     nodeBB++;
-                	errs()<<"11111111111\n";
                     break;
                 }
                 case NextBlockOperating:
@@ -1785,7 +1772,6 @@ void JumpTargetManager::analysisUseDef(llvm::BasicBlock *thisBlock){
                       nodeBB = it;
                       goto BranchNode;
                     }
-                	errs()<<"2222222222222\n";
                     break;
                 }
                 case CurrentBlockLastAssign:
@@ -1795,7 +1781,6 @@ void JumpTargetManager::analysisUseDef(llvm::BasicBlock *thisBlock){
                     v1 = store->getValueOperand();
                     operateUser = dyn_cast<User>(lastInst);
                     nodeBB++;
-                    errs()<<"333333333333\n";
                     break;
                 }
                 case ConstantValueAssign:
@@ -1817,12 +1802,8 @@ NextValue:
           }///?while(!vs.empty())?
 
           goto Finished;  
-        }////?end if(!islegalAddr(v)) 
-
-      }
-
-    }////?end if(I->getOpcode()...Load)
-  
+        }///?end if(!islegalAddr(v)) 
+    }///?end if(I->getOpcode()...Load) 
   }
 Finished:
   errs()<<"Finished and reassignment.\n";
