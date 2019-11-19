@@ -178,6 +178,8 @@ public:
     UnknowResult 
   }; 
   void getIllegalAccessDFG(llvm::BasicBlock *thisBlock);
+  void setLegalValue(void);  
+
   using LastAssignmentResultWithInst = std::pair<enum LastAssignmentResult, llvm::Instruction *>;
   LastAssignmentResultWithInst getLastAssignment(llvm::Value *v, 
                                          llvm::User *userInst, 

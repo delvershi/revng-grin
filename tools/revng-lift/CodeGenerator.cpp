@@ -986,6 +986,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     }
     if(*ptc.exception_syscall == 11){
       JumpTargets.getIllegalAccessDFG(BlockBRs);
+      JumpTargets.setLegalValue();
       *ptc.exception_syscall = -1;//TODO modify later.
     }
   

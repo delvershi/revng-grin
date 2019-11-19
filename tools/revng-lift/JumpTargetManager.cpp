@@ -1774,7 +1774,7 @@ void JumpTargetManager::getIllegalAccessDFG(llvm::BasicBlock *thisBlock){
                     if((nodepCFG.first - bb) == 0){
                       llvm::Function::iterator it(nodepCFG.second);
                       nodeBB = it;
-                      goto BranchNode;
+                      continue;
                     }
                     break;
                 }
@@ -1798,8 +1798,6 @@ void JumpTargetManager::getIllegalAccessDFG(llvm::BasicBlock *thisBlock){
               
             }///?if(v1->isUsedInBasicBlock(bb))?
             nodeBB--;
-BranchNode:
-            continue;
           }///?for(;nodeBB != begin;)?
 NextValue:
             errs()<<"Explore next Value of illegal Value of DFG!\n";
@@ -1812,6 +1810,12 @@ NextValue:
   }
 Finished:
   errs()<<"Finished ayalysis illegal access Data Flow!\n";
+}
+
+void JumpTargetManager::setLegalValue(void){
+  for(auto inst : DataFlow){
+    errs()<<*inst<<"\n";
+  }
 }
 
 unsigned int JumpTargetManager::StrToInt(const char *str){
