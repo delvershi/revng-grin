@@ -1813,25 +1813,35 @@ Finished:
 }
 
 void JumpTargetManager::setLegalValue(void){
-  for(unsigned i = 0; i < DataFlow.size(); i++){
-          unsigned Opcode = DataFlow[i]->getOpcode();
-          switch(Opcode){
-              case Instruction::Load:
-                  handleMemoryAccess(DataFlow[i],DataFlow[i+1]);
-              break;
-          }
+  for(unsigned i = 0; i < (DataFlow.size()-1); i++){
+   // if(isCorrelationWithNext(v, next))
+    unsigned Opcode = DataFlow[i]->getOpcode();
+    switch(Opcode){
+        case Instruction::Load:
+	case Instruction::Store:
+            handleMemoryAccess(DataFlow[i],DataFlow[i+1]);
+        break;
+    }
 
   }
 }
 
 void JumpTargetManager::handleMemoryAccess(llvm::Instruction *current, llvm::Instruction *next){
   auto loadI = dyn_cast<llvm::LoadInst>(current);
-  Value *v = loadI->getPointerOperand();
-  if(isCorrelationWithNext(v, next)){
-    errs()<<*next<<" ======================\n";
+  auto storeI = dyn_cast<llvm::StoreInst>(current);
+  Value *v = nullptr;
+
+  if(loadI)
+    v = loadI->getPointerOperand();
+  else if(storeI)
+    v = storeI->getValueOperand();
+
+  if(!isCorrelationWithNext(v, next)){
+    legalSet.emplace_back(v,current);
+    errs()<<*current<<" ======================\n";
   }
-  
 }
+
 
 bool JumpTargetManager::isCorrelationWithNext(llvm::Value *preValue, llvm::Instruction *Inst){
   if(auto storeI = dyn_cast<llvm::StoreInst>(Inst)){

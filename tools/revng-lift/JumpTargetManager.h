@@ -146,6 +146,16 @@ inline const char *getName(Values V) {
 
 } // namespace CFGForm
 
+class legalValue {
+public:
+  legalValue(llvm::Value *value, llvm::Instruction *I):
+    value(value),
+    I(I) {}
+private:
+  llvm::Value *value;
+  llvm::Instruction *I; 
+};
+
 class JumpTargetManager {
 private:
   using interval_set = boost::icl::interval_set<uint64_t>;
@@ -196,7 +206,9 @@ public:
 private:
   std::vector<llvm::Instruction *> DataFlow;
   void handleMemoryAccess(llvm::Instruction *current, llvm::Instruction *next);
+
   bool isCorrelationWithNext(llvm::Value *preValue, llvm::Instruction *Inst);
+  std::vector<legalValue> legalSet;
 
 public:
   using BlockWithAddress = std::pair<uint64_t, llvm::BasicBlock *>;
