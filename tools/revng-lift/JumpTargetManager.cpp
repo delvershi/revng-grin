@@ -1813,10 +1813,40 @@ Finished:
 }
 
 void JumpTargetManager::setLegalValue(void){
-  for(auto inst : DataFlow){
-    errs()<<*inst<<"\n";
+  for(unsigned i = 0; i < DataFlow.size(); i++){
+          unsigned Opcode = DataFlow[i]->getOpcode();
+          switch(Opcode){
+              case Instruction::Load:
+                  handleMemoryAccess(DataFlow[i],DataFlow[i+1]);
+              break;
+          }
+
   }
 }
+
+void JumpTargetManager::handleMemoryAccess(llvm::Instruction *current, llvm::Instruction *next){
+  auto loadI = dyn_cast<llvm::LoadInst>(current);
+  Value *v = loadI->getPointerOperand();
+  if(isCorrelationWithNext(v, next)){
+    errs()<<*next<<" ======================\n";
+  }
+  
+}
+
+bool JumpTargetManager::isCorrelationWithNext(llvm::Value *preValue, llvm::Instruction *Inst){
+  if(auto storeI = dyn_cast<llvm::StoreInst>(Inst)){
+    if((storeI->getPointerOperand() - preValue) == 0)
+          return 1;
+  }
+  else{
+    auto v = dyn_cast<llvm::Value>(Inst);
+    if((v - preValue) == 0)
+          return 1;
+  }
+
+  return 0;
+}
+
 
 unsigned int JumpTargetManager::StrToInt(const char *str){
   unsigned int dest =  (str[1]*1000)+str[2];

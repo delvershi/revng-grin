@@ -186,14 +186,17 @@ public:
                                          llvm::BasicBlock *currentBB);
   bool islegalAddr(llvm::Value *v);
   unsigned int StrToInt(const char *str);
- 
-  std::vector<llvm::Instruction *> DataFlow;
 
   /* Not executing branch of CFG */
   std::vector<std::pair<uint64_t, llvm::BasicBlock *>> partCFG;
   // <destination branch BB,source BB> 
   std::pair<llvm::BasicBlock *, llvm::BasicBlock *> nodepCFG;
   void node_ofpCFG(uint64_t addr, llvm::BasicBlock *dest);
+
+private:
+  std::vector<llvm::Instruction *> DataFlow;
+  void handleMemoryAccess(llvm::Instruction *current, llvm::Instruction *next);
+  bool isCorrelationWithNext(llvm::Value *preValue, llvm::Instruction *Inst);
 
 public:
   using BlockWithAddress = std::pair<uint64_t, llvm::BasicBlock *>;
