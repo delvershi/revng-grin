@@ -1813,6 +1813,9 @@ Finished:
 }
 
 void JumpTargetManager::setLegalValue(void){
+  if(DataFlow.empty())
+    return;
+
   for(unsigned i = 0; i < (DataFlow.size()-1); i++){
    // if(isCorrelationWithNext(v, next))
     unsigned Opcode = DataFlow[i]->getOpcode();
@@ -1821,9 +1824,18 @@ void JumpTargetManager::setLegalValue(void){
 	case Instruction::Store:
             handleMemoryAccess(DataFlow[i],DataFlow[i+1]);
         break;
+	case Instruction::Select:
+	    handleSelectOperation(DataFlow[i],DataFlow[i+1]);
+	break;
+	case Instruction::Add:
+	case Instruction::Sub:
+	    handleBinaryOperation(DataFlow[i],DataFlow[i+1]);
+	break;
     }
 
   }
+  DataFlow.clear();
+  legalSet.clear();
 }
 
 void JumpTargetManager::handleMemoryAccess(llvm::Instruction *current, llvm::Instruction *next){
@@ -1837,11 +1849,35 @@ void JumpTargetManager::handleMemoryAccess(llvm::Instruction *current, llvm::Ins
     v = storeI->getValueOperand();
 
   if(!isCorrelationWithNext(v, next)){
-    legalSet.emplace_back(v,current);
+    legalSet.emplace_back(v,current); 
     errs()<<*current<<" ======================\n";
   }
 }
 
+void JumpTargetManager::handleSelectOperation(llvm::Instruction *current, llvm::Instruction *next){
+  auto selectI = dyn_cast<llvm::SelectInst>(current);
+  
+  // Because we have pushed FalseValue, so TrueValue must be correlation.
+  revng_assert(!isCorrelationWithNext(selectI->getFalseValue(), next),"That's wrong!");
+  legalSet.emplace_back(selectI->getFalseValue(),current);
+  
+  //selectI->getTrueValue(); 
+  
+}
+
+void JumpTargetManager::handleBinaryOperation(llvm::Instruction *current, llvm::Instruction *next){
+  Value *firstOp = current->getOperand(0);
+  Value *secondOp = current->getOperand(1);
+
+  if(!isCorrelationWithNext(firstOp, next)){
+    legalSet.emplace_back(firstOp,current);
+    //TODO: Is Judge secondOp constant value  
+  }
+  else{
+    legalSet.emplace_back(secondOp,current);
+    //TODO: Is Judge firstOp constant value
+  }
+}
 
 bool JumpTargetManager::isCorrelationWithNext(llvm::Value *preValue, llvm::Instruction *Inst){
   if(auto storeI = dyn_cast<llvm::StoreInst>(Inst)){
@@ -1856,7 +1892,6 @@ bool JumpTargetManager::isCorrelationWithNext(llvm::Value *preValue, llvm::Instr
 
   return 0;
 }
-
 
 unsigned int JumpTargetManager::StrToInt(const char *str){
   unsigned int dest =  (str[1]*1000)+str[2];

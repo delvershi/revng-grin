@@ -206,6 +206,8 @@ public:
 private:
   std::vector<llvm::Instruction *> DataFlow;
   void handleMemoryAccess(llvm::Instruction *current, llvm::Instruction *next);
+  void handleSelectOperation(llvm::Instruction *current, llvm::Instruction *next);
+  void handleBinaryOperation(llvm::Instruction *current, llvm::Instruction *next);
 
   bool isCorrelationWithNext(llvm::Value *preValue, llvm::Instruction *Inst);
   std::vector<legalValue> legalSet;
