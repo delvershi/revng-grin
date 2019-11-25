@@ -210,7 +210,10 @@ private:
   void handleBinaryOperation(llvm::Instruction *current, llvm::Instruction *next);
 
   bool isCorrelationWithNext(llvm::Value *preValue, llvm::Instruction *Inst);
+  void set_rIO_ptr(llvm::Instruction *next);
   std::vector<legalValue> legalSet;
+
+  legalValue *relatedInstPtr;
 
 public:
   using BlockWithAddress = std::pair<uint64_t, llvm::BasicBlock *>;

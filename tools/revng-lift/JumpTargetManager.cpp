@@ -431,6 +431,7 @@ JumpTargetManager::JumpTargetManager(Function *TheFunction,
   // getOption<bool>(Options, "enable-pre")->setInitialValue(false);
   // getOption<uint32_t>(Options, "max-recurse-depth")->setInitialValue(10);
   haveBB = 0;
+  relatedInstPtr = nullptr;
 }
 
 static bool isBetterThan(const Label *NewCandidate, const Label *OldCandidate) {
@@ -1832,12 +1833,13 @@ void JumpTargetManager::setLegalValue(void){
 	case Instruction::And:
 	    handleBinaryOperation(DataFlow[i],DataFlow[i+1]);
 	break;
-	case llvm::Instruction::ICmp:
+	//case llvm::Instruction::ICmp:
         case llvm::Instruction::IntToPtr:
         case llvm::Instruction::ZExt:
 	case llvm::Instruction::Trunc:
 	break;
 	default:
+            errs()<<*DataFlow[i];
 	    revng_abort("Unknow of instruction!");
 	break;
     }
@@ -1845,11 +1847,19 @@ void JumpTargetManager::setLegalValue(void){
   }
   
   for(auto set : legalSet){
-      errs()<<*set.I<<" ============\n";
+      errs()<<*set.I<<" ===== " <<*set.value<<"\n";
   }
 
   DataFlow.clear();
   legalSet.clear();
+}
+
+void JumpTargetManager::set_rIO_ptr(llvm::Instruction *next){
+  for(unsigned i = 0;i<legalSet.size();i++){
+    if(isCorrelationWithNext(legalSet[i].value,next)){
+      relatedInstPtr = &legalSet[i]; 
+    }
+  }
 }
 
 void JumpTargetManager::handleMemoryAccess(llvm::Instruction *current, llvm::Instruction *next){
@@ -1863,8 +1873,16 @@ void JumpTargetManager::handleMemoryAccess(llvm::Instruction *current, llvm::Ins
     v = storeI->getValueOperand();
 
   if(!isCorrelationWithNext(v, next)){
-    legalSet.emplace_back(v,current); 
-    
+    set_rIO_ptr(next);
+
+    auto constv = dyn_cast<llvm::Constant>(v);
+    if(constv and relatedInstPtr){
+      relatedInstPtr->value = v;    
+    }
+    else
+      legalSet.emplace_back(v,current); 
+//    if(relatedInstPtr != nullptr)
+//      errs()<<*relatedInstPtr->I<<" ****************\n";    
   }
 }
 
@@ -1883,15 +1901,14 @@ void JumpTargetManager::handleBinaryOperation(llvm::Instruction *current, llvm::
   Value *firstOp = current->getOperand(0);
   Value *secondOp = current->getOperand(1);
 
-  if(!isCorrelationWithNext(firstOp, next)){
+  if(isCorrelationWithNext(firstOp, next)){
+    legalSet.emplace_back(secondOp,current); 
+  }
+  else if(isCorrelationWithNext(secondOp, next)){
     legalSet.emplace_back(firstOp,current);
-    //TODO: Is Judge secondOp constant value 
-
   }
-  if(!isCorrelationWithNext(secondOp, next)){
-    legalSet.emplace_back(secondOp,current);
-    //TODO: Is Judge firstOp constant value
-  }
+  else
+    revng_abort("Must one Value has correlation!");
 
   revng_assert(((dyn_cast<Constant>(firstOp)&&dyn_cast<Constant>(secondOp)) != 1),"That's unnormal Inst!");
 }

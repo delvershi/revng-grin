@@ -596,6 +596,7 @@ HasSize	tools/revng-lift/BinaryFile.cpp	/^  bool HasSize;$/;"	m	class:FilePortio
 HelpersModule	tools/revng-lift/CodeGenerator.h	/^  std::unique_ptr<llvm::Module> HelpersModule;$/;"	m	class:CodeGenerator
 I	include/revng/ReachingDefinitions/ReachingDefinitionsAnalysisImpl.h	/^  llvm::Instruction *I;$/;"	m	struct:MemoryInstruction
 I	lib/StackAnalysis/BasicBlockInstructionPair.h	/^  llvm::Instruction *I;$/;"	m	class:StackAnalysis::BasicBlockInstructionPair
+I	tools/revng-lift/JumpTargetManager.h	/^  llvm::Instruction *I; $/;"	m	class:legalValue
 ID	include/revng/BasicAnalyses/GeneratedCodeBasicInfo.h	/^  static char ID;$/;"	m	class:GeneratedCodeBasicInfo
 ID	include/revng/Dump/CollectCFG.h	/^  static char ID;$/;"	m	class:CollectCFG
 ID	include/revng/Dump/CollectNoreturn.h	/^  static char ID;$/;"	m	class:CollectNoreturn
@@ -2426,6 +2427,7 @@ greaterThan	lib/StackAnalysis/FunctionABI.cpp	/^  bool greaterThan(const Inhibit
 greaterThan	lib/Support/ExampleAnalysis.cpp	/^  bool greaterThan(const LatticeElement &) { revng_abort(); }$/;"	f	class:ExampleAnalysis::LatticeElement
 half	tests/Runtime/function-call.c	/^int half(int parameter) {$/;"	f
 handleArithmeticOperator	tools/revng-lift/OSRA.cpp	/^void OSRA::handleArithmeticOperator(Instruction *I) {$/;"	f	class:OSRA
+handleBinaryOperation	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::handleBinaryOperation(llvm::Instruction *current, llvm::Instruction *next){$/;"	f	class:JumpTargetManager
 handleBranch	tools/revng-lift/OSRA.cpp	/^void OSRA::handleBranch(Instruction *I) {$/;"	f	class:OSRA
 handleCall	lib/StackAnalysis/Intraprocedural.cpp	/^Interrupt Analysis::handleCall(Instruction *Caller,$/;"	f	class:StackAnalysis::Intraprocedural::Analysis
 handleComparison	tools/revng-lift/OSRA.cpp	/^void OSRA::handleComparison(Instruction *I) {$/;"	f	class:OSRA
@@ -2439,7 +2441,9 @@ handleGenericInstruction	lib/StackAnalysis/Intraprocedural.cpp	/^  void handleGe
 handleInstruction	tools/revng-lift/SET.cpp	/^Value *SET::handleInstruction(Instruction *Target, Value *V) {$/;"	f	class:SET
 handleInstructionWithOSRA	tools/revng-lift/SET.cpp	/^bool SET::handleInstructionWithOSRA(Instruction *Target, Value *V) {$/;"	f	class:SET
 handleLogicalOperator	tools/revng-lift/OSRA.cpp	/^void OSRA::handleLogicalOperator(Instruction *I) {$/;"	f	class:OSRA
+handleMemoryAccess	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::handleMemoryAccess(llvm::Instruction *current, llvm::Instruction *next){$/;"	f	class:JumpTargetManager
 handleMemoryOperation	tools/revng-lift/OSRA.cpp	/^void OSRA::handleMemoryOperation(Instruction *I) {$/;"	f	class:OSRA
+handleSelectOperation	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::handleSelectOperation(llvm::Instruction *current, llvm::Instruction *next){$/;"	f	class:JumpTargetManager
 handleSumJump	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::handleSumJump(Instruction *SumJump) {$/;"	f	class:JumpTargetManager
 handleTerminator	lib/StackAnalysis/Intraprocedural.cpp	/^Interrupt Analysis::handleTerminator(TerminatorInst *T,$/;"	f	class:StackAnalysis::Intraprocedural::Analysis
 handleUnaryOperator	tools/revng-lift/OSRA.cpp	/^void OSRA::handleUnaryOperator(Instruction *I) {$/;"	f	class:OSRA
@@ -2590,6 +2594,7 @@ isConstant	tools/revng-lift/OSRA.h	/^    bool isConstant() const {$/;"	f	class:O
 isContradiction	include/revng/StackAnalysis/FunctionsSummary.h	/^  bool isContradiction() const { return Value == Contradiction; }$/;"	f	class:StackAnalysis::FunctionCallReturnValue
 isContradiction	include/revng/StackAnalysis/FunctionsSummary.h	/^  bool isContradiction() const { return Value == Contradiction; }$/;"	f	class:StackAnalysis::FunctionReturnValue
 isContradiction	include/revng/StackAnalysis/FunctionsSummary.h	/^  bool isContradiction() const { return Value == Contradiction; }$/;"	f	class:StackAnalysis::RegisterArgument
+isCorrelationWithNext	tools/revng-lift/JumpTargetManager.cpp	/^bool JumpTargetManager::isCorrelationWithNext(llvm::Value *preValue, llvm::Instruction *Inst){$/;"	f	class:JumpTargetManager
 isDead	tools/revng-lift/OSRA.cpp	/^bool OSRA::isDead(Instruction *I) const {$/;"	f	class:OSRA
 isDestroyed	include/revng/Support/ClassSentinel.h	/^  bool isDestroyed() const { return Destroyed; }$/;"	f	class:ClassSentinel
 isECS	lib/StackAnalysis/InterproceduralAnalysis.cpp	/^      bool isECS() const { return ECS > Total \/ 2; }$/;"	f	struct:StackAnalysis::ClobberedRegistersAnalysis::IterationResult::ECSVote
@@ -2709,6 +2714,9 @@ key	scripts/monotone-framework.py	/^                     key=lambda i: reachabil
 labels	tools/revng-lift/BinaryFile.h	/^  const LabelIntervalMap &labels() const { return LabelsMap; }$/;"	f	class:BinaryFile
 landingPads	tools/revng-lift/BinaryFile.h	/^  const std::set<uint64_t> &landingPads() const { return LandingPads; }$/;"	f	class:BinaryFile
 lastMerge	tools/revng-lift/OSRA.cpp	/^  unsigned lastMerge() const { return LastMergeHeight; }$/;"	f	class:Reacher
+legalSet	tools/revng-lift/JumpTargetManager.h	/^  std::vector<legalValue> legalSet;$/;"	m	class:JumpTargetManager
+legalValue	tools/revng-lift/JumpTargetManager.h	/^  legalValue(llvm::Value *value, llvm::Instruction *I):$/;"	f	class:legalValue
+legalValue	tools/revng-lift/JumpTargetManager.h	/^class legalValue {$/;"	c
 literal_status	tests/Runtime/calc.c	/^typedef enum { none, positive, negative } literal_status;$/;"	t	typeref:enum:__anon1	file:
 llvm	include/revng/BasicAnalyses/CustomCFG.h	/^namespace llvm {$/;"	n
 llvm	include/revng/BasicAnalyses/GeneratedCodeBasicInfo.h	/^namespace llvm {$/;"	n
@@ -3270,6 +3278,7 @@ setDispatcher	tools/revng-lift/NoReturnAnalysis.h	/^  void setDispatcher(llvm::B
 setInactive	tools/revng-lift/OSRA.cpp	/^  void setInactive(unsigned Height) { LastActiveHeight = Height; }$/;"	f	class:Reacher
 setIndentation	include/revng/Support/Debug.h	/^  void setIndentation(unsigned Level) {$/;"	f	class:Logger
 setLastMerge	tools/revng-lift/OSRA.cpp	/^  void setLastMerge(unsigned Height) { LastMergeHeight = Height; }$/;"	f	class:Reacher
+setLegalValue	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::setLegalValue(void){$/;"	f	class:JumpTargetManager
 setOperand	tools/revng-lift/SimplifyComparisonsPass.cpp	/^  void setOperand(unsigned Index, Term *T) { Operands[Index] = T; }$/;"	f	class:BinaryTerm
 setReason	tools/revng-lift/JumpTargetManager.h	/^    void setReason(JTReason::Values Reason) {$/;"	f	class:JumpTargetManager::JumpTarget
 setReturn	lib/StackAnalysis/ABIIR.h	/^  void setReturn() { IsReturn = true; }$/;"	f	class:StackAnalysis::ABIIRBasicBlock
@@ -3443,6 +3452,7 @@ value	include/revng/StackAnalysis/FunctionsSummary.h	/^  Values value() const { 
 value	include/revng/StackAnalysis/FunctionsSummary.h	/^  Values value() const { return Value; }$/;"	f	class:StackAnalysis::RegisterArgument
 value	tools/revng-lift/BinaryFile.h	/^  uint64_t value() const { return Value; }$/;"	f	class:Pointer
 value	tools/revng-lift/BinaryFile.h	/^  uint64_t value() const {$/;"	f	class:Label
+value	tools/revng-lift/JumpTargetManager.h	/^  llvm::Value *value;$/;"	m	class:legalValue
 value	tools/revng-lift/OSRA.h	/^    const llvm::Value *value() const { return Value; }$/;"	f	class:OSRAPass::BoundedValue
 value	tools/revng-lift/SET.cpp	/^  uint64_t value() const {$/;"	f	class:MaterializedValue
 valueName	include/revng/StackAnalysis/FunctionsSummary.h	/^  const char *valueName() const {$/;"	f	class:StackAnalysis::FunctionCallReturnValue
