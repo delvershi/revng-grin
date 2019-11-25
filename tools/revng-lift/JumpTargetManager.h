@@ -151,7 +151,7 @@ public:
   legalValue(llvm::Value *value, llvm::Instruction *I):
     value(value),
     I(I) {}
-private:
+
   llvm::Value *value;
   llvm::Instruction *I; 
 };

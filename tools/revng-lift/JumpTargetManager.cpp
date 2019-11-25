@@ -1829,11 +1829,25 @@ void JumpTargetManager::setLegalValue(void){
 	break;
 	case Instruction::Add:
 	case Instruction::Sub:
+	case Instruction::And:
 	    handleBinaryOperation(DataFlow[i],DataFlow[i+1]);
+	break;
+	case llvm::Instruction::ICmp:
+        case llvm::Instruction::IntToPtr:
+        case llvm::Instruction::ZExt:
+	case llvm::Instruction::Trunc:
+	break;
+	default:
+	    revng_abort("Unknow of instruction!");
 	break;
     }
 
   }
+  
+  for(auto set : legalSet){
+      errs()<<*set.I<<" ============\n";
+  }
+
   DataFlow.clear();
   legalSet.clear();
 }
@@ -1850,7 +1864,7 @@ void JumpTargetManager::handleMemoryAccess(llvm::Instruction *current, llvm::Ins
 
   if(!isCorrelationWithNext(v, next)){
     legalSet.emplace_back(v,current); 
-    errs()<<*current<<" ======================\n";
+    
   }
 }
 
@@ -1871,12 +1885,15 @@ void JumpTargetManager::handleBinaryOperation(llvm::Instruction *current, llvm::
 
   if(!isCorrelationWithNext(firstOp, next)){
     legalSet.emplace_back(firstOp,current);
-    //TODO: Is Judge secondOp constant value  
+    //TODO: Is Judge secondOp constant value 
+
   }
-  else{
+  if(!isCorrelationWithNext(secondOp, next)){
     legalSet.emplace_back(secondOp,current);
     //TODO: Is Judge firstOp constant value
   }
+
+  revng_assert(((dyn_cast<Constant>(firstOp)&&dyn_cast<Constant>(secondOp)) != 1),"That's unnormal Inst!");
 }
 
 bool JumpTargetManager::isCorrelationWithNext(llvm::Value *preValue, llvm::Instruction *Inst){
