@@ -1876,7 +1876,7 @@ void JumpTargetManager::handleMemoryAccess(llvm::Instruction *current, llvm::Ins
     set_rIO_ptr(next);
 
     auto constv = dyn_cast<llvm::Constant>(v);
-    if(constv and relatedInstPtr){
+    if(constv && relatedInstPtr){
       relatedInstPtr->value = v;    
     }
     else
