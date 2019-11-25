@@ -148,12 +148,13 @@ inline const char *getName(Values V) {
 
 class legalValue {
 public:
-  legalValue(llvm::Value *value, llvm::Instruction *I):
-    value(value),
-    I(I) {}
-
-  llvm::Value *value;
-  llvm::Instruction *I; 
+  legalValue(llvm::Value *v, llvm::Instruction *inst){
+    value.push_back(v);
+    I.push_back(inst);
+  }
+  // Value stack and Instruction stack
+  std::vector<llvm::Value *> value;
+  std::vector<llvm::Instruction *> I; 
 };
 
 class JumpTargetManager {

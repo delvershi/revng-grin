@@ -1817,6 +1817,8 @@ void JumpTargetManager::setLegalValue(void){
   if(DataFlow.empty())
     return;
 
+  //llvm::Instruction * dump = nullptr;
+  //DataFlow.push_back(dump);
   for(unsigned i = 0; i < (DataFlow.size()-1); i++){
    // if(isCorrelationWithNext(v, next))
     unsigned Opcode = DataFlow[i]->getOpcode();
@@ -1847,7 +1849,9 @@ void JumpTargetManager::setLegalValue(void){
   }
   
   for(auto set : legalSet){
-      errs()<<*set.I<<" ===== " <<*set.value<<"\n";
+    for(auto ii : set.I)
+      errs()<<*ii; 
+	// "===== " <<*set.value<<"\n";
   }
 
   DataFlow.clear();
@@ -1856,8 +1860,10 @@ void JumpTargetManager::setLegalValue(void){
 
 void JumpTargetManager::set_rIO_ptr(llvm::Instruction *next){
   for(unsigned i = 0;i<legalSet.size();i++){
-    if(isCorrelationWithNext(legalSet[i].value,next)){
-      relatedInstPtr = &legalSet[i]; 
+    for(auto v : legalSet[i].value){
+      if(isCorrelationWithNext(v,next)){
+        relatedInstPtr = &legalSet[i]; 
+      }
     }
   }
 }
@@ -1873,22 +1879,26 @@ void JumpTargetManager::handleMemoryAccess(llvm::Instruction *current, llvm::Ins
     v = storeI->getValueOperand();
 
   if(!isCorrelationWithNext(v, next)){
-    set_rIO_ptr(next);
-
-    auto constv = dyn_cast<llvm::Constant>(v);
-    if(constv && relatedInstPtr){
-      relatedInstPtr->value = v;    
+    auto constv = dyn_cast<llvm::ConstantInt>(v);
+    if(constv and relatedInstPtr){
+      relatedInstPtr->value.push_back(v);    
     }
     else
-      legalSet.emplace_back(v,current); 
-//    if(relatedInstPtr != nullptr)
-//      errs()<<*relatedInstPtr->I<<" ****************\n";    
+      legalSet.emplace_back(v,current);
+
+   set_rIO_ptr(next);
   }
 }
 
 void JumpTargetManager::handleSelectOperation(llvm::Instruction *current, llvm::Instruction *next){
   auto selectI = dyn_cast<llvm::SelectInst>(current);
   
+  if(relatedInstPtr){
+    relatedInstPtr->value.push_back(selectI->getFalseValue());
+    relatedInstPtr->I.push_back(current);
+    return;
+  }
+
   // Because we have pushed FalseValue, so TrueValue must be correlation.
   revng_assert(!isCorrelationWithNext(selectI->getFalseValue(), next),"That's wrong!");
   legalSet.emplace_back(selectI->getFalseValue(),current);
@@ -1900,11 +1910,20 @@ void JumpTargetManager::handleSelectOperation(llvm::Instruction *current, llvm::
 void JumpTargetManager::handleBinaryOperation(llvm::Instruction *current, llvm::Instruction *next){
   Value *firstOp = current->getOperand(0);
   Value *secondOp = current->getOperand(1);
+  bool first = isCorrelationWithNext(firstOp, next);
+  bool second = isCorrelationWithNext(secondOp, next);
 
-  if(isCorrelationWithNext(firstOp, next)){
+  if(relatedInstPtr){
+    auto v = first ? secondOp:firstOp;
+    relatedInstPtr->value.push_back(v);
+    relatedInstPtr->I.push_back(current);
+    return;
+  }
+
+  if(first){
     legalSet.emplace_back(secondOp,current); 
   }
-  else if(isCorrelationWithNext(secondOp, next)){
+  else if(second){
     legalSet.emplace_back(firstOp,current);
   }
   else
@@ -1914,6 +1933,9 @@ void JumpTargetManager::handleBinaryOperation(llvm::Instruction *current, llvm::
 }
 
 bool JumpTargetManager::isCorrelationWithNext(llvm::Value *preValue, llvm::Instruction *Inst){
+  if(Inst==nullptr)
+    return 0;
+
   if(auto storeI = dyn_cast<llvm::StoreInst>(Inst)){
     if((storeI->getPointerOperand() - preValue) == 0)
           return 1;
