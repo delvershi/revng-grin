@@ -431,7 +431,6 @@ JumpTargetManager::JumpTargetManager(Function *TheFunction,
   // getOption<bool>(Options, "enable-pre")->setInitialValue(false);
   // getOption<uint32_t>(Options, "max-recurse-depth")->setInitialValue(10);
   haveBB = 0;
-  relatedInstPtr = nullptr;
 }
 
 static bool isBetterThan(const Label *NewCandidate, const Label *OldCandidate) {
@@ -1817,6 +1816,10 @@ void JumpTargetManager::setLegalValue(void){
   if(DataFlow.empty())
     return;
 
+  std::vector<legalValue> legalSet;
+  std::vector<legalValue> &legalSet1 = legalSet;
+  legalValue *relatedInstPtr = nullptr;
+
   //llvm::Instruction * dump = nullptr;
   //DataFlow.push_back(dump);
   for(unsigned i = 0; i < (DataFlow.size()-1); i++){
@@ -1825,15 +1828,15 @@ void JumpTargetManager::setLegalValue(void){
     switch(Opcode){
         case Instruction::Load:
 	case Instruction::Store:
-            handleMemoryAccess(DataFlow[i],DataFlow[i+1]);
+            handleMemoryAccess(DataFlow[i],DataFlow[i+1],legalSet1,relatedInstPtr);
         break;
 	case Instruction::Select:
-	    handleSelectOperation(DataFlow[i],DataFlow[i+1]);
+	    handleSelectOperation(DataFlow[i],DataFlow[i+1],legalSet1,relatedInstPtr);
 	break;
 	case Instruction::Add:
 	case Instruction::Sub:
 	case Instruction::And:
-	    handleBinaryOperation(DataFlow[i],DataFlow[i+1]);
+	    handleBinaryOperation(DataFlow[i],DataFlow[i+1],legalSet1,relatedInstPtr);
 	break;
 	//case llvm::Instruction::ICmp:
         case llvm::Instruction::IntToPtr:
@@ -1848,17 +1851,21 @@ void JumpTargetManager::setLegalValue(void){
 
   }
   
-  for(auto set : legalSet){
+  for(auto set : legalSet1){
     for(auto ii : set.I)
-      errs()<<*ii; 
-	// "===== " <<*set.value<<"\n";
+      errs()<<*ii<<" -------------";
+    for(auto vvv : set.value) 
+      errs() <<*vvv<<" +++++++++++\n";
+    
+    errs()<<"\n";
   }
 
   DataFlow.clear();
-  legalSet.clear();
 }
 
-void JumpTargetManager::set_rIO_ptr(llvm::Instruction *next){
+void JumpTargetManager::set2ptr(llvm::Instruction *next,
+                                std::vector<legalValue> &legalSet,
+                                legalValue *relatedInstPtr){
   for(unsigned i = 0;i<legalSet.size();i++){
     for(auto v : legalSet[i].value){
       if(isCorrelationWithNext(v,next)){
@@ -1868,7 +1875,10 @@ void JumpTargetManager::set_rIO_ptr(llvm::Instruction *next){
   }
 }
 
-void JumpTargetManager::handleMemoryAccess(llvm::Instruction *current, llvm::Instruction *next){
+void JumpTargetManager::handleMemoryAccess(llvm::Instruction *current, 
+                                           llvm::Instruction *next,
+                                           std::vector<legalValue> &legalSet,
+                                           legalValue *relatedInstPtr){
   auto loadI = dyn_cast<llvm::LoadInst>(current);
   auto storeI = dyn_cast<llvm::StoreInst>(current);
   Value *v = nullptr;
@@ -1883,14 +1893,18 @@ void JumpTargetManager::handleMemoryAccess(llvm::Instruction *current, llvm::Ins
     if(constv and relatedInstPtr){
       relatedInstPtr->value.push_back(v);    
     }
-    else
-      legalSet.emplace_back(v,current);
+    else 
+      legalSet.emplace_back(PushTemple(v),PushTemple(current));
 
-   set_rIO_ptr(next);
+    //Find out value that is related with unrelated Inst.
+    set2ptr(next,legalSet,relatedInstPtr);
   }
 }
 
-void JumpTargetManager::handleSelectOperation(llvm::Instruction *current, llvm::Instruction *next){
+void JumpTargetManager::handleSelectOperation(llvm::Instruction *current, 
+                                              llvm::Instruction *next,
+                                              std::vector<legalValue> &legalSet, 
+                                              legalValue *relatedInstPtr){
   auto selectI = dyn_cast<llvm::SelectInst>(current);
   
   if(relatedInstPtr){
@@ -1901,13 +1915,14 @@ void JumpTargetManager::handleSelectOperation(llvm::Instruction *current, llvm::
 
   // Because we have pushed FalseValue, so TrueValue must be correlation.
   revng_assert(!isCorrelationWithNext(selectI->getFalseValue(), next),"That's wrong!");
-  legalSet.emplace_back(selectI->getFalseValue(),current);
-  
-  //selectI->getTrueValue(); 
-  
+  legalSet.emplace_back(PushTemple(selectI->getFalseValue()),PushTemple(current));
+   //selectI->getTrueValue(); 
 }
 
-void JumpTargetManager::handleBinaryOperation(llvm::Instruction *current, llvm::Instruction *next){
+void JumpTargetManager::handleBinaryOperation(llvm::Instruction *current, 
+                                              llvm::Instruction *next,
+                                              std::vector<legalValue> &legalSet, 
+                                              legalValue *relatedInstPtr){
   Value *firstOp = current->getOperand(0);
   Value *secondOp = current->getOperand(1);
   bool first = isCorrelationWithNext(firstOp, next);
@@ -1921,10 +1936,10 @@ void JumpTargetManager::handleBinaryOperation(llvm::Instruction *current, llvm::
   }
 
   if(first){
-    legalSet.emplace_back(secondOp,current); 
+    legalSet.emplace_back(PushTemple(secondOp),PushTemple(current)); 
   }
   else if(second){
-    legalSet.emplace_back(firstOp,current);
+    legalSet.emplace_back(PushTemple(firstOp),PushTemple(current));
   }
   else
     revng_abort("Must one Value has correlation!");

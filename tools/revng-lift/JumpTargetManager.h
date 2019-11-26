@@ -148,10 +148,10 @@ inline const char *getName(Values V) {
 
 class legalValue {
 public:
-  legalValue(llvm::Value *v, llvm::Instruction *inst){
-    value.push_back(v);
-    I.push_back(inst);
-  }
+  legalValue(std::vector<llvm::Value *>v, std::vector<llvm::Instruction *>inst):
+    value(v),
+    I(inst) {}
+
   // Value stack and Instruction stack
   std::vector<llvm::Value *> value;
   std::vector<llvm::Instruction *> I; 
@@ -206,15 +206,37 @@ public:
 
 private:
   std::vector<llvm::Instruction *> DataFlow;
-  void handleMemoryAccess(llvm::Instruction *current, llvm::Instruction *next);
-  void handleSelectOperation(llvm::Instruction *current, llvm::Instruction *next);
-  void handleBinaryOperation(llvm::Instruction *current, llvm::Instruction *next);
+  void handleMemoryAccess(llvm::Instruction *current, 
+                          llvm::Instruction *next,
+                          std::vector<legalValue> &legalSet,
+                          legalValue *relatedInstPtr);
+  void handleSelectOperation(llvm::Instruction *current, 
+                             llvm::Instruction *next, 
+                             std::vector<legalValue> &legalSet,
+                             legalValue *relatedInstPtr);
+  void handleBinaryOperation(llvm::Instruction *current, 
+                             llvm::Instruction *next,
+                             std::vector<legalValue> &legalSet,
+                             legalValue *relatedInstPtr);
 
   bool isCorrelationWithNext(llvm::Value *preValue, llvm::Instruction *Inst);
-  void set_rIO_ptr(llvm::Instruction *next);
-  std::vector<legalValue> legalSet;
+  void set2ptr(llvm::Instruction *next,
+               std::vector<legalValue> &legalSet,
+               legalValue *relatedInstPtr);
+  std::vector<llvm::Value *> PushTemple(llvm::Value *v){
+    std::vector<llvm::Value *> temp;
+    temp.push_back(v);
+    return temp;
+  }
+  std::vector<llvm::Instruction *> PushTemple(llvm::Instruction *I){
+    std::vector<llvm::Instruction *> temp;
+    temp.push_back(I);
+    return temp;
+  }
+ 
+ // std::vector<legalValue> legalSet;
 
-  legalValue *relatedInstPtr;
+ // legalValue *relatedInstPtr;
 
 public:
   using BlockWithAddress = std::pair<uint64_t, llvm::BasicBlock *>;
