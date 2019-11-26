@@ -1819,6 +1819,7 @@ void JumpTargetManager::setLegalValue(void){
   std::vector<legalValue> legalSet;
   std::vector<legalValue> &legalSet1 = legalSet;
   legalValue *relatedInstPtr = nullptr;
+  legalValue *&relatedInstPtr1 = relatedInstPtr;
 
   //llvm::Instruction * dump = nullptr;
   //DataFlow.push_back(dump);
@@ -1828,15 +1829,15 @@ void JumpTargetManager::setLegalValue(void){
     switch(Opcode){
         case Instruction::Load:
 	case Instruction::Store:
-            handleMemoryAccess(DataFlow[i],DataFlow[i+1],legalSet1,relatedInstPtr);
+            handleMemoryAccess(DataFlow[i],DataFlow[i+1],legalSet1,relatedInstPtr1);
         break;
 	case Instruction::Select:
-	    handleSelectOperation(DataFlow[i],DataFlow[i+1],legalSet1,relatedInstPtr);
+	    handleSelectOperation(DataFlow[i],DataFlow[i+1],legalSet1,relatedInstPtr1);
 	break;
 	case Instruction::Add:
 	case Instruction::Sub:
 	case Instruction::And:
-	    handleBinaryOperation(DataFlow[i],DataFlow[i+1],legalSet1,relatedInstPtr);
+	    handleBinaryOperation(DataFlow[i],DataFlow[i+1],legalSet1,relatedInstPtr1);
 	break;
 	//case llvm::Instruction::ICmp:
         case llvm::Instruction::IntToPtr:
@@ -1854,6 +1855,7 @@ void JumpTargetManager::setLegalValue(void){
   for(auto set : legalSet1){
     for(auto ii : set.I)
       errs()<<*ii<<" -------------";
+    errs()<<"\n";
     for(auto vvv : set.value) 
       errs() <<*vvv<<" +++++++++++\n";
     
@@ -1865,7 +1867,7 @@ void JumpTargetManager::setLegalValue(void){
 
 void JumpTargetManager::set2ptr(llvm::Instruction *next,
                                 std::vector<legalValue> &legalSet,
-                                legalValue *relatedInstPtr){
+                                legalValue *&relatedInstPtr){
   for(unsigned i = 0;i<legalSet.size();i++){
     for(auto v : legalSet[i].value){
       if(isCorrelationWithNext(v,next)){
@@ -1878,7 +1880,7 @@ void JumpTargetManager::set2ptr(llvm::Instruction *next,
 void JumpTargetManager::handleMemoryAccess(llvm::Instruction *current, 
                                            llvm::Instruction *next,
                                            std::vector<legalValue> &legalSet,
-                                           legalValue *relatedInstPtr){
+                                           legalValue *&relatedInstPtr){
   auto loadI = dyn_cast<llvm::LoadInst>(current);
   auto storeI = dyn_cast<llvm::StoreInst>(current);
   Value *v = nullptr;
@@ -1904,7 +1906,7 @@ void JumpTargetManager::handleMemoryAccess(llvm::Instruction *current,
 void JumpTargetManager::handleSelectOperation(llvm::Instruction *current, 
                                               llvm::Instruction *next,
                                               std::vector<legalValue> &legalSet, 
-                                              legalValue *relatedInstPtr){
+                                              legalValue *&relatedInstPtr){
   auto selectI = dyn_cast<llvm::SelectInst>(current);
   
   if(relatedInstPtr){
@@ -1922,7 +1924,7 @@ void JumpTargetManager::handleSelectOperation(llvm::Instruction *current,
 void JumpTargetManager::handleBinaryOperation(llvm::Instruction *current, 
                                               llvm::Instruction *next,
                                               std::vector<legalValue> &legalSet, 
-                                              legalValue *relatedInstPtr){
+                                              legalValue *&relatedInstPtr){
   Value *firstOp = current->getOperand(0);
   Value *secondOp = current->getOperand(1);
   bool first = isCorrelationWithNext(firstOp, next);

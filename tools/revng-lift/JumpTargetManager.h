@@ -209,20 +209,20 @@ private:
   void handleMemoryAccess(llvm::Instruction *current, 
                           llvm::Instruction *next,
                           std::vector<legalValue> &legalSet,
-                          legalValue *relatedInstPtr);
+                          legalValue *&relatedInstPtr);
   void handleSelectOperation(llvm::Instruction *current, 
                              llvm::Instruction *next, 
                              std::vector<legalValue> &legalSet,
-                             legalValue *relatedInstPtr);
+                             legalValue *&relatedInstPtr);
   void handleBinaryOperation(llvm::Instruction *current, 
                              llvm::Instruction *next,
                              std::vector<legalValue> &legalSet,
-                             legalValue *relatedInstPtr);
+                             legalValue *&relatedInstPtr);
 
   bool isCorrelationWithNext(llvm::Value *preValue, llvm::Instruction *Inst);
   void set2ptr(llvm::Instruction *next,
                std::vector<legalValue> &legalSet,
-               legalValue *relatedInstPtr);
+               legalValue *&relatedInstPtr);
   std::vector<llvm::Value *> PushTemple(llvm::Value *v){
     std::vector<llvm::Value *> temp;
     temp.push_back(v);
