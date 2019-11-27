@@ -1852,7 +1852,8 @@ void JumpTargetManager::setLegalValue(void){
 	break;
     }
   }
-  
+   
+  foldStack(legalSet1);
   for(auto set : legalSet1){
     for(auto ii : set.I)
       errs()<<*ii<<" -------------";
@@ -1864,6 +1865,29 @@ void JumpTargetManager::setLegalValue(void){
   }
 
   DataFlow.clear();
+}
+
+// To fold Instruction stack and to assign Value to'global variable'.
+void JumpTargetManager::foldStack(std::vector<legalValue> &legalSet){
+  for(auto set : legalSet){
+    // Find out global variable and to set value.
+    for(auto v : set.value){
+      if(dyn_cast<GlobalVariable>(v)){
+        //TODO: To assign a value
+        errs()<<*v<<" 55555555\n";
+      }
+    }
+    // To fold instruction.
+    for(auto inst : set.I){
+      auto op = inst->getOpcode();
+      if(op==Instruction::Store or op==Instruction::Load){
+        revng_assert(set.I.size() == 1,"Unknow State!");
+        break; 
+      }
+      //TODO: Fold Instruction
+    }
+    
+  }/// ?end for(auto set:legalSet)
 }
 
 void JumpTargetManager::set2ptr(llvm::Instruction *next,
@@ -1892,8 +1916,8 @@ void JumpTargetManager::handleMemoryAccess(llvm::Instruction *current,
     v = storeI->getValueOperand();
 
   if(!isCorrelationWithNext(v, next)){
-    auto constv = dyn_cast<llvm::ConstantInt>(v);
-    if(constv and relatedInstPtr){
+    /* Reduct Data flow instructions to Value stack and Instruction stack */
+    if(relatedInstPtr){
       relatedInstPtr->value.push_back(v);    
     }
     else 
