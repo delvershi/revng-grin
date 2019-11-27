@@ -233,10 +233,6 @@ private:
     temp.push_back(I);
     return temp;
   }
- 
- // std::vector<legalValue> legalSet;
-
- // legalValue *relatedInstPtr;
 
 public:
   using BlockWithAddress = std::pair<uint64_t, llvm::BasicBlock *>;

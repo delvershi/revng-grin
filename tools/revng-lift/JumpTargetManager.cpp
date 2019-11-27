@@ -1821,23 +1821,25 @@ void JumpTargetManager::setLegalValue(void){
   legalValue *relatedInstPtr = nullptr;
   legalValue *&relatedInstPtr1 = relatedInstPtr;
 
-  //llvm::Instruction * dump = nullptr;
-  //DataFlow.push_back(dump);
-  for(unsigned i = 0; i < (DataFlow.size()-1); i++){
-   // if(isCorrelationWithNext(v, next))
+  llvm::Instruction *next = nullptr;
+  for(unsigned i = 0; i < DataFlow.size(); i++){
+    if(i == (DataFlow.size() - 1))
+        next = nullptr;
+    else
+        next = DataFlow[i+1]; 
     unsigned Opcode = DataFlow[i]->getOpcode();
     switch(Opcode){
         case Instruction::Load:
 	case Instruction::Store:
-            handleMemoryAccess(DataFlow[i],DataFlow[i+1],legalSet1,relatedInstPtr1);
+            handleMemoryAccess(DataFlow[i],next,legalSet1,relatedInstPtr1);
         break;
 	case Instruction::Select:
-	    handleSelectOperation(DataFlow[i],DataFlow[i+1],legalSet1,relatedInstPtr1);
+	    handleSelectOperation(DataFlow[i],next,legalSet1,relatedInstPtr1);
 	break;
 	case Instruction::Add:
 	case Instruction::Sub:
 	case Instruction::And:
-	    handleBinaryOperation(DataFlow[i],DataFlow[i+1],legalSet1,relatedInstPtr1);
+	    handleBinaryOperation(DataFlow[i],next,legalSet1,relatedInstPtr1);
 	break;
 	//case llvm::Instruction::ICmp:
         case llvm::Instruction::IntToPtr:
@@ -1849,7 +1851,6 @@ void JumpTargetManager::setLegalValue(void){
 	    revng_abort("Unknow of instruction!");
 	break;
     }
-
   }
   
   for(auto set : legalSet1){
