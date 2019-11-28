@@ -1869,6 +1869,8 @@ void JumpTargetManager::setLegalValue(void){
 
 // To fold Instruction stack and to assign Value to'global variable'.
 void JumpTargetManager::foldStack(std::vector<legalValue> &legalSet){
+  const DataLayout &DL = TheModule.getDataLayout();
+
   for(auto set : legalSet){
     // Find out global variable and to set value.
     for(auto v : set.value){
@@ -1877,14 +1879,15 @@ void JumpTargetManager::foldStack(std::vector<legalValue> &legalSet){
         errs()<<*v<<" 55555555\n";
       }
     }
-    // To fold instruction.
-    for(auto inst : set.I){
-      auto op = inst->getOpcode();
+    // To reverse fold instruction.
+    for(auto inst = set.I.end(); inst != set.I.begin(); inst--){
+      auto op = (*inst)->getOpcode();
       if(op==Instruction::Store or op==Instruction::Load){
         revng_assert(set.I.size() == 1,"Unknow State!");
         break; 
       }
-      //TODO: Fold Instruction
+      //TODO: Fold binary instruction
+      //instFold   
     }
     
   }/// ?end for(auto set:legalSet)
