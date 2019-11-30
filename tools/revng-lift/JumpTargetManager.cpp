@@ -1879,17 +1879,37 @@ void JumpTargetManager::foldStack(std::vector<legalValue> &legalSet){
         errs()<<*v<<" 55555555\n";
       }
     }
-    // To reverse fold instruction.
-    for(auto inst = set.I.end(); inst != set.I.begin(); inst--){
+    // To reverse and fold instruction.
+    unsigned FoldNum = 0;
+    for(auto inst = set.I.rbegin(); inst != set.I.rend(); inst++){
       auto op = (*inst)->getOpcode();
       if(op==Instruction::Store or op==Instruction::Load){
         revng_assert(set.I.size() == 1,"Unknow State!");
-        break; 
       }
       //TODO: Fold binary instruction
-      //instFold   
-    }
-    
+      std::vector<unsigned> subscript;
+      Constant *NewOperand = nullptr;
+      for(unsigned i=set.value.size(); i>0; i--){
+	if(dyn_cast<ConstantInt>(set.value[i-1]))
+	  subscript.push_back(i-1);
+      }
+
+      revng_assert(subscript.size()!=0, "Unknow value, Can't fold instruction!");
+      if(subscript.size() == 1)
+	break;
+      if(subscript.size()>1){
+        Constant *op1 = dyn_cast<Constant>(set.value[subscript[0]]);
+	Constant *op2 = dyn_cast<Constant>(set.value[subscript[1]]);
+	op1 = ConstantExpr::getTruncOrBitCast(op1,(*inst)->getOperand(0)->getType());
+	op2 = ConstantExpr::getTruncOrBitCast(op2,(*inst)->getOperand(1)->getType());
+        NewOperand = ConstantFoldBinaryOpOperands(op,op1,op2,DL);
+
+	set.value.erase(set.value.begin()+subscript[1],set.value.begin()+subscript[0]+1);
+	set.value.push_back(dyn_cast<Value>(NewOperand));
+	FoldNum++;
+      }   
+    }// End of folding instructions
+    set.I.erase(set.I.begin()+set.I.size()-FoldNum, set.I.begin()+set.I.size());
   }/// ?end for(auto set:legalSet)
 }
 
