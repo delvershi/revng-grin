@@ -1737,10 +1737,10 @@ void JumpTargetManager::getIllegalAccessDFG(llvm::BasicBlock *thisBlock){
           // Get illegal access Value's DFG. 
           while(!vs.empty()){
             llvm::BasicBlock *tmpB = nullptr;
-            std::tie(v1,operateUser,tmpB) = vs.front();
+            std::tie(v1,operateUser,tmpB) = vs.back();
             llvm::Function::iterator nodeBB(tmpB);
             llvm::Function::iterator begin(tmpB->getParent()->begin());
-            vs.erase(vs.begin());
+            vs.pop_back();
 
           for(;nodeBB != begin;){  
             auto bb = dyn_cast<llvm::BasicBlock>(nodeBB);
@@ -1863,12 +1863,24 @@ void JumpTargetManager::setLegalValue(void){
     
     errs()<<"\n";
   }
-  foldSet();
+  foldSet(legalSet1);
   DataFlow.clear();
 }
 
-void JumpTargetManager::foldSet(){
-  //TODO:Fold Set instruction
+void JumpTargetManager::foldSet(std::vector<legalValue> &legalSet){
+//  Constant *base = nullptr;
+//  //TODO:Fold Set instruction
+//  for(auto set : make_range(legalSet.rbegin(),legalSet.rend())){
+//    revng_assert(set.I.size()==1, "Stack must have one Instruction!");
+//    auto op = set.I[0]->getOpcode();
+//    if(op==Instruction::Load or op==Instruction::Store){
+//      for(auto v : set.value){
+//	if(auto constant = dyn_cast<Constant>(v))
+//	  base = constant;
+//      } 
+//    }
+//
+//  }
 }
 
 // To fold Instruction stack and to assign Value to'global variable'.
@@ -1893,6 +1905,8 @@ void JumpTargetManager::foldStack(std::vector<legalValue> &legalSet){
     }
     // To reverse and fold instruction.
     unsigned FoldNum = 0;
+//    unsigned position = 0;
+//   Constant *SelectValue = nullptr;
     for(auto inst = legalSet[s].I.rbegin(); inst != legalSet[s].I.rend(); inst++){
       auto op = (*inst)->getOpcode();
       if(op==Instruction::Store or op==Instruction::Load)
@@ -1905,10 +1919,18 @@ void JumpTargetManager::foldStack(std::vector<legalValue> &legalSet){
 	if(dyn_cast<ConstantInt>(legalSet[s].value[i-1]))
 	  subscript.push_back(i-1);
       }
-
       revng_assert(subscript.size()!=0, "Unknow value, Can't fold instruction!");
       if(subscript.size() == 1)
 	break;
+
+//      if(op==Instruction::Select){
+//        position = inst - legalSet[s].I.rbegin();
+//	SelectValue = legalSet[s].value[subscript[1]];
+//        legalSet[s].value.erase[legalSet[s].value.begin()+subscript[1]];
+//	FoldNum++;
+//	continue;
+//      }
+
       if(subscript.size()>1){
         Constant *op1 = dyn_cast<Constant>(legalSet[s].value[subscript[0]]);
 	Constant *op2 = dyn_cast<Constant>(legalSet[s].value[subscript[1]]);

@@ -208,7 +208,7 @@ private:
   std::vector<llvm::Instruction *> DataFlow;
   void foldStack(std::vector<legalValue> &legalSet);
 
-  void foldSet();
+  void foldSet(std::vector<legalValue> &legalSet);
 
   void handleMemoryAccess(llvm::Instruction *current, 
                           llvm::Instruction *next,
