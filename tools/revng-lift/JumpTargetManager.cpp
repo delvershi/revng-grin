@@ -1953,8 +1953,9 @@ void JumpTargetManager::set2ptr(llvm::Instruction *next,
                                 std::vector<legalValue> &legalSet,
                                 legalValue *&relatedInstPtr){
   for(unsigned i = 0;i<legalSet.size();i++){
-    for(auto v : legalSet[i].value){
-      if(isCorrelationWithNext(v,next)){
+    for(unsigned v = 0; v<legalSet[i].value.size(); v++){
+      if(isCorrelationWithNext(legalSet[i].value[v],next)){
+        legalSet[i].value.erase(legalSet[i].value.begin()+v);
         relatedInstPtr = &legalSet[i]; 
       }
     }
