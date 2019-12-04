@@ -1809,7 +1809,7 @@ NextValue:
     }///?end if(I->getOpcode()...Load) 
   }
 Finished:
-  errs()<<"Finished ayalysis illegal access Data Flow!\n";
+  errs()<<"Finished analysis illegal access Data Flow!\n";
 }
 
 void JumpTargetManager::setLegalValue(void){
@@ -1853,7 +1853,6 @@ void JumpTargetManager::setLegalValue(void){
     }
   }
    
-  foldStack(legalSet1);
   for(auto set : legalSet1){
     for(auto ii : set.I)
       errs()<<*ii<<" -------------";
@@ -1883,70 +1882,58 @@ void JumpTargetManager::foldSet(std::vector<legalValue> &legalSet){
 //  }
 }
 
+/* TODO: To assign a value  
+ * According binary executing memory and CPU States setting */
+llvm::Value *JumpTargetManager::payBinaryValue(llvm::Value *v){
+  errs()<<"\n"<<*v<<"\n\n";
+  llvm::Type *Int64 = IntegerType::get(TheModule.getContext(),64);
+  uint64_t Address = ptc.regs[R_ESP];
+  Constant *probableValue = ConstantInt::get(Int64,Address);
+  v = dyn_cast<Value>(probableValue);
+  errs()<<"\n"<<*v<<"\n\n";  
+
+  return v;
+}
+
 // To fold Instruction stack and to assign Value to'global variable'.
-void JumpTargetManager::foldStack(std::vector<legalValue> &legalSet){
+void JumpTargetManager::foldStack(legalValue *&relatedInstPtr){
   const DataLayout &DL = TheModule.getDataLayout();
 
-  for(unsigned s = 0; s<legalSet.size(); s++){
-    // Find out global variable and to set value.
-    for(unsigned j=0; j<legalSet[s].value.size(); j++){
-      if(dyn_cast<GlobalVariable>(legalSet[s].value[j])){
+  while(true){
+    Value *last = relatedInstPtr->value.back();
+    Value *secondlast = *(relatedInstPtr->value.end()-2);
 
-        //TODO: To assign a value
-        errs()<<"\n"<<*legalSet[s].value[j]<<" 55555555\n\n";
-        // According binary executing memory and CPU states setting.
-	llvm::Type *Int64 = IntegerType::get(TheModule.getContext(),64);
-	uint64_t Address = ptc.regs[R_ESP];
-	Constant *probableValue = ConstantInt::get(Int64,Address);
-	legalSet[s].value[j] = dyn_cast<Value>(probableValue);
-
-        errs()<<"\n"<<*legalSet[s].value[j]<<" 55555555\n\n";
+    if(dyn_cast<Constant>(last) and dyn_cast<Constant>(secondlast)){
+      if(dyn_cast<ConstantInt>(last) == nullptr){
+        last = payBinaryValue(last);
       }
-    }
-    // To reverse and fold instruction.
-    unsigned FoldNum = 0;
-//    unsigned position = 0;
-//   Constant *SelectValue = nullptr;
-    for(auto inst = legalSet[s].I.rbegin(); inst != legalSet[s].I.rend(); inst++){
-      auto op = (*inst)->getOpcode();
-      if(op==Instruction::Store or op==Instruction::Load)
-          revng_assert(legalSet[s].I.size() == 1,"Unknow State!");
-
+      if(dyn_cast<ConstantInt>(secondlast) == nullptr){
+        secondlast = payBinaryValue(secondlast);
+      }
       // Fold binary instruction
-      std::vector<unsigned> subscript;
-      Constant *NewOperand = nullptr;
-      for(unsigned i=legalSet[s].value.size(); i>0; i--){
-	if(dyn_cast<ConstantInt>(legalSet[s].value[i-1]))
-	  subscript.push_back(i-1);
-      }
-      revng_assert(subscript.size()!=0, "Unknow value, Can't fold instruction!");
-      if(subscript.size() == 1)
-	break;
+      Instruction *Inst = relatedInstPtr->I.back();
 
-//      if(op==Instruction::Select){
-//        position = inst - legalSet[s].I.rbegin();
-//	SelectValue = legalSet[s].value[subscript[1]];
-//        legalSet[s].value.erase[legalSet[s].value.begin()+subscript[1]];
-//	FoldNum++;
-//	continue;
-//      }
+      if(Inst->getOpcode()==Instruction::Select){ 
+        auto base = secondlast;
+        errs()<<*base<<" <-encount Select instruction add to base\n";
+        relatedInstPtr->value.erase(relatedInstPtr->value.end()-2);
+        relatedInstPtr->I.pop_back();
+        break;
+      }     
+      // TODO: To loop base until base equal to 0
+      Constant *op1 = dyn_cast<Constant>(last);
+      Constant *op2 = dyn_cast<Constant>(secondlast);
+      op1 = ConstantExpr::getTruncOrBitCast(op1,Inst->getOperand(0)->getType());
+      op2 = ConstantExpr::getTruncOrBitCast(op2,Inst->getOperand(1)->getType());
+      Constant *NewOperand = ConstantFoldBinaryOpOperands(Inst->getOpcode(),op1,op2,DL);
 
-      if(subscript.size()>1){
-        Constant *op1 = dyn_cast<Constant>(legalSet[s].value[subscript[0]]);
-	Constant *op2 = dyn_cast<Constant>(legalSet[s].value[subscript[1]]);
-	op1 = ConstantExpr::getTruncOrBitCast(op1,(*inst)->getOperand(0)->getType());
-	op2 = ConstantExpr::getTruncOrBitCast(op2,(*inst)->getOperand(1)->getType());
-        NewOperand = ConstantFoldBinaryOpOperands(op,op1,op2,DL);
-
-	legalSet[s].value.erase(legalSet[s].value.begin()+subscript[1],
-			        legalSet[s].value.begin()+subscript[0]+1);
-	legalSet[s].value.push_back(dyn_cast<Value>(NewOperand));
-	FoldNum++;
-      }   
-    }// End of folding instructions
-    legalSet[s].I.erase(legalSet[s].I.begin()+legalSet[s].I.size()-FoldNum, 
-		        legalSet[s].I.begin()+legalSet[s].I.size());
-  }/// ?end for(unsigned s :legalSet)
+      relatedInstPtr->value.erase(relatedInstPtr->value.end()-2,relatedInstPtr->value.end());
+      relatedInstPtr->value.push_back(dyn_cast<Value>(NewOperand));
+      relatedInstPtr->I.pop_back();
+    }
+    else 
+      break;  
+  }  
 }
 
 void JumpTargetManager::set2ptr(llvm::Instruction *next,
@@ -1978,7 +1965,14 @@ void JumpTargetManager::handleMemoryAccess(llvm::Instruction *current,
   if(!isCorrelationWithNext(v, next)){
     /* Reduct Data flow instructions to Value stack and Instruction stack */
     if(relatedInstPtr){
-      relatedInstPtr->value.push_back(v);    
+      relatedInstPtr->value.push_back(v); 
+      auto num = relatedInstPtr->value.size(); 
+      if(num>1){  
+        auto last = dyn_cast<Constant>(relatedInstPtr->value[num-1]);
+        auto secondlast = dyn_cast<Constant>(relatedInstPtr->value[num-2]);
+        if(last and secondlast)
+          foldStack(relatedInstPtr);
+      }
     }
     else 
       legalSet.emplace_back(PushTemple(v),PushTemple(current));

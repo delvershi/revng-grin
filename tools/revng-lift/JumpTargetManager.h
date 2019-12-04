@@ -206,7 +206,7 @@ public:
 
 private:
   std::vector<llvm::Instruction *> DataFlow;
-  void foldStack(std::vector<legalValue> &legalSet);
+  void foldStack(legalValue *&relatedInstPtr);
 
   void foldSet(std::vector<legalValue> &legalSet);
 
@@ -223,6 +223,7 @@ private:
                              std::vector<legalValue> &legalSet,
                              legalValue *&relatedInstPtr);
 
+  llvm::Value *payBinaryValue(llvm::Value *v);
   bool isCorrelationWithNext(llvm::Value *preValue, llvm::Instruction *Inst);
   void set2ptr(llvm::Instruction *next,
                std::vector<legalValue> &legalSet,
