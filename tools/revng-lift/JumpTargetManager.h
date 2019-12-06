@@ -173,7 +173,7 @@ public:
   int64_t getDestBRPCWrite(llvm::BasicBlock *block);
   bool haveTranslatedPC(uint64_t pc, uint64_t next);
 
-  std::vector<uint64_t> BranchTargets;  
+  std::vector<std::pair<uint64_t, llvm::BasicBlock *>> BranchTargets;  
 
   enum LastAssignmentResult{
     CurrentBlockValueDef, /* Case 1: Return value def instruction
@@ -199,10 +199,10 @@ public:
   unsigned int StrToInt(const char *str);
 
   /* Not executing branch of CFG */
-  std::vector<std::pair<uint64_t, llvm::BasicBlock *>> partCFG;
+  std::vector<std::pair<llvm::BasicBlock *, llvm::BasicBlock *>> partCFG;
   // <destination branch BB,source BB> 
   std::pair<llvm::BasicBlock *, llvm::BasicBlock *> nodepCFG;
-  void node_ofpCFG(uint64_t addr, llvm::BasicBlock *dest);
+  void pushpartCFGStack(llvm::BasicBlock *dest, llvm::BasicBlock *src);
 
 private:
   std::vector<llvm::Instruction *> DataFlow;

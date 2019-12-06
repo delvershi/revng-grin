@@ -1558,13 +1558,10 @@ void JumpTargetManager::harvest() {
   }
 }
 
-void JumpTargetManager::node_ofpCFG(uint64_t addr, llvm::BasicBlock *dest){
-  for(auto node : partCFG){
-    if(node.first == addr){
-      nodepCFG.first = dest;
-      nodepCFG.second = node.second;
-    }
-  }
+void JumpTargetManager::pushpartCFGStack(llvm::BasicBlock *dest, llvm::BasicBlock *src){
+  partCFG.push_back(std::make_pair(dest,src));
+  nodepCFG.first = dest;
+  nodepCFG.second = src;
 }
 
 /* TODO: In the future, there will be modify by 
@@ -1966,13 +1963,13 @@ void JumpTargetManager::handleMemoryAccess(llvm::Instruction *current,
     /* Reduct Data flow instructions to Value stack and Instruction stack */
     if(relatedInstPtr){
       relatedInstPtr->value.push_back(v); 
-      auto num = relatedInstPtr->value.size(); 
-      if(num>1){  
-        auto last = dyn_cast<Constant>(relatedInstPtr->value[num-1]);
-        auto secondlast = dyn_cast<Constant>(relatedInstPtr->value[num-2]);
-        if(last and secondlast)
-          foldStack(relatedInstPtr);
-      }
+//      auto num = relatedInstPtr->value.size(); 
+//      if(num>1){  
+//        auto last = dyn_cast<Constant>(relatedInstPtr->value[num-1]);
+//        auto secondlast = dyn_cast<Constant>(relatedInstPtr->value[num-2]);
+//        if(last and secondlast)
+//          foldStack(relatedInstPtr);
+//      }
     }
     else 
       legalSet.emplace_back(PushTemple(v),PushTemple(current));
@@ -2085,14 +2082,13 @@ void JumpTargetManager::harvestbranchBasicBlock(uint64_t nextAddr,
     /***
     * TODO: check in registerJT
     */ 
-    for (auto destPair : branchJT){
-      if(!haveTranslatedPC(destPair.first, nextAddr)){
+    for (auto destAddrSrcBB : branchJT){
+      if(!haveTranslatedPC(destAddrSrcBB.first, nextAddr)){
         /* Recording current CPU state */
         ptc.storeCPUState();
-        BranchTargets.push_back(destPair.first); 
-        /* Recording not execute branch relationship with destibnation of CFG */ 
-        partCFG.push_back(std::pair<uint64_t, llvm::BasicBlock *>(destPair.first,destPair.second));
-        errs()<<format_hex(destPair.first,0)<<" <- Jmp target add\n";
+        /* Recording not execute branch destination relationship with current BasicBlock */ 
+        BranchTargets.push_back(std::make_pair(destAddrSrcBB.first,destAddrSrcBB.second)); 
+        errs()<<format_hex(destAddrSrcBB.first,0)<<" <- Jmp target add\n";
       }
     }
     errs()<<"Branch targets total numbers: "<<BranchTargets.size()<<" 888\n"; 

@@ -781,7 +781,8 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
   // To register branch inst of BB into vector
   BasicBlock *BlockBRs;
   bool traverseFLAG = 0;
-  uint64_t jtVirtualAddress; 
+  uint64_t jtVirtualAddress;
+  llvm::BasicBlock *srcBB = nullptr; 
   while (Entry != nullptr) {
     jjj++;
     BlockBRs = nullptr;
@@ -977,7 +978,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       if(DynamicVirtualAddress == 0 && traverseFLAG && !JumpTargets.BranchTargets.empty()){
         JumpTargets.haveBB = 0;
         BlockBRs = nullptr;
-        jtVirtualAddress = JumpTargets.BranchTargets.front();
+        std::tie(jtVirtualAddress, srcBB) = JumpTargets.BranchTargets.front();
         JumpTargets.BranchTargets.erase(JumpTargets.BranchTargets.begin());
         ptc.deletCPULINEState();
         DynamicVirtualAddress = jtVirtualAddress;  
@@ -1015,7 +1016,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       // Initial traverse branch PC
       BlockBRs = nullptr;
       JumpTargets.haveBB = 0;
-      jtVirtualAddress = JumpTargets.BranchTargets.front();
+      std::tie(jtVirtualAddress, srcBB) = JumpTargets.BranchTargets.front();
       JumpTargets.BranchTargets.erase(JumpTargets.BranchTargets.begin());
       ptc.deletCPULINEState();
       DynamicVirtualAddress = jtVirtualAddress;
@@ -1041,12 +1042,13 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     if((JumpTargets.haveBB || DynamicVirtualAddress == 0 ) && !JumpTargets.BranchTargets.empty()){
       BlockBRs = nullptr;
       // if occure a translated BB, traversing next branch
-      jtVirtualAddress = JumpTargets.BranchTargets.front();
+      std::tie(jtVirtualAddress, srcBB) = JumpTargets.BranchTargets.front();
       errs()<<"--------------------\n";
       JumpTargets.BranchTargets.erase(JumpTargets.BranchTargets.begin());
       ptc.deletCPULINEState();
       DynamicVirtualAddress = jtVirtualAddress;
     }
+
     if(DynamicVirtualAddress){
       auto tmpBB = JumpTargets.registerJT(DynamicVirtualAddress,JTReason::GlobalData);
       if(JumpTargets.haveBB){
@@ -1056,7 +1058,9 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       }
       else{
         std::tie(VirtualAddress, Entry) = JumpTargets.peek();
-	JumpTargets.node_ofpCFG(VirtualAddress, Entry);
+        if(srcBB)
+	  JumpTargets.pushpartCFGStack(Entry,srcBB);
+        srcBB = nullptr;
       }
       if(BlockBRs != nullptr){  
         auto branchLabeledcontent = Translator.branchcontent(); 
