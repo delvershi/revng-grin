@@ -198,11 +198,12 @@ public:
   bool islegalAddr(llvm::Value *v);
   unsigned int StrToInt(const char *str);
 
-  /* Not executing branch of CFG */
+  /* Have explored branches of CFG */
   std::vector<std::pair<llvm::BasicBlock *, llvm::BasicBlock *>> partCFG;
   // <destination branch BB,source BB> 
   std::pair<llvm::BasicBlock *, llvm::BasicBlock *> nodepCFG;
   void pushpartCFGStack(llvm::BasicBlock *dest, llvm::BasicBlock *src);
+  void searchpartCFG(llvm::BasicBlock *block);
 
 private:
   std::vector<llvm::Instruction *> DataFlow;

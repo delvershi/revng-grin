@@ -1564,6 +1564,16 @@ void JumpTargetManager::pushpartCFGStack(llvm::BasicBlock *dest, llvm::BasicBloc
   nodepCFG.second = src;
 }
 
+void JumpTargetManager::searchpartCFG(llvm::BasicBlock *block){
+  for(auto bb : partCFG){
+    if((block - bb.first) == 0){
+      nodepCFG.first = bb.first;
+      nodepCFG.second = bb.second;
+      break;
+    } 
+  }  
+}
+
 /* TODO: In the future, there will be modify by 
  *       orignal Inst is judged access memory rather than judge LLVM IR 
  */
@@ -1638,7 +1648,7 @@ JumpTargetManager:: getLastAssignment(llvm::Value *v,
   if(dyn_cast<ConstantInt>(v)){
     return std::make_pair(ConstantValueAssign,nullptr);
   }
-
+  errs()<<currentBB->getName()<<"               **************************************\n\n ";
   bool bar = 0;
   std::vector<llvm::Instruction *> vDefUse;
   for(User *vu : v->users()){
@@ -1768,9 +1778,12 @@ void JumpTargetManager::getIllegalAccessDFG(llvm::BasicBlock *thisBlock){
                 }
                 case NextBlockOperating:
                 {
+                    // Judge current BasickBlcok whether reaching partCFG's node
+                    // if ture, to research partCFG stack and update node 
                     if((nodepCFG.first - bb) == 0){
                       llvm::Function::iterator it(nodepCFG.second);
                       nodeBB = it;
+                      searchpartCFG(nodepCFG.second);
                       continue;
                     }
                     break;
