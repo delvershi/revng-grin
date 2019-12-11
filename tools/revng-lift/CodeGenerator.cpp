@@ -782,6 +782,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
   BasicBlock *BlockBRs;
   bool traverseFLAG = 0;
   uint64_t jtVirtualAddress;
+  uint64_t tmpVA = 0;
   llvm::BasicBlock *srcBB = nullptr; 
   while (Entry != nullptr) {
     jjj++;
@@ -804,6 +805,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
 
     if(traverseFLAG && !JumpTargets.haveBB){
       ConsumedSize = ptc.translate(VirtualAddress, InstructionList.get(),&DynamicVirtualAddress);
+      tmpVA = VirtualAddress;
     }
     if(traverseFLAG && JumpTargets.haveBB){
       ptc_instruction_list_malloc(InstructionList.get()); 
@@ -1030,10 +1032,19 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
    
     //handle invalid address
     auto invalidaddr = DynamicVirtualAddress >> 0x18;
-    if(invalidaddr)
+    if(invalidaddr){
+      outs()<<"occure invalid address: "<<format_hex(DynamicVirtualAddress,0)
+            <<"  explore branch: "<<format_hex(tmpVA,0)<<"\n";
       DynamicVirtualAddress = 0;
-    if(DynamicVirtualAddress<0x400000)
+   
+    }
+    else if(DynamicVirtualAddress<0x400000){
+      outs()<<"occure invalid address: "<<format_hex(DynamicVirtualAddress,0)
+            <<"  explore branch: "<<format_hex(tmpVA,0)<<"\n";
       DynamicVirtualAddress = 0;
+
+    }
+
     if(JumpTargets.BranchTargets.empty()){
       DynamicVirtualAddress = 0;
     }
