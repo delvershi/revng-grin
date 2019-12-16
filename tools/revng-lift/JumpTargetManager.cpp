@@ -1723,6 +1723,16 @@ void JumpTargetManager::getIllegalAccessDFG(llvm::BasicBlock *thisBlock){
   BasicBlock::iterator I = thisBlock->begin();
   auto endInst = thisBlock->end();
 
+  BasicBlock::iterator brI = --endInst;
+  if(auto branch = dyn_cast<BranchInst>(brI)){
+    if(branch->isConditional()){
+      errs()<<"\nThis Block contains br instruction, don't need analysis partCFG!\n";
+      return;
+    }
+  }
+      //outs()<<*I<<"\n";
+ 
+
   DataFlow.clear();  
 
   for(;I!=endInst;I++){
