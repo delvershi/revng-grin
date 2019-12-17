@@ -1752,6 +1752,19 @@ void JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock){
   setLegalValue();
 }
 
+void JumpTargetManager::handleIllegalJumpAddress(llvm::BasicBlock *thisBlock){
+  // Emerge illegal next jump address, current Block must contain a indirect instruction!
+  BasicBlock::iterator I = --thisBlock->end(); 
+  I--; 
+  auto store = dyn_cast<llvm::StoreInst>(--I);
+  if(store){
+    getIllegalValueDFG(store->getPointerOperand(),dyn_cast<llvm::Instruction>(store),thisBlock);
+  
+  errs()<<*(--I)<<"    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n";
+    setLegalValue();
+  }
+}
+
 void JumpTargetManager::getIllegalValueDFG(llvm::Value *v,llvm::Instruction *I,llvm::BasicBlock *thisBlock){
   llvm::User *operateUser = nullptr;
   llvm::Value *v1 = nullptr;

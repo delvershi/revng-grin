@@ -1034,12 +1034,14 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     if(invalidaddr){
       outs()<<"occure invalid address: "<<format_hex(DynamicVirtualAddress,0)
             <<"  explore branch: "<<format_hex(tmpVA,0)<<"\n";
+      JumpTargets.handleIllegalJumpAddress(BlockBRs);
       DynamicVirtualAddress = 0;
    
     }
     else if(DynamicVirtualAddress<0x400000){
       outs()<<"occure invalid address: "<<format_hex(DynamicVirtualAddress,0)
             <<"  explore branch: "<<format_hex(tmpVA,0)<<"\n";
+      JumpTargets.handleIllegalJumpAddress(BlockBRs);
       DynamicVirtualAddress = 0;
 
     }

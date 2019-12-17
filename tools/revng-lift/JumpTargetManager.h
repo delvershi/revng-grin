@@ -190,7 +190,7 @@ public:
   };
    
   void handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock);
-  void handleIllegal
+  void handleIllegalJumpAddress(llvm::BasicBlock *thisBlock);
   void getIllegalValueDFG(llvm::Value *v,llvm::Instruction *I,llvm::BasicBlock *thisBlock);
   void setLegalValue(void);  
 
