@@ -187,8 +187,10 @@ public:
 
     ConstantValueAssign, 
     UnknowResult 
-  }; 
-  void getIllegalAccessDFG(llvm::BasicBlock *thisBlock);
+  };
+   
+  void handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock);
+  void getIllegalValueDFG(llvm::Value *v,llvm::Instruction *I,llvm::BasicBlock *thisBlock);
   void setLegalValue(void);  
 
   using LastAssignmentResultWithInst = std::pair<enum LastAssignmentResult, llvm::Instruction *>;

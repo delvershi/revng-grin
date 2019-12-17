@@ -1719,7 +1719,7 @@ JumpTargetManager:: getLastAssignment(llvm::Value *v,
   return std::make_pair(UnknowResult,nullptr);   
 }
 
-void JumpTargetManager::getIllegalAccessDFG(llvm::BasicBlock *thisBlock){
+void JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock){
   BasicBlock::iterator I = thisBlock->begin();
   auto endInst = thisBlock->end();
 
@@ -1732,7 +1732,6 @@ void JumpTargetManager::getIllegalAccessDFG(llvm::BasicBlock *thisBlock){
   }
       //outs()<<*I<<"\n";
  
-
   DataFlow.clear();  
 
   for(;I!=endInst;I++){
@@ -1743,93 +1742,97 @@ void JumpTargetManager::getIllegalAccessDFG(llvm::BasicBlock *thisBlock){
         Value *v = linst->getPointerOperand();
 
         if(!islegalAddr(v)){
-          llvm::User *operateUser = nullptr;
-          llvm::Value *v1 = nullptr;
-          LastAssignmentResult result;
-          llvm::Instruction *lastInst = nullptr;
-          std::vector<std::tuple<llvm::Value *,llvm::User *,llvm::BasicBlock *>> vs;
-          vs.push_back(std::make_tuple(v,dyn_cast<User>(I),thisBlock));
-          DataFlow.push_back(dyn_cast<llvm::Instruction>(I));
- 
-          // Get illegal access Value's DFG. 
-          while(!vs.empty()){
-            llvm::BasicBlock *tmpB = nullptr;
-            std::tie(v1,operateUser,tmpB) = vs.back();
-            llvm::Function::iterator nodeBB(tmpB);
-            llvm::Function::iterator begin(tmpB->getParent()->begin());
-            vs.pop_back();
-
-          for(;nodeBB != begin;){  
-            auto bb = dyn_cast<llvm::BasicBlock>(nodeBB);
-            if(v1->isUsedInBasicBlock(bb)){
-              std::tie(result,lastInst) = getLastAssignment(v1,operateUser,bb);
-              switch(result)
-              {
-                case CurrentBlockValueDef:
-                {
-                    if(lastInst->getOpcode() == Instruction::Select){
-                      auto select = dyn_cast<llvm::SelectInst>(lastInst);
-                      v1 = select->getTrueValue();
-                      vs.push_back(std::make_tuple(select->getFalseValue(),dyn_cast<User>(lastInst),bb));
-                    }
-                    else{
-                      auto nums = lastInst->getNumOperands();
-                      for(Use &lastU : lastInst->operands()){
-                        Value *lastv = lastU.get();
-                        vs.push_back(std::make_tuple(lastv,dyn_cast<User>(lastInst),bb));
-                      }
-                      v1 = std::get<0>(vs[vs.size()-nums]);
-                      vs.erase(vs.begin()+vs.size()-nums);
-                    }
-                    DataFlow.push_back(lastInst);
-                    operateUser = dyn_cast<User>(lastInst);
-                    nodeBB++;
-                    break;
-                }
-                case NextBlockOperating:
-                {
-                    // Judge current BasickBlcok whether reaching partCFG's node
-                    // if ture, to research partCFG stack and update node 
-                    if((nodepCFG.first - bb) == 0){
-                      llvm::Function::iterator it(nodepCFG.second);
-                      nodeBB = it;
-                      searchpartCFG(nodepCFG.second);
-                      continue;
-                    }
-                    break;
-                }
-                case CurrentBlockLastAssign:
-                {
-                    // Only Store instruction can assign a value for Value rather than defined
-                    auto store = dyn_cast<llvm::StoreInst>(lastInst);
-                    v1 = store->getValueOperand();
-                    DataFlow.push_back(lastInst);
-                    operateUser = dyn_cast<User>(lastInst);
-                    nodeBB++;
-                    break;
-                }
-                case ConstantValueAssign:
-                    goto NextValue;
-                break;
-                case UnknowResult:
-                    revng_abort("Unknow of result!");
-                break;
-              }
-              
-            }///?if(v1->isUsedInBasicBlock(bb))?
-            nodeBB--;
-          }///?for(;nodeBB != begin;)?
-NextValue:
-            errs()<<"Explore next Value of illegal Value of DFG!\n";
-            continue;
-          }///?while(!vs.empty())?
-
-          goto Finished;  
-        }///?end if(!islegalAddr(v)) 
-    }///?end if(I->getOpcode()...Load) 
+          getIllegalValueDFG(v,dyn_cast<llvm::Instruction>(I),thisBlock);
+          errs()<<"Finished analysis illegal access Data Flow!\n";
+          break;
+        }
+    }
   }
-Finished:
-  errs()<<"Finished analysis illegal access Data Flow!\n";
+ 
+  setLegalValue();
+}
+
+void JumpTargetManager::getIllegalValueDFG(llvm::Value *v,llvm::Instruction *I,llvm::BasicBlock *thisBlock){
+  llvm::User *operateUser = nullptr;
+  llvm::Value *v1 = nullptr;
+  LastAssignmentResult result;
+  llvm::Instruction *lastInst = nullptr;
+  std::vector<std::tuple<llvm::Value *,llvm::User *,llvm::BasicBlock *>> vs;
+  vs.push_back(std::make_tuple(v,dyn_cast<User>(I),thisBlock));
+  DataFlow.push_back(I);
+ 
+  // Get illegal access Value's DFG. 
+  while(!vs.empty()){
+    llvm::BasicBlock *tmpB = nullptr;
+    std::tie(v1,operateUser,tmpB) = vs.back();
+    llvm::Function::iterator nodeBB(tmpB);
+    llvm::Function::iterator begin(tmpB->getParent()->begin());
+    vs.pop_back();
+
+    for(;nodeBB != begin;){  
+      auto bb = dyn_cast<llvm::BasicBlock>(nodeBB);
+      if(v1->isUsedInBasicBlock(bb)){
+        std::tie(result,lastInst) = getLastAssignment(v1,operateUser,bb);
+        switch(result)
+        {
+          case CurrentBlockValueDef:
+          {
+              if(lastInst->getOpcode() == Instruction::Select){
+                auto select = dyn_cast<llvm::SelectInst>(lastInst);
+                v1 = select->getTrueValue();
+                vs.push_back(std::make_tuple(select->getFalseValue(),dyn_cast<User>(lastInst),bb));
+              }
+              else{
+                auto nums = lastInst->getNumOperands();
+                for(Use &lastU : lastInst->operands()){
+                  Value *lastv = lastU.get();
+                  vs.push_back(std::make_tuple(lastv,dyn_cast<User>(lastInst),bb));
+                }
+                v1 = std::get<0>(vs[vs.size()-nums]);
+                vs.erase(vs.begin()+vs.size()-nums);
+              }
+              DataFlow.push_back(lastInst);
+              operateUser = dyn_cast<User>(lastInst);
+              nodeBB++;
+              break;
+          }
+          case NextBlockOperating:
+          {
+              // Judge current BasickBlcok whether reaching partCFG's node
+              // if ture, to research partCFG stack and update node 
+              if((nodepCFG.first - bb) == 0){
+                llvm::Function::iterator it(nodepCFG.second);
+                nodeBB = it;
+                searchpartCFG(nodepCFG.second);
+                continue;
+              }
+              break;
+          }
+          case CurrentBlockLastAssign:
+          {
+              // Only Store instruction can assign a value for Value rather than defined
+              auto store = dyn_cast<llvm::StoreInst>(lastInst);
+              v1 = store->getValueOperand();
+              DataFlow.push_back(lastInst);
+              operateUser = dyn_cast<User>(lastInst);
+              nodeBB++;
+              break;
+          }
+          case ConstantValueAssign:
+              goto NextValue;
+          break;
+          case UnknowResult:
+              revng_abort("Unknow of result!");
+          break;
+        }
+        
+      }///?if(v1->isUsedInBasicBlock(bb))?
+      nodeBB--;
+    }///?for(;nodeBB != begin;)?
+NextValue:
+    errs()<<"Explore next Value of illegal Value of DFG!\n";
+    continue;
+  }///?while(!vs.empty())?
 }
 
 void JumpTargetManager::setLegalValue(void){
