@@ -1758,7 +1758,7 @@ void JumpTargetManager::handleIllegalJumpAddress(llvm::BasicBlock *thisBlock){
   I--; 
   auto store = dyn_cast<llvm::StoreInst>(--I);
   if(store){
-    getIllegalValueDFG(store->getPointerOperand(),dyn_cast<llvm::Instruction>(store),thisBlock);
+    getIllegalValueDFG(store->getValueOperand(),dyn_cast<llvm::Instruction>(store),thisBlock);
   
   errs()<<*(--I)<<"    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n";
     setLegalValue();
