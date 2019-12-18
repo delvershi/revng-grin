@@ -1758,9 +1758,10 @@ void JumpTargetManager::handleIllegalJumpAddress(llvm::BasicBlock *thisBlock){
   I--; 
   auto store = dyn_cast<llvm::StoreInst>(--I);
   if(store){
+    // Seeking Value of assign to pc. 
+    // eg:store i64 value, i64* @pc  
     getIllegalValueDFG(store->getValueOperand(),dyn_cast<llvm::Instruction>(store),thisBlock);
-  
-  errs()<<*(--I)<<"    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n";
+    errs()<<"Finished analysis illegal access Data Flow!\n";
     setLegalValue();
   }
 }
