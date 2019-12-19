@@ -1699,6 +1699,7 @@ JumpTargetManager:: getLastAssignment(llvm::Value *v,
             case llvm::Instruction::And:
             case llvm::Instruction::ZExt:
             case llvm::Instruction::Trunc:
+	    case llvm::Instruction::Shl:
               continue;
             break;
             default:
@@ -1876,6 +1877,7 @@ void JumpTargetManager::setLegalValue(void){
 	case Instruction::Add:
 	case Instruction::Sub:
 	case Instruction::And:
+	case Instruction::Shl:
 	    handleBinaryOperation(DataFlow[i],next,legalSet1,relatedInstPtr1);
 	break;
 	//case llvm::Instruction::ICmp:
