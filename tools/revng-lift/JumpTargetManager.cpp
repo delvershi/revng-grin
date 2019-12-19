@@ -1574,6 +1574,28 @@ void JumpTargetManager::searchpartCFG(llvm::BasicBlock *block){
   }  
 }
 
+uint32_t JumpTargetManager::belongToUBlock(llvm::BasicBlock *block){
+  llvm::StringRef str = block->getName();
+  LLVM_NODISCARD size_t nPos1 = llvm::StringRef::npos;
+  LLVM_NODISCARD size_t nPos2 = llvm::StringRef::npos;
+  llvm::StringRef substr = "";
+  nPos1 = str.find_last_of(".");
+  nPos2 = str.find_last_of(".",nPos1-1);
+  if(nPos1>nPos2){
+    substr = str.substr(nPos2 + 1, nPos1 - nPos2 - 1);
+  }
+  else{
+    substr = str.substr(nPos1+1,str.size()-nPos1-1);
+  }
+  
+  // TODO: Get user defined code range.
+  llvm::StringRef UserCodeName = "main";
+  if(substr.equals(UserCodeName))
+    return 1;
+
+  return 0;
+}
+
 /* TODO: In the future, there will be modify by 
  *       orignal Inst is judged access memory rather than judge LLVM IR 
  */
@@ -1721,6 +1743,8 @@ JumpTargetManager:: getLastAssignment(llvm::Value *v,
 }
 
 void JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock){
+  uint32_t userCodeFlag = 0;
+  uint32_t &userCodeFlag1 = userCodeFlag;
   BasicBlock::iterator I = thisBlock->begin();
   auto endInst = thisBlock->end();
 
@@ -1743,17 +1767,19 @@ void JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock){
         Value *v = linst->getPointerOperand();
 
         if(!islegalAddr(v)){
-          getIllegalValueDFG(v,dyn_cast<llvm::Instruction>(I),thisBlock);
+          getIllegalValueDFG(v,dyn_cast<llvm::Instruction>(I),thisBlock,userCodeFlag1);
           errs()<<"Finished analysis illegal access Data Flow!\n";
           break;
         }
     }
   }
  
-  setLegalValue();
+  setLegalValue(userCodeFlag1);
 }
 
 void JumpTargetManager::handleIllegalJumpAddress(llvm::BasicBlock *thisBlock){
+  uint32_t userCodeFlag = 0;
+  uint32_t &userCodeFlag1 = userCodeFlag;
   // Emerge illegal next jump address, current Block must contain a indirect instruction!
   BasicBlock::iterator I = --thisBlock->end(); 
   I--; 
@@ -1761,13 +1787,18 @@ void JumpTargetManager::handleIllegalJumpAddress(llvm::BasicBlock *thisBlock){
   if(store){
     // Seeking Value of assign to pc. 
     // eg:store i64 value, i64* @pc  
-    getIllegalValueDFG(store->getValueOperand(),dyn_cast<llvm::Instruction>(store),thisBlock);
+    getIllegalValueDFG(store->getValueOperand(),
+		       dyn_cast<llvm::Instruction>(store),
+		       thisBlock,userCodeFlag1);
     errs()<<"Finished analysis illegal access Data Flow!\n";
-    setLegalValue();
+    setLegalValue(userCodeFlag1);
   }
 }
 
-void JumpTargetManager::getIllegalValueDFG(llvm::Value *v,llvm::Instruction *I,llvm::BasicBlock *thisBlock){
+void JumpTargetManager::getIllegalValueDFG(llvm::Value *v,
+		llvm::Instruction *I,
+		llvm::BasicBlock *thisBlock,
+		uint32_t &userCodeFlag){
   llvm::User *operateUser = nullptr;
   llvm::Value *v1 = nullptr;
   LastAssignmentResult result;
@@ -1787,6 +1818,7 @@ void JumpTargetManager::getIllegalValueDFG(llvm::Value *v,llvm::Instruction *I,l
     for(;nodeBB != begin;){  
       auto bb = dyn_cast<llvm::BasicBlock>(nodeBB);
       if(v1->isUsedInBasicBlock(bb)){
+	userCodeFlag = belongToUBlock(bb);
         std::tie(result,lastInst) = getLastAssignment(v1,operateUser,bb);
         switch(result)
         {
@@ -1850,7 +1882,7 @@ NextValue:
   }///?while(!vs.empty())?
 }
 
-void JumpTargetManager::setLegalValue(void){
+void JumpTargetManager::setLegalValue(uint32_t &userCodeFlag){
   if(DataFlow.empty())
     return;
 
@@ -1891,7 +1923,12 @@ void JumpTargetManager::setLegalValue(void){
 	break;
     }
   }
-   
+
+  if(!userCodeFlag){
+    errs()<<"Don't need to assign operation\n";
+    return;
+  }
+  
   for(auto set : legalSet1){
     for(auto ii : set.I)
       errs()<<*ii<<" -------------";
@@ -1900,7 +1937,8 @@ void JumpTargetManager::setLegalValue(void){
       errs() <<*vvv<<" +++++++++++\n";
     
     errs()<<"\n";
-  }
+  } 
+  // To assign a legal value
   foldSet(legalSet1);
   DataFlow.clear();
 }

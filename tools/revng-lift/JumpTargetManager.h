@@ -191,8 +191,10 @@ public:
    
   void handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock);
   void handleIllegalJumpAddress(llvm::BasicBlock *thisBlock);
-  void getIllegalValueDFG(llvm::Value *v,llvm::Instruction *I,llvm::BasicBlock *thisBlock);
-  void setLegalValue(void);  
+  void getIllegalValueDFG(llvm::Value *v,llvm::Instruction *I,
+		          llvm::BasicBlock *thisBlock,
+			  uint32_t &userCodeFlag);
+  void setLegalValue(uint32_t &userCodeFlag);  
 
   using LastAssignmentResultWithInst = std::pair<enum LastAssignmentResult, llvm::Instruction *>;
   LastAssignmentResultWithInst getLastAssignment(llvm::Value *v, 
@@ -200,6 +202,8 @@ public:
                                          llvm::BasicBlock *currentBB);
   bool islegalAddr(llvm::Value *v);
   unsigned int StrToInt(const char *str);
+  /* Judging whether the Block is User define Block area*/
+  uint32_t belongToUBlock(llvm::BasicBlock *block);
 
   /* Have explored branches of CFG */
   std::vector<std::pair<llvm::BasicBlock *, llvm::BasicBlock *>> partCFG;
