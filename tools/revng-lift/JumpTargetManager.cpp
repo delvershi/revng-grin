@@ -1939,6 +1939,7 @@ void JumpTargetManager::setLegalValue(uint32_t &userCodeFlag){
     errs()<<"\n";
   } 
   // To assign a legal value
+  revng_abort("\nNeed to assign a value \n");
   foldSet(legalSet1);
   DataFlow.clear();
 }
