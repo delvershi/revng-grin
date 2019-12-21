@@ -1674,17 +1674,40 @@ JumpTargetManager:: getLastAssignment(llvm::Value *v,
   bool bar = 0;
   std::vector<llvm::Instruction *> vDefUse;
   for(User *vu : v->users()){
+    //errs()<<*vu<<"\n";
     if((vu - userInst) == 0)
     	bar = 1;
     auto *vui = dyn_cast<Instruction>(vu);
     if(bar && ((vui->getParent() - currentBB) == 0)){
-    	//errs()<<*vu<<" userI****\n";
+    	//errs()<<*vu<<" userInst****\n";
         vDefUse.push_back(vui);
     }
     /*
     if(bar && ((vui->getParent() - thisBlock) != 0))
     	break;
     */
+  }
+  if(vDefUse.empty()){
+    bar = 0;
+    std::vector<Instruction *> UserOFbv;
+    for(auto &Ib : make_range(currentBB->begin(),currentBB->end())){
+      for(auto &Ub : Ib.operands()){
+        Value *Vb = Ub.get();
+        if((v - Vb)==0){
+          UserOFbv.push_back(dyn_cast<Instruction>(&Ib));
+          break;
+        }
+      }
+    }
+    for(auto vuInst : make_range(UserOFbv.rbegin(),UserOFbv.rend())){
+      if((dyn_cast<User>(vuInst) - userInst) == 0)
+        bar = 1;
+      if(bar)
+        vDefUse.push_back(vuInst);
+    }
+    
+    if(vDefUse.empty())
+      vDefUse = UserOFbv; 
   }
 
   auto def = dyn_cast<Instruction>(v);
@@ -1739,6 +1762,7 @@ JumpTargetManager:: getLastAssignment(llvm::Value *v,
             return std::make_pair(NextBlockOperating,nullptr);
         }
   }
+ 
   return std::make_pair(UnknowResult,nullptr);   
 }
 
