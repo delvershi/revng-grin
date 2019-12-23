@@ -975,6 +975,12 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
 
     // Obtain a new program counter to translate
     std::tie(VirtualAddress, Entry) = JumpTargets.peek();
+    if(*ptc.isCall and traverseFLAG){
+      errs()<<*((unsigned long *)ptc.regs[4])<<"<--store callnext\n";
+      errs()<<*ptc.CallNext<<"\n";
+      *ptc.isCall = 0;
+    }
+
     if(*ptc.exception_syscall == 0x100){
       DynamicVirtualAddress = ptc.do_syscall2();
       if(DynamicVirtualAddress == 0 && traverseFLAG && !JumpTargets.BranchTargets.empty()){
