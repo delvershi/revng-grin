@@ -2152,6 +2152,18 @@ unsigned int JumpTargetManager::StrToInt(const char *str){
   return dest;
 }
 
+void JumpTargetManager::harvestCallBasicBlock(llvm::BasicBlock *thisBlock){
+  if(!haveTranslatedPC(*ptc.CallNext, 0)){
+      /* Recording current CPU state */
+      ptc.regs[R_ESP] = ptc.regs[R_ESP] + 8;
+      ptc.storeCPUState();
+      /* Recording not execute branch destination relationship with current BasicBlock */ 
+      BranchTargets.push_back(std::make_pair(*ptc.CallNext,thisBlock)); 
+      errs()<<format_hex(*ptc.CallNext,0)<<" <- Call next target add\n";
+    }
+  errs()<<"Branch targets total numbers: "<<BranchTargets.size()<<"\n";  
+}
+
 void JumpTargetManager::harvestbranchBasicBlock(uint64_t nextAddr, 
        llvm::BasicBlock *thisBlock, 
        uint32_t size, 

@@ -975,9 +975,11 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
 
     // Obtain a new program counter to translate
     std::tie(VirtualAddress, Entry) = JumpTargets.peek();
+
     if(*ptc.isCall and traverseFLAG){
       errs()<<*((unsigned long *)ptc.regs[4])<<"<--store callnext\n";
       errs()<<*ptc.CallNext<<"\n";
+      JumpTargets.harvestCallBasicBlock(BlockBRs);
       *ptc.isCall = 0;
     }
 

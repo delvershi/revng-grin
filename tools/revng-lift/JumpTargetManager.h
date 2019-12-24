@@ -175,6 +175,8 @@ public:
 
   std::vector<std::pair<uint64_t, llvm::BasicBlock *>> BranchTargets;  
 
+  void harvestCallBasicBlock(llvm::BasicBlock *thisBlock);
+
   enum LastAssignmentResult{
     CurrentBlockValueDef, /* Case 1: Return value def instruction
                            * Case 2: Current BasicBlock have many use of 
