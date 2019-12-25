@@ -165,7 +165,8 @@ private:
 public:  
   /* Determine whether to repeat to TB.*/ 
   unsigned int haveBB;
-  void harvestbranchBasicBlock(uint64_t nextAddr, 
+  void harvestbranchBasicBlock(uint64_t nextAddr,
+		     uint64_t thisAddr, 
                      llvm::BasicBlock *thisBlock, 
                      uint32_t size, 
         std::map<std::string, llvm::BasicBlock *> &branchlabeledBasicBlock
@@ -173,9 +174,9 @@ public:
   int64_t getDestBRPCWrite(llvm::BasicBlock *block);
   bool haveTranslatedPC(uint64_t pc, uint64_t next);
 
-  std::vector<std::pair<uint64_t, llvm::BasicBlock *>> BranchTargets;  
+  std::vector<std::tuple<uint64_t, llvm::BasicBlock *, uint64_t>> BranchTargets;  
 
-  void harvestCallBasicBlock(llvm::BasicBlock *thisBlock);
+  void harvestCallBasicBlock(llvm::BasicBlock *thisBlock, uint64_t thisAddr);
 
   enum LastAssignmentResult{
     CurrentBlockValueDef, /* Case 1: Return value def instruction
@@ -208,11 +209,14 @@ public:
   uint32_t belongToUBlock(llvm::BasicBlock *block);
 
   /* Have explored branches of CFG */
-  std::vector<std::pair<llvm::BasicBlock *, llvm::BasicBlock *>> partCFG;
-  // <destination branch BB,source BB> 
-  std::pair<llvm::BasicBlock *, llvm::BasicBlock *> nodepCFG;
-  void pushpartCFGStack(llvm::BasicBlock *dest, llvm::BasicBlock *src);
-  void searchpartCFG(llvm::BasicBlock *block);
+  std::vector<std::tuple<llvm::BasicBlock *, uint64_t, llvm::BasicBlock *,uint64_t>> partCFG;
+  // <destination branch BB,source BB,source Addr> 
+  std::tuple<llvm::BasicBlock *, llvm::BasicBlock *,uint64_t> nodepCFG;
+  void pushpartCFGStack(llvm::BasicBlock *dest, 
+		        uint64_t DAddr,
+		        llvm::BasicBlock *src,
+			uint64_t SAddr);
+  void searchpartCFG(uint64_t srcAddr);
 
 private:
   std::vector<llvm::Instruction *> DataFlow;

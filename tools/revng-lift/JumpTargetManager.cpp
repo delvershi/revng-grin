@@ -1558,17 +1558,22 @@ void JumpTargetManager::harvest() {
   }
 }
 
-void JumpTargetManager::pushpartCFGStack(llvm::BasicBlock *dest, llvm::BasicBlock *src){
-  partCFG.push_back(std::make_pair(dest,src));
-  nodepCFG.first = dest;
-  nodepCFG.second = src;
+void JumpTargetManager::pushpartCFGStack(llvm::BasicBlock *dest, 
+		                         uint64_t DAddr,
+					 llvm::BasicBlock *src,
+					 uint64_t SAddr){
+  partCFG.push_back(std::make_tuple(dest,DAddr,src,SAddr));
+  std::get<0>(nodepCFG) = dest;
+  std::get<1>(nodepCFG) = src;
+  std::get<2>(nodepCFG) = SAddr;
 }
 
-void JumpTargetManager::searchpartCFG(llvm::BasicBlock *block){
-  for(auto bb : partCFG){
-    if((block - bb.first) == 0){
-      nodepCFG.first = bb.first;
-      nodepCFG.second = bb.second;
+void JumpTargetManager::searchpartCFG(uint64_t srcAddr){
+  for(auto p : partCFG){
+    if((srcAddr - std::get<1>(p)) == 0){
+      std::get<0>(nodepCFG) = std::get<0>(p);
+      std::get<1>(nodepCFG) = std::get<2>(p);
+      std::get<2>(nodepCFG) = std::get<3>(p);
       break;
     } 
   }  
@@ -1871,10 +1876,10 @@ void JumpTargetManager::getIllegalValueDFG(llvm::Value *v,
           {
               // Judge current BasickBlcok whether reaching partCFG's node
               // if ture, to research partCFG stack and update node 
-              if((nodepCFG.first - bb) == 0){
-                llvm::Function::iterator it(nodepCFG.second);
+              if((std::get<0>(nodepCFG) - bb) == 0){
+                llvm::Function::iterator it(std::get<1>(nodepCFG));
                 nodeBB = it;
-                searchpartCFG(nodepCFG.second);
+                searchpartCFG(std::get<2>(nodepCFG));
                 continue;
               }
               break;
@@ -1898,6 +1903,14 @@ void JumpTargetManager::getIllegalValueDFG(llvm::Value *v,
         }
         
       }///?if(v1->isUsedInBasicBlock(bb))?
+      else{
+        if((std::get<0>(nodepCFG) - bb) == 0){
+         llvm::Function::iterator it(std::get<1>(nodepCFG));
+         nodeBB = it;
+         searchpartCFG(std::get<2>(nodepCFG));
+         continue;
+        }       
+      }
       nodeBB--;
     }///?for(;nodeBB != begin;)?
 NextValue:
@@ -2152,19 +2165,21 @@ unsigned int JumpTargetManager::StrToInt(const char *str){
   return dest;
 }
 
-void JumpTargetManager::harvestCallBasicBlock(llvm::BasicBlock *thisBlock){
+void JumpTargetManager::harvestCallBasicBlock(llvm::BasicBlock *thisBlock,uint64_t thisAddr){
   if(!haveTranslatedPC(*ptc.CallNext, 0)){
       /* Recording current CPU state */
       ptc.regs[R_ESP] = ptc.regs[R_ESP] + 8;
       ptc.storeCPUState();
-      /* Recording not execute branch destination relationship with current BasicBlock */ 
-      BranchTargets.push_back(std::make_pair(*ptc.CallNext,thisBlock)); 
+      /* Recording not execute branch destination relationship with current BasicBlock */
+     // thisBlock = nullptr; 
+      BranchTargets.push_back(std::make_tuple(*ptc.CallNext,thisBlock,thisAddr)); 
       errs()<<format_hex(*ptc.CallNext,0)<<" <- Call next target add\n";
     }
   errs()<<"Branch targets total numbers: "<<BranchTargets.size()<<"\n";  
 }
 
-void JumpTargetManager::harvestbranchBasicBlock(uint64_t nextAddr, 
+void JumpTargetManager::harvestbranchBasicBlock(uint64_t nextAddr,
+       uint64_t thisAddr,	
        llvm::BasicBlock *thisBlock, 
        uint32_t size, 
        std::map<std::string, llvm::BasicBlock *> &branchlabeledBasicBlock){
@@ -2203,8 +2218,13 @@ void JumpTargetManager::harvestbranchBasicBlock(uint64_t nextAddr,
       if(!haveTranslatedPC(destAddrSrcBB.first, nextAddr)){
         /* Recording current CPU state */
         ptc.storeCPUState();
-        /* Recording not execute branch destination relationship with current BasicBlock */ 
-        BranchTargets.push_back(std::make_pair(destAddrSrcBB.first,destAddrSrcBB.second)); 
+        /* Recording not execute branch destination relationship 
+	 * with current BasicBlock and address */ 
+        BranchTargets.push_back(std::make_tuple(
+				destAddrSrcBB.first,
+				destAddrSrcBB.second,
+				thisAddr
+				)); 
         errs()<<format_hex(destAddrSrcBB.first,0)<<" <- Jmp target add\n";
       }
     }
