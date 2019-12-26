@@ -1877,8 +1877,27 @@ void JumpTargetManager::getIllegalValueDFG(llvm::Value *v,
               // Judge current BasickBlcok whether reaching partCFG's node
               // if ture, to research partCFG stack and update node 
               if((std::get<0>(nodepCFG) - bb) == 0){
+		uint32_t num = 0;
+                auto callBB = std::get<1>(nodepCFG);
+                auto brJT = dyn_cast<BranchInst>(--(callBB->end()));
+		if(brJT){
+		  std::vector<Value *> brNum;
+		  brNum.push_back(dyn_cast<Value>(brJT));
+		  while(!brNum.empty()){
+		    auto br = dyn_cast<BranchInst>(brNum.back());
+		    brNum.pop_back();
+		    if(br and br->isUnconditional()){
+		      revng_assert(br->getNumOperands() == 1,"Must one dest");
+		      auto labelB = dyn_cast<BasicBlock>(br->getOperand(0));
+		      brNum.push_back(dyn_cast<Value>(--(labelB->end())));
+		      num++;
+		    }
+		  }
+             	}
                 llvm::Function::iterator it(std::get<1>(nodepCFG));
                 nodeBB = it;
+		for(;num>0;num--)
+		  nodeBB++;
                 searchpartCFG(std::get<2>(nodepCFG));
                 continue;
               }
@@ -1905,11 +1924,19 @@ void JumpTargetManager::getIllegalValueDFG(llvm::Value *v,
       }///?if(v1->isUsedInBasicBlock(bb))?
       else{
         if((std::get<0>(nodepCFG) - bb) == 0){
-         llvm::Function::iterator it(std::get<1>(nodepCFG));
-         nodeBB = it;
-         searchpartCFG(std::get<2>(nodepCFG));
-         continue;
-        }       
+	  // I guess: Only Block with call could be split
+	  auto callBB = std::get<1>(nodepCFG);
+          if(auto brJT = dyn_cast<BranchInst>(--(callBB->end()))){
+            if(brJT->isUnconditional()){
+	      revng_abort("Appear split block\n");
+	    }
+	  } 
+
+          llvm::Function::iterator it(std::get<1>(nodepCFG));
+          nodeBB = it;
+          searchpartCFG(std::get<2>(nodepCFG));
+          continue;
+         }        
       }
       nodeBB--;
     }///?for(;nodeBB != begin;)?
