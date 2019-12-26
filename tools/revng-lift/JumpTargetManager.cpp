@@ -1674,7 +1674,11 @@ JumpTargetManager:: getLastAssignment(llvm::Value *v,
                                       llvm::BasicBlock *currentBB){
   if(dyn_cast<ConstantInt>(v)){
     return std::make_pair(ConstantValueAssign,nullptr);
-  }
+  } 
+  StringRef rsp = "rsp"; 
+  if(v->getName().equals(rsp))
+    return std::make_pair(ConstantValueAssign,nullptr);
+
   errs()<<currentBB->getName()<<"               **************************************\n\n ";
   bool bar = 0;
   std::vector<llvm::Instruction *> vDefUse;
@@ -1748,8 +1752,12 @@ JumpTargetManager:: getLastAssignment(llvm::Value *v,
             case llvm::Instruction::Sub:
             case llvm::Instruction::And:
             case llvm::Instruction::ZExt:
+	    case llvm::Instruction::SExt:
             case llvm::Instruction::Trunc:
 	    case llvm::Instruction::Shl:
+	    case llvm::Instruction::LShr:
+	    case llvm::Instruction::AShr:
+            case llvm::Instruction::Or:
               continue;
             break;
             default:
@@ -1809,6 +1817,8 @@ void JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock){
 void JumpTargetManager::handleIllegalJumpAddress(llvm::BasicBlock *thisBlock){
   uint32_t userCodeFlag = 0;
   uint32_t &userCodeFlag1 = userCodeFlag;
+  DataFlow.clear();
+
   // Emerge illegal next jump address, current Block must contain a indirect instruction!
   BasicBlock::iterator I = --thisBlock->end(); 
   I--; 
@@ -1887,7 +1897,7 @@ void JumpTargetManager::getIllegalValueDFG(llvm::Value *v,
 		    auto br = dyn_cast<BranchInst>(brNum.back());
 		    brNum.pop_back();
 		    if(br and br->isUnconditional()){
-		      revng_assert(br->getNumOperands() == 1,"Must one dest");
+		      // TODO:br->Operands() 
 		      auto labelB = dyn_cast<BasicBlock>(br->getOperand(0));
 		      brNum.push_back(dyn_cast<Value>(--(labelB->end())));
 		      num++;
@@ -1924,17 +1934,29 @@ void JumpTargetManager::getIllegalValueDFG(llvm::Value *v,
       }///?if(v1->isUsedInBasicBlock(bb))?
       else{
         if((std::get<0>(nodepCFG) - bb) == 0){
-	  // I guess: Only Block with call could be split
-	  auto callBB = std::get<1>(nodepCFG);
-          if(auto brJT = dyn_cast<BranchInst>(--(callBB->end()))){
-            if(brJT->isUnconditional()){
-	      revng_abort("Appear split block\n");
-	    }
-	  } 
-
+          uint32_t num = 0;
+          auto callBB = std::get<1>(nodepCFG);
+          auto brJT = dyn_cast<BranchInst>(--(callBB->end()));
+          if(brJT){
+            std::vector<Value *> brNum;
+            brNum.push_back(dyn_cast<Value>(brJT));
+            while(!brNum.empty()){
+              auto br = dyn_cast<BranchInst>(brNum.back());
+              brNum.pop_back();
+              if(br and br->isUnconditional()){
+      		// TODO:br->Operands() 
+                auto labelB = dyn_cast<BasicBlock>(br->getOperand(0));
+                brNum.push_back(dyn_cast<Value>(--(labelB->end())));
+                num++;
+              }
+            }
+          }
           llvm::Function::iterator it(std::get<1>(nodepCFG));
           nodeBB = it;
-          searchpartCFG(std::get<2>(nodepCFG));
+          for(;num>0;num--)
+            nodeBB++;
+           
+	  searchpartCFG(std::get<2>(nodepCFG));
           continue;
          }        
       }
@@ -1974,11 +1996,15 @@ void JumpTargetManager::setLegalValue(uint32_t &userCodeFlag){
 	case Instruction::Sub:
 	case Instruction::And:
 	case Instruction::Shl:
+	case Instruction::AShr:
+	case Instruction::LShr:
+	case Instruction::Or:
 	    handleBinaryOperation(DataFlow[i],next,legalSet1,relatedInstPtr1);
 	break;
 	//case llvm::Instruction::ICmp:
         case llvm::Instruction::IntToPtr:
         case llvm::Instruction::ZExt:
+	case llvm::Instruction::SExt:
 	case llvm::Instruction::Trunc:
 	break;
 	default:
@@ -2164,9 +2190,10 @@ void JumpTargetManager::handleBinaryOperation(llvm::Instruction *current,
   else if(second){
     legalSet.emplace_back(PushTemple(firstOp),PushTemple(current));
   }
-  else
+  else{ 
+    errs()<<*next<<"\n";
     revng_abort("Must one Value has correlation!");
-
+  }
   revng_assert(((dyn_cast<Constant>(firstOp)&&dyn_cast<Constant>(secondOp)) != 1),"That's unnormal Inst!");
 }
 
@@ -2249,7 +2276,8 @@ void JumpTargetManager::harvestbranchBasicBlock(uint64_t nextAddr,
 	 * with current BasicBlock and address */ 
         BranchTargets.push_back(std::make_tuple(
 				destAddrSrcBB.first,
-				destAddrSrcBB.second,
+				//destAddrSrcBB.second,
+				thisBlock,
 				thisAddr
 				)); 
         errs()<<format_hex(destAddrSrcBB.first,0)<<" <- Jmp target add\n";
