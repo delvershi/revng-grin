@@ -1041,16 +1041,14 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     if(traverseFLAG){
    
     //handle invalid address
-    if(!ptc.isValidExecuteAddr(DynamicVirtualAddress)){
+    if(!ptc.isValidExecuteAddr(DynamicVirtualAddress)  
+       and !JumpTargets.BranchTargets.empty())
+    {
       outs()<<"occure invalid address: "<<format_hex(DynamicVirtualAddress,0)
             <<"  explore branch: "<<format_hex(tmpVA,0)<<"\n";
       JumpTargets.handleIllegalJumpAddress(BlockBRs);
       DynamicVirtualAddress = 0;
    
-    }
-
-    if(JumpTargets.BranchTargets.empty()){
-      DynamicVirtualAddress = 0;
     }
     
     // Some branch destination addr is 0 
@@ -1086,6 +1084,10 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
                                    branchLabeledcontent);
       }
       std::cerr<<std::hex<<DynamicVirtualAddress<<" \n";
+    }
+
+    if(JumpTargets.BranchTargets.empty()){
+      DynamicVirtualAddress = 0;
     }
     }////?end if(traverseFLAG)
     
