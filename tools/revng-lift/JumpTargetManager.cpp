@@ -1891,6 +1891,10 @@ void JumpTargetManager::getIllegalValueDFG(llvm::Value *v,
                 auto callBB = std::get<1>(nodepCFG);
                 auto brJT = dyn_cast<BranchInst>(--(callBB->end()));
 		if(brJT){
+        	  if(brJT->isConditional() and *ptc.isIndirectJmp){
+	            nodeBB = begin;
+	            continue;
+	          }
 		  std::vector<Value *> brNum;
 		  brNum.push_back(dyn_cast<Value>(brJT));
 		  while(!brNum.empty()){
@@ -1938,6 +1942,10 @@ void JumpTargetManager::getIllegalValueDFG(llvm::Value *v,
           auto callBB = std::get<1>(nodepCFG);
           auto brJT = dyn_cast<BranchInst>(--(callBB->end()));
           if(brJT){
+	    if(brJT->isConditional() and *ptc.isIndirectJmp){
+	      nodeBB = begin;
+	      continue;
+	    }
             std::vector<Value *> brNum;
             brNum.push_back(dyn_cast<Value>(brJT));
             while(!brNum.empty()){
@@ -2003,6 +2011,8 @@ void JumpTargetManager::setLegalValue(uint32_t &userCodeFlag){
 	break;
 	//case llvm::Instruction::ICmp:
         case llvm::Instruction::IntToPtr:
+	    handleConversionOperations(DataFlow[i],legalSet1,relatedInstPtr1);
+	break;
         case llvm::Instruction::ZExt:
 	case llvm::Instruction::SExt:
 	case llvm::Instruction::Trunc:
@@ -2029,7 +2039,7 @@ void JumpTargetManager::setLegalValue(uint32_t &userCodeFlag){
     errs()<<"\n";
   } 
   // To assign a legal value
-//  revng_abort("\nNeed to assign a value \n");
+  revng_abort("\nNeed to assign a value \n");
   foldSet(legalSet1);
   DataFlow.clear();
 }
@@ -2148,6 +2158,18 @@ void JumpTargetManager::handleMemoryAccess(llvm::Instruction *current,
     //Find out value that is related with unrelated Inst.
     set2ptr(next,legalSet,relatedInstPtr);
   }
+}
+
+void JumpTargetManager::handleConversionOperations(llvm::Instruction *current,
+		                                   std::vector<legalValue> &legalSet,
+						   legalValue *&relatedInstPtr){
+  if(relatedInstPtr){
+    //relatedInstPtr->value.push_back(current->getOperand(0));
+    relatedInstPtr->I.push_back(current);
+    return;
+  }  
+
+  legalSet.emplace_back(PushTemple(current));
 }
 
 void JumpTargetManager::handleSelectOperation(llvm::Instruction *current, 

@@ -998,7 +998,10 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       }
     }
     if(*ptc.exception_syscall == 11){
-      JumpTargets.handleIllegalMemoryAccess(BlockBRs);
+      if(*ptc.isIndirectJmp)
+        JumpTargets.handleIllegalJumpAddress(BlockBRs);
+      else 
+        JumpTargets.handleIllegalMemoryAccess(BlockBRs);
       *ptc.exception_syscall = -1;//TODO modify later.
     }
   
@@ -1042,7 +1045,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
    
     //handle invalid address
     if(!ptc.isValidExecuteAddr(DynamicVirtualAddress)  
-       and !JumpTargets.BranchTargets.empty())
+       and !JumpTargets.haveBB)
     {
       outs()<<"occure invalid address: "<<format_hex(DynamicVirtualAddress,0)
             <<"  explore branch: "<<format_hex(tmpVA,0)<<"\n";
@@ -1052,7 +1055,9 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     }
     
     // Some branch destination addr is 0 
-    if((JumpTargets.haveBB || DynamicVirtualAddress == 0 ) && !JumpTargets.BranchTargets.empty()){
+    if((JumpTargets.haveBB || DynamicVirtualAddress == 0 ) and
+		    !JumpTargets.BranchTargets.empty())
+    {
       BlockBRs = nullptr;
       // if occure a translated BB, traversing next branch
       std::tie(jtVirtualAddress, srcBB, srcAddr) = JumpTargets.BranchTargets.front();

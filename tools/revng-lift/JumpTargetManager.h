@@ -152,6 +152,9 @@ public:
     value(v),
     I(inst) {}
 
+  legalValue(std::vector<llvm::Instruction *>inst):
+    I(inst) {}
+
   // Value stack and Instruction stack
   std::vector<llvm::Value *> value;
   std::vector<llvm::Instruction *> I; 
@@ -236,6 +239,9 @@ private:
                              llvm::Instruction *next,
                              std::vector<legalValue> &legalSet,
                              legalValue *&relatedInstPtr);
+  void handleConversionOperations(llvm::Instruction *current,
+                                  std::vector<legalValue> &legalSet,
+                                  legalValue *&relatedInstPtr);
 
   llvm::Value *payBinaryValue(llvm::Value *v);
   bool isCorrelationWithNext(llvm::Value *preValue, llvm::Instruction *Inst);
