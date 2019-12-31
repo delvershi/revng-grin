@@ -200,6 +200,7 @@ public:
   void getIllegalValueDFG(llvm::Value *v,llvm::Instruction *I,
 		          llvm::BasicBlock *thisBlock,
 			  uint32_t &userCodeFlag);
+  void getLegalValueRange(llvm::BasicBlock *thisBlock);
   void setLegalValue(uint32_t &userCodeFlag);  
 
   using LastAssignmentResultWithInst = std::pair<enum LastAssignmentResult, llvm::Instruction *>;

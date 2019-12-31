@@ -1824,14 +1824,47 @@ void JumpTargetManager::handleIllegalJumpAddress(llvm::BasicBlock *thisBlock){
   I--; 
   auto store = dyn_cast<llvm::StoreInst>(--I);
   if(store){
+    if(*ptc.isIndirectJmp)
+      getLegalValueRange(thisBlock);
     // Seeking Value of assign to pc. 
     // eg:store i64 value, i64* @pc  
     getIllegalValueDFG(store->getValueOperand(),
 		       dyn_cast<llvm::Instruction>(store),
 		       thisBlock,userCodeFlag1);
     errs()<<"Finished analysis illegal access Data Flow!\n";
+
     setLegalValue(userCodeFlag1);
   }
+}
+
+void JumpTargetManager::getLegalValueRange(llvm::BasicBlock *thisBlock){
+  llvm::Function::iterator nodeBB(thisBlock);
+  llvm::Function::iterator begin(thisBlock->getParent()->begin());
+  nodepCFG = std::make_tuple(std::get<0>(partCFG.back()),
+		             std::get<2>(partCFG.back()),
+		             std::get<3>(partCFG.back()));
+  llvm::BasicBlock *rangeBB = nullptr;
+  for(;nodeBB != begin;){
+    auto bb = dyn_cast<llvm::BasicBlock>(nodeBB);
+    if((std::get<0>(nodepCFG) - bb) == 0){
+      llvm::Function::iterator it(std::get<1>(nodepCFG));
+      //TODO handle split Block
+      nodeBB = it;
+      searchpartCFG(std::get<2>(nodepCFG));   
+    }
+    auto lastBB = dyn_cast<llvm::BasicBlock>(nodeBB);
+    BasicBlock::iterator I = --(lastBB->end());
+    if(auto branch = dyn_cast<BranchInst>(I)){
+      if(branch->isConditional()){
+	rangeBB = lastBB;
+        break;
+      }
+    }
+    nodeBB--;
+  }
+
+  errs()<<*rangeBB;
+  revng_abort("range BB\n");
 }
 
 void JumpTargetManager::getIllegalValueDFG(llvm::Value *v,
@@ -2026,7 +2059,7 @@ void JumpTargetManager::setLegalValue(uint32_t &userCodeFlag){
 
   if(!userCodeFlag){
     errs()<<"Don't need to assign operation\n";
-    return;
+//    return;
   }
   
   for(auto set : legalSet1){
@@ -2039,7 +2072,7 @@ void JumpTargetManager::setLegalValue(uint32_t &userCodeFlag){
     errs()<<"\n";
   } 
   // To assign a legal value
-  revng_abort("\nNeed to assign a value \n");
+ // revng_abort("\nNeed to assign a value \n");
   foldSet(legalSet1);
   DataFlow.clear();
 }
