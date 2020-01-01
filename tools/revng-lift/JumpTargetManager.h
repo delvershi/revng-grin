@@ -180,6 +180,7 @@ public:
   std::vector<std::tuple<uint64_t, llvm::BasicBlock *, uint64_t>> BranchTargets;  
 
   void harvestCallBasicBlock(llvm::BasicBlock *thisBlock, uint64_t thisAddr);
+  void harvestBTBasicBlock(llvm::BasicBlock *thisBlock, uint64_t thisAddr, uint64_t destAddr);
 
   enum LastAssignmentResult{
     CurrentBlockValueDef, /* Case 1: Return value def instruction
@@ -196,12 +197,13 @@ public:
   };
    
   void handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock);
-  void handleIllegalJumpAddress(llvm::BasicBlock *thisBlock);
+  void handleIllegalJumpAddress(llvm::BasicBlock *thisBlock, uint64_t thisAddr);
   void getIllegalValueDFG(llvm::Value *v,llvm::Instruction *I,
 		          llvm::BasicBlock *thisBlock,
 			  uint32_t &userCodeFlag);
   void getLegalValueRange(llvm::BasicBlock *thisBlock);
-  void setLegalValue(uint32_t &userCodeFlag);  
+  uint32_t setLegalValue(uint32_t &userCodeFlag, bool rangeF);  
+  uint32_t range;
 
   using LastAssignmentResultWithInst = std::pair<enum LastAssignmentResult, llvm::Instruction *>;
   LastAssignmentResultWithInst getLastAssignment(llvm::Value *v, 
@@ -215,7 +217,8 @@ public:
   /* Have explored branches of CFG */
   std::vector<std::tuple<llvm::BasicBlock *, uint64_t, llvm::BasicBlock *,uint64_t>> partCFG;
   // <destination branch BB,source BB,source Addr> 
-  std::tuple<llvm::BasicBlock *, llvm::BasicBlock *,uint64_t> nodepCFG;
+  using NODETYPE = std::tuple<llvm::BasicBlock *, llvm::BasicBlock *,uint64_t>;
+  NODETYPE nodepCFG;
   void pushpartCFGStack(llvm::BasicBlock *dest, 
 		        uint64_t DAddr,
 		        llvm::BasicBlock *src,
@@ -224,6 +227,8 @@ public:
 
 private:
   std::vector<llvm::Instruction *> DataFlow;
+  // Record address after setting a legal value 
+  std::vector<llvm::Constant *> AddressSet;
   void foldStack(legalValue *&relatedInstPtr);
 
   void foldSet(std::vector<legalValue> &legalSet);

@@ -999,7 +999,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     }
     if(*ptc.exception_syscall == 11){
       if(*ptc.isIndirectJmp)
-        JumpTargets.handleIllegalJumpAddress(BlockBRs);
+        JumpTargets.handleIllegalJumpAddress(BlockBRs,tmpVA);
       else 
         JumpTargets.handleIllegalMemoryAccess(BlockBRs);
       *ptc.exception_syscall = -1;//TODO modify later.
@@ -1049,7 +1049,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     {
       outs()<<"occure invalid address: "<<format_hex(DynamicVirtualAddress,0)
             <<"  explore branch: "<<format_hex(tmpVA,0)<<"\n";
-      JumpTargets.handleIllegalJumpAddress(BlockBRs);
+      JumpTargets.handleIllegalJumpAddress(BlockBRs,tmpVA);
       DynamicVirtualAddress = 0;
    
     }

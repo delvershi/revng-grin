@@ -45,6 +45,7 @@ Address	tools/revng-lift/BinaryFile.cpp	/^  uint64_t Address;$/;"	m	class:DwarfR
 Address	tools/revng-lift/BinaryFile.cpp	/^  uint64_t Address;$/;"	m	class:FilePortion	file:
 Address	tools/revng-lift/BinaryFile.h	/^    uint64_t Address;$/;"	m	struct:BinaryFile::__anon9
 Address	tools/revng-lift/BinaryFile.h	/^  uint64_t Address;$/;"	m	class:Label
+AddressSet	tools/revng-lift/JumpTargetManager.h	/^  std::vector<llvm::Constant *> AddressSet;$/;"	m	class:JumpTargetManager
 AddressSpace	lib/StackAnalysis/Element.h	/^  AddressSpace(ASID ID) : ID(ID) {}$/;"	f	class:StackAnalysis::Intraprocedural::AddressSpace
 AddressSpace	lib/StackAnalysis/Element.h	/^class AddressSpace {$/;"	c	namespace:StackAnalysis::Intraprocedural
 AffectingLoads	tools/revng-lift/OSRA.cpp	/^    SmallVector<const LoadInst *, 3> AffectingLoads;$/;"	m	struct:OSRA::ComparisonOperand	file:
@@ -2343,6 +2344,7 @@ getLarge	include/revng/ADT/LazySmallBitVector.h	/^  LargeStorage &getLarge() {$/
 getLarge	include/revng/ADT/LazySmallBitVector.h	/^  const LargeStorage &getLarge() const {$/;"	f	class:LazySmallBitVector
 getLastAssignment	tools/revng-lift/JumpTargetManager.cpp	/^JumpTargetManager:: getLastAssignment(llvm::Value *v, $/;"	f	class:JumpTargetManager
 getLastUniqueWrite	tools/revng-lift/InstructionTranslator.cpp	/^static StoreInst *getLastUniqueWrite(BasicBlock *BB, const Value *Register) {$/;"	f	file:
+getLegalValueRange	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::getLegalValueRange(llvm::BasicBlock *thisBlock){$/;"	f	class:JumpTargetManager
 getLimitedValue	include/revng/Support/IRHelpers.h	/^inline uint64_t getLimitedValue(const llvm::Value *V) {$/;"	f
 getLinkRegister	lib/StackAnalysis/Cache.h	/^  llvm::GlobalVariable *getLinkRegister(llvm::BasicBlock *Function) const {$/;"	f	class:StackAnalysis::Cache
 getLoadAddressValue	tools/revng-lift/CPUStateAccessAnalysisPass.cpp	/^static Value *getLoadAddressValue(Instruction *I) {$/;"	f	file:
@@ -2723,6 +2725,7 @@ key	scripts/monotone-framework.py	/^                     key=lambda i: reachabil
 labels	tools/revng-lift/BinaryFile.h	/^  const LabelIntervalMap &labels() const { return LabelsMap; }$/;"	f	class:BinaryFile
 landingPads	tools/revng-lift/BinaryFile.h	/^  const std::set<uint64_t> &landingPads() const { return LandingPads; }$/;"	f	class:BinaryFile
 lastMerge	tools/revng-lift/OSRA.cpp	/^  unsigned lastMerge() const { return LastMergeHeight; }$/;"	f	class:Reacher
+legalValue	tools/revng-lift/JumpTargetManager.h	/^  legalValue(std::vector<llvm::Instruction *>inst):$/;"	f	class:legalValue
 legalValue	tools/revng-lift/JumpTargetManager.h	/^  legalValue(std::vector<llvm::Value *>v, std::vector<llvm::Instruction *>inst):$/;"	f	class:legalValue
 legalValue	tools/revng-lift/JumpTargetManager.h	/^class legalValue {$/;"	c
 literal_status	tests/Runtime/calc.c	/^typedef enum { none, positive, negative } literal_status;$/;"	t	typeref:enum:__anon7	file:
@@ -2851,7 +2854,6 @@ noReturn	tools/revng-lift/JumpTargetManager.h	/^  NoReturnAnalysis &noReturn() {
 noReturnSyscalls	include/revng/Support/revng.h	/^  llvm::ArrayRef<uint64_t> noReturnSyscalls() const { return NoReturnSyscalls; }$/;"	f	class:Architecture
 noWritesTo	lib/StackAnalysis/Cache.cpp	/^static bool noWritesTo(const Instruction *Start,$/;"	f	namespace:StackAnalysis
 node_by_index	scripts/monotone-framework.py	/^  node_by_index = lambda index: get_unique([x$/;"	v
-nodepCFG	tools/revng-lift/JumpTargetManager.h	/^  std::tuple<llvm::BasicBlock *, llvm::BasicBlock *,uint64_t> nodepCFG;$/;"	m	class:JumpTargetManager
 nodes_begin	tools/revng-lift/SubGraph.h	/^  static nodes_iterator nodes_begin(GraphType *G) { return G->Nodes.begin(); }$/;"	f	struct:llvm::GraphTraits
 nodes_end	tools/revng-lift/SubGraph.h	/^  static nodes_iterator nodes_end(GraphType *G) { return G->Nodes.end(); }$/;"	f	struct:llvm::GraphTraits
 none	tests/Runtime/calc.c	/^typedef enum { none, positive, negative } literal_status;$/;"	e	enum:__anon7	file:
@@ -3117,6 +3119,7 @@ qemu_real_host_page_size	runtime/support.c	/^uintptr_t qemu_real_host_page_size 
 raise_exception_helper	runtime/support.c	/^void raise_exception_helper() {$/;"	f
 range	lib/StackAnalysis/FunctionABI.cpp	/^  DirectedLabelRange range(ABIIRBasicBlock *BB) {$/;"	f	class:StackAnalysis::ABIAnalysis::Analysis	file:
 range	lib/StackAnalysis/IncoherentCallsAnalysis.cpp	/^  DirectedLabelRange range(ABIIRBasicBlock *BB) {$/;"	f	class:StackAnalysis::IncoherentCallsAnalysis::Analysis	file:
+range	tools/revng-lift/JumpTargetManager.h	/^  uint32_t range;$/;"	m	class:JumpTargetManager
 raofc	tests/Analysis/x86_64/StackAnalysis/raofc.S	/^raofc:$/;"	l
 rax_not_my_argument	tests/Analysis/x86_64/StackAnalysis/return-value-to-argument.S	/^rax_not_my_argument:$/;"	l
 rbegin	lib/StackAnalysis/ABIIR.h	/^  const_reverse_iterator rbegin() const { return Instructions.rbegin(); }$/;"	f	class:StackAnalysis::ABIIRBasicBlock
@@ -3289,7 +3292,7 @@ setDispatcher	tools/revng-lift/NoReturnAnalysis.h	/^  void setDispatcher(llvm::B
 setInactive	tools/revng-lift/OSRA.cpp	/^  void setInactive(unsigned Height) { LastActiveHeight = Height; }$/;"	f	class:Reacher
 setIndentation	include/revng/Support/Debug.h	/^  void setIndentation(unsigned Level) {$/;"	f	class:Logger
 setLastMerge	tools/revng-lift/OSRA.cpp	/^  void setLastMerge(unsigned Height) { LastMergeHeight = Height; }$/;"	f	class:Reacher
-setLegalValue	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::setLegalValue(uint32_t &userCodeFlag){$/;"	f	class:JumpTargetManager
+setLegalValue	tools/revng-lift/JumpTargetManager.cpp	/^uint32_t JumpTargetManager::setLegalValue(uint32_t &userCodeFlag,bool rangeF){$/;"	f	class:JumpTargetManager
 setOperand	tools/revng-lift/SimplifyComparisonsPass.cpp	/^  void setOperand(unsigned Index, Term *T) { Operands[Index] = T; }$/;"	f	class:BinaryTerm
 setReason	tools/revng-lift/JumpTargetManager.h	/^    void setReason(JTReason::Values Reason) {$/;"	f	class:JumpTargetManager::JumpTarget
 setReturn	lib/StackAnalysis/ABIIR.h	/^  void setReturn() { IsReturn = true; }$/;"	f	class:StackAnalysis::ABIIRBasicBlock

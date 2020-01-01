@@ -431,6 +431,7 @@ JumpTargetManager::JumpTargetManager(Function *TheFunction,
   // getOption<bool>(Options, "enable-pre")->setInitialValue(false);
   // getOption<uint32_t>(Options, "max-recurse-depth")->setInitialValue(10);
   haveBB = 0;
+  range = 0;
 }
 
 static bool isBetterThan(const Label *NewCandidate, const Label *OldCandidate) {
@@ -1758,6 +1759,8 @@ JumpTargetManager:: getLastAssignment(llvm::Value *v,
 	    case llvm::Instruction::LShr:
 	    case llvm::Instruction::AShr:
             case llvm::Instruction::Or:
+	    case llvm::Instruction::Br:
+	    case llvm::Instruction::Call:			  
               continue;
             break;
             default:
@@ -1811,10 +1814,25 @@ void JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock){
     }
   }
  
-  setLegalValue(userCodeFlag1);
+  setLegalValue(userCodeFlag1,0);
 }
 
-void JumpTargetManager::handleIllegalJumpAddress(llvm::BasicBlock *thisBlock){
+// Harvest branch target(destination) address
+void JumpTargetManager::harvestBTBasicBlock(llvm::BasicBlock *thisBlock,
+		                            uint64_t thisAddr,
+					    uint64_t destAddr){
+  if(!haveTranslatedPC(destAddr, 0)){
+      ptc.storeCPUState();
+      /* Recording not execute branch destination relationship with current BasicBlock */
+     // thisBlock = nullptr; 
+      BranchTargets.push_back(std::make_tuple(destAddr,thisBlock,thisAddr)); 
+      errs()<<format_hex(destAddr,0)<<" <- Jmp target add\n";
+    }
+  errs()<<"Branch targets total numbers: "<<BranchTargets.size()<<"\n";  
+}
+
+void JumpTargetManager::handleIllegalJumpAddress(llvm::BasicBlock *thisBlock, 
+		                                 uint64_t thisAddr){
   uint32_t userCodeFlag = 0;
   uint32_t &userCodeFlag1 = userCodeFlag;
   DataFlow.clear();
@@ -1833,16 +1851,23 @@ void JumpTargetManager::handleIllegalJumpAddress(llvm::BasicBlock *thisBlock){
 		       thisBlock,userCodeFlag1);
     errs()<<"Finished analysis illegal access Data Flow!\n";
 
-    setLegalValue(userCodeFlag1);
+    setLegalValue(userCodeFlag1,0);
+
+    if(!AddressSet.empty()){
+      for(auto addr : AddressSet){
+        auto integer = dyn_cast<ConstantInt>(addr);
+	harvestBTBasicBlock(thisBlock,thisAddr,integer->getZExtValue());
+      }
+      AddressSet.clear();
+    }
   }
 }
 
 void JumpTargetManager::getLegalValueRange(llvm::BasicBlock *thisBlock){
   llvm::Function::iterator nodeBB(thisBlock);
   llvm::Function::iterator begin(thisBlock->getParent()->begin());
-  nodepCFG = std::make_tuple(std::get<0>(partCFG.back()),
-		             std::get<2>(partCFG.back()),
-		             std::get<3>(partCFG.back()));
+  NODETYPE nodetmp = nodepCFG;
+  
   llvm::BasicBlock *rangeBB = nullptr;
   for(;nodeBB != begin;){
     auto bb = dyn_cast<llvm::BasicBlock>(nodeBB);
@@ -1863,8 +1888,25 @@ void JumpTargetManager::getLegalValueRange(llvm::BasicBlock *thisBlock){
     nodeBB--;
   }
 
-  errs()<<*rangeBB;
-  revng_abort("range BB\n");
+  BasicBlock::iterator I = --rangeBB->end();
+  auto br = dyn_cast<BranchInst>(I);
+  auto cmp = dyn_cast<ICmpInst>(br->getCondition());
+  revng_assert(cmp,"That should a cmp instruction!");
+  CmpInst::Predicate p = cmp->getPredicate(); 
+  if(p == CmpInst::ICMP_EQ || p == CmpInst::ICMP_NE){
+    nodepCFG = nodetmp;
+    *ptc.isIndirectJmp = 0;
+    return;
+  }
+
+  uint32_t userFlag = 1;
+  uint32_t &userFlag1 = userFlag;
+  getIllegalValueDFG(br->getCondition(),
+		     dyn_cast<llvm::Instruction>(br),
+		     rangeBB,userFlag1);
+  range = setLegalValue(userFlag1,1);
+
+  nodepCFG = nodetmp;
 }
 
 void JumpTargetManager::getIllegalValueDFG(llvm::Value *v,
@@ -2009,9 +2051,9 @@ NextValue:
   }///?while(!vs.empty())?
 }
 
-void JumpTargetManager::setLegalValue(uint32_t &userCodeFlag){
+uint32_t JumpTargetManager::setLegalValue(uint32_t &userCodeFlag,bool rangeF){
   if(DataFlow.empty())
-    return;
+    return 0;
 
   std::vector<legalValue> legalSet;
   std::vector<legalValue> &legalSet1 = legalSet;
@@ -2040,6 +2082,7 @@ void JumpTargetManager::setLegalValue(uint32_t &userCodeFlag){
 	case Instruction::AShr:
 	case Instruction::LShr:
 	case Instruction::Or:
+	case Instruction::ICmp:
 	    handleBinaryOperation(DataFlow[i],next,legalSet1,relatedInstPtr1);
 	break;
 	//case llvm::Instruction::ICmp:
@@ -2049,6 +2092,7 @@ void JumpTargetManager::setLegalValue(uint32_t &userCodeFlag){
         case llvm::Instruction::ZExt:
 	case llvm::Instruction::SExt:
 	case llvm::Instruction::Trunc:
+	case llvm::Instruction::Br:
 	break;
 	default:
             errs()<<*DataFlow[i];
@@ -2059,7 +2103,7 @@ void JumpTargetManager::setLegalValue(uint32_t &userCodeFlag){
 
   if(!userCodeFlag){
     errs()<<"Don't need to assign operation\n";
-//    return;
+    return 0;
   }
   
   for(auto set : legalSet1){
@@ -2071,26 +2115,92 @@ void JumpTargetManager::setLegalValue(uint32_t &userCodeFlag){
     
     errs()<<"\n";
   } 
+  if(rangeF){
+    for(auto set : legalSet1){
+      for(auto I : set.I){
+        if(I->getOpcode() == Instruction::ICmp){
+	  for(auto value : set.value){
+	    if(auto constant = dyn_cast<ConstantInt>(value)){
+	      auto n = constant->getZExtValue();
+	      DataFlow.clear();
+	      return n;
+	    }
+	  }
+	}
+      }
+    }
+  }
+
   // To assign a legal value
- // revng_abort("\nNeed to assign a value \n");
   foldSet(legalSet1);
   DataFlow.clear();
+  //revng_abort("\nNeed to assign a value \n");
+
+  return 0;
 }
 
 void JumpTargetManager::foldSet(std::vector<legalValue> &legalSet){
-//  Constant *base = nullptr;
-//  //TODO:Fold Set instruction
-//  for(auto set : make_range(legalSet.rbegin(),legalSet.rend())){
-//    revng_assert(set.I.size()==1, "Stack must have one Instruction!");
-//    auto op = set.I[0]->getOpcode();
-//    if(op==Instruction::Load or op==Instruction::Store){
-//      for(auto v : set.value){
-//	if(auto constant = dyn_cast<Constant>(v))
-//	  base = constant;
-//      } 
-//    }
-//
-//  }
+  const DataLayout &DL = TheModule.getDataLayout();
+  std::vector<Constant *> base;
+  //TODO:Fold Set instruction
+  for(auto set : make_range(legalSet.rbegin(),legalSet.rend())){
+    revng_assert(set.I.size()==1, "Stack must have one Instruction!");
+    auto op = set.I[0]->getOpcode();
+    switch(op){
+        case Instruction::Load:
+	{
+	  auto load = dyn_cast<LoadInst>(set.I[0]);
+          for(uint32_t n = 0; n<range+1; n++){
+	    auto newoperand = ConstantInt::get(load->getType(),n);
+	    base.push_back(newoperand);
+	  }
+	  break;
+	}
+	case Instruction::Store:
+	{
+	  auto store = dyn_cast<StoreInst>(set.I[0]);
+          for(uint32_t n = 0; n<range+1; n++){
+	    auto newoperand = ConstantInt::get(store->getType(),n);
+	    base.push_back(newoperand);
+	  }
+	  break;
+	}
+	//case Instruction::Select:
+	//case Instruction::And:
+	//case Instruction::Sub:
+	case Instruction::Add:
+	case Instruction::Shl:
+	{
+	  Constant *op2 = dyn_cast<Constant>(set.value[0]);
+          op2 = ConstantExpr::getTruncOrBitCast(op2,set.I[0]->getOperand(1)->getType());
+	  for(uint32_t i = 0; i<base.size(); i++){
+            base[i] = ConstantExpr::getTruncOrBitCast(base[i],set.I[0]->getOperand(0)->getType());
+            base[i] = ConstantFoldBinaryOpOperands(op,base[i],op2,DL);
+	  }
+	  break;
+	}
+	//case Instruction::AShr:
+	//case Instruction::LShr:
+	//case Instruction::Or:
+        case llvm::Instruction::IntToPtr:
+	{
+	  auto inttoptr = dyn_cast<IntToPtrInst>(set.I[0]);
+	  for(uint32_t i = 0; i<base.size(); i++){
+	    auto integer = dyn_cast<ConstantInt>(base[i]);
+	    uint64_t address = integer->getZExtValue();
+	    uint64_t n = *((uint64_t *)address);
+	    base[i] = ConstantInt::get(inttoptr->getType(),n);
+	  }
+          break;
+	}
+        default:
+	    errs()<<*set.I[0]<<"\n";
+            revng_abort("Unknow fold instruction!");
+        break;	    
+    }
+  }/// end for(auto..
+  AddressSet.clear();
+  AddressSet = base;
 }
 
 /* TODO: To assign a value  
