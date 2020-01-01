@@ -1817,6 +1817,40 @@ void JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock){
   setLegalValue(userCodeFlag1,0);
 }
 
+void JumpTargetManager::handleIndirectInst(llvm::BasicBlock *thisBlock, 
+		                                 uint64_t thisAddr){
+  uint32_t userCodeFlag = 0;
+  uint32_t &userCodeFlag1 = userCodeFlag;
+  DataFlow.clear();
+
+  // Contains indirect instruction's Block, it must have a store instruction.
+  BasicBlock::iterator I = --thisBlock->end(); 
+  I--; 
+  auto store = dyn_cast<llvm::StoreInst>(--I);
+  if(store){
+    range = 0;
+    getLegalValueRange(thisBlock);
+    if(!range)
+      return;
+    // Seeking Value of assign to pc. 
+    // eg:store i64 value, i64* @pc  
+    getIllegalValueDFG(store->getValueOperand(),
+		       dyn_cast<llvm::Instruction>(store),
+		       thisBlock,userCodeFlag1);
+    errs()<<"Finished analysis indirect Inst access Data Flow!\n";
+
+    setLegalValue(userCodeFlag1,0);
+
+    if(!AddressSet.empty()){
+      for(auto addr : AddressSet){
+        auto integer = dyn_cast<ConstantInt>(addr);
+	harvestBTBasicBlock(thisBlock,thisAddr,integer->getZExtValue());
+      }
+      AddressSet.clear();
+    }
+  }
+}
+
 // Harvest branch target(destination) address
 void JumpTargetManager::harvestBTBasicBlock(llvm::BasicBlock *thisBlock,
 		                            uint64_t thisAddr,
@@ -1842,8 +1876,10 @@ void JumpTargetManager::handleIllegalJumpAddress(llvm::BasicBlock *thisBlock,
   I--; 
   auto store = dyn_cast<llvm::StoreInst>(--I);
   if(store){
+    range = 0;
     if(*ptc.isIndirectJmp)
       getLegalValueRange(thisBlock);
+     
     // Seeking Value of assign to pc. 
     // eg:store i64 value, i64* @pc  
     getIllegalValueDFG(store->getValueOperand(),
@@ -2148,26 +2184,19 @@ void JumpTargetManager::foldSet(std::vector<legalValue> &legalSet){
     auto op = set.I[0]->getOpcode();
     switch(op){
         case Instruction::Load:
-	{
-	  auto load = dyn_cast<LoadInst>(set.I[0]);
-          for(uint32_t n = 0; n<range+1; n++){
-	    auto newoperand = ConstantInt::get(load->getType(),n);
-	    base.push_back(newoperand);
-	  }
-	  break;
-	}
 	case Instruction::Store:
 	{
-	  auto store = dyn_cast<StoreInst>(set.I[0]);
+illegal_addr:
           for(uint32_t n = 0; n<range+1; n++){
-	    auto newoperand = ConstantInt::get(store->getType(),n);
+	    auto newoperand = ConstantInt::get(set.I[0]->getType(),n);
 	    base.push_back(newoperand);
 	  }
 	  break;
 	}
 	//case Instruction::Select:
 	//case Instruction::And:
-	//case Instruction::Sub:
+	case Instruction::Sub:
+	break;
 	case Instruction::Add:
 	case Instruction::Shl:
 	{
@@ -2188,6 +2217,10 @@ void JumpTargetManager::foldSet(std::vector<legalValue> &legalSet){
 	  for(uint32_t i = 0; i<base.size(); i++){
 	    auto integer = dyn_cast<ConstantInt>(base[i]);
 	    uint64_t address = integer->getZExtValue();
+	    if(!ptc.isValidExecuteAddr(address)){
+              base.clear();
+	      goto illegal_addr;
+	    }
 	    uint64_t n = *((uint64_t *)address);
 	    base[i] = ConstantInt::get(inttoptr->getType(),n);
 	  }
@@ -2197,7 +2230,7 @@ void JumpTargetManager::foldSet(std::vector<legalValue> &legalSet){
 	    errs()<<*set.I[0]<<"\n";
             revng_abort("Unknow fold instruction!");
         break;	    
-    }
+    }/// end switch(...
   }/// end for(auto..
   AddressSet.clear();
   AddressSet = base;

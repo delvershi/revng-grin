@@ -1004,6 +1004,9 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
         JumpTargets.handleIllegalMemoryAccess(BlockBRs);
       *ptc.exception_syscall = -1;//TODO modify later.
     }
+
+    if(*ptc.isIndirectJmp and !traverseFLAG)
+      JumpTargets.handleIndirectInst(BlockBRs,tmpVA);
   
     if(!traverseFLAG){
     if(DynamicVirtualAddress){
@@ -1098,7 +1101,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     
   } // End translations loop
  
-  errs()<<"sdsafsadfasgfdads\n";
+  outs()<<"\nRewrite Successful\n";
 
   importHelperFunctionDeclaration("cpu_loop");
 

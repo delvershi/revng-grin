@@ -2446,8 +2446,9 @@ handleEdge	lib/StackAnalysis/IncoherentCallsAnalysis.cpp	/^  llvm::Optional<Elem
 handleEdge	lib/StackAnalysis/Intraprocedural.h	/^  llvm::Optional<Element> handleEdge(const Element &Original,$/;"	f	class:StackAnalysis::Intraprocedural::Analysis
 handleEdge	lib/Support/ExampleAnalysis.cpp	/^  llvm::Optional<LatticeElement> handleEdge(const LatticeElement &Original,$/;"	f	class:ExampleAnalysis::Analysis
 handleGenericInstruction	lib/StackAnalysis/Intraprocedural.cpp	/^  void handleGenericInstruction(Instruction *I) {$/;"	f	class:StackAnalysis::Intraprocedural::BasicBlockState
-handleIllegalJumpAddress	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::handleIllegalJumpAddress(llvm::BasicBlock *thisBlock){$/;"	f	class:JumpTargetManager
+handleIllegalJumpAddress	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::handleIllegalJumpAddress(llvm::BasicBlock *thisBlock, $/;"	f	class:JumpTargetManager
 handleIllegalMemoryAccess	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock){$/;"	f	class:JumpTargetManager
+handleIndirectInst	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::handleIndirectInst(llvm::BasicBlock *thisBlock, $/;"	f	class:JumpTargetManager
 handleInstruction	tools/revng-lift/SET.cpp	/^Value *SET::handleInstruction(Instruction *Target, Value *V) {$/;"	f	class:SET
 handleInstructionWithOSRA	tools/revng-lift/SET.cpp	/^bool SET::handleInstructionWithOSRA(Instruction *Target, Value *V) {$/;"	f	class:SET
 handleLogicalOperator	tools/revng-lift/OSRA.cpp	/^void OSRA::handleLogicalOperator(Instruction *I) {$/;"	f	class:OSRA
@@ -2459,6 +2460,7 @@ handleTerminator	lib/StackAnalysis/Intraprocedural.cpp	/^Interrupt Analysis::han
 handleUnaryOperator	tools/revng-lift/OSRA.cpp	/^void OSRA::handleUnaryOperator(Instruction *I) {$/;"	f	class:OSRA
 handle_sigsegv	runtime/support.c	/^void handle_sigsegv(int signo, siginfo_t *info, void *opaque_context) {$/;"	f
 harvest	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::harvest() {$/;"	f	class:JumpTargetManager
+harvestBTBasicBlock	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::harvestBTBasicBlock(llvm::BasicBlock *thisBlock,$/;"	f	class:JumpTargetManager
 harvestCallBasicBlock	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::harvestCallBasicBlock(llvm::BasicBlock *thisBlock,uint64_t thisAddr){$/;"	f	class:JumpTargetManager
 harvestGlobalData	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::harvestGlobalData() {$/;"	f	class:JumpTargetManager
 harvestbranchBasicBlock	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::harvestbranchBasicBlock(uint64_t nextAddr,$/;"	f	class:JumpTargetManager

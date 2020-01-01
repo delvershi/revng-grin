@@ -198,6 +198,7 @@ public:
    
   void handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock);
   void handleIllegalJumpAddress(llvm::BasicBlock *thisBlock, uint64_t thisAddr);
+  void handleIndirectInst(llvm::BasicBlock *thisBlock, uint64_t thisAddr);
   void getIllegalValueDFG(llvm::Value *v,llvm::Instruction *I,
 		          llvm::BasicBlock *thisBlock,
 			  uint32_t &userCodeFlag);
