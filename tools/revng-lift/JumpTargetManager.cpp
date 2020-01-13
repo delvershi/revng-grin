@@ -1870,6 +1870,12 @@ void JumpTargetManager::handleIllegalJumpAddress(llvm::BasicBlock *thisBlock,
   uint32_t userCodeFlag = 0;
   uint32_t &userCodeFlag1 = userCodeFlag;
   DataFlow.clear();
+  
+  auto br = dyn_cast<BranchInst>(--thisBlock->end());
+  while(br){
+    thisBlock = dyn_cast<BasicBlock>(br->getOperand(0));
+    br = dyn_cast<BranchInst>(--thisBlock->end());
+  }
 
   // Emerge illegal next jump address, current Block must contain a indirect instruction!
   BasicBlock::iterator I = --thisBlock->end(); 
