@@ -2425,11 +2425,13 @@ unsigned int JumpTargetManager::StrToInt(const char *str){
 
 void JumpTargetManager::harvestCallBasicBlock(llvm::BasicBlock *thisBlock,uint64_t thisAddr){
   if(!haveTranslatedPC(*ptc.CallNext, 0)){
-      /* Recording current CPU state */
+      /* Construct a state that have executed a call to next instruction of CPU state */
       ptc.regs[R_ESP] = ptc.regs[R_ESP] + 8;
       ptc.storeCPUState();
+      // Recover stack state
+      ptc.regs[R_ESP] = ptc.regs[R_ESP] - 8;
       /* Recording not execute branch destination relationship with current BasicBlock */
-     // thisBlock = nullptr; 
+      // thisBlock = nullptr; 
       BranchTargets.push_back(std::make_tuple(*ptc.CallNext,thisBlock,thisAddr)); 
       errs()<<format_hex(*ptc.CallNext,0)<<" <- Call next target add\n";
     }
