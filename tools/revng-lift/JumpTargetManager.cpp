@@ -2135,6 +2135,7 @@ uint32_t JumpTargetManager::setLegalValue(uint32_t &userCodeFlag,bool rangeF){
 	case llvm::Instruction::SExt:
 	case llvm::Instruction::Trunc:
 	case llvm::Instruction::Br:
+	case llvm::Instruction::Call:
 	break;
 	default:
             errs()<<*DataFlow[i];
