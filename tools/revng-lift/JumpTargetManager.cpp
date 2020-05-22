@@ -1760,7 +1760,8 @@ JumpTargetManager:: getLastAssignment(llvm::Value *v,
 	    case llvm::Instruction::AShr:
             case llvm::Instruction::Or:
 	    case llvm::Instruction::Br:
-	    case llvm::Instruction::Call:			  
+	    case llvm::Instruction::Call:
+	    case llvm::Instruction::Mul:			  
               continue;
             break;
             default:
@@ -1974,7 +1975,9 @@ void JumpTargetManager::getIllegalValueDFG(llvm::Value *v,
     for(;nodeBB != begin;){  
       auto bb = dyn_cast<llvm::BasicBlock>(nodeBB);
       if(v1->isUsedInBasicBlock(bb)){
-	userCodeFlag = belongToUBlock(bb);
+	//Whether bb belongs to user code section 
+	//userCodeFlag = belongToUBlock(bb);
+	userCodeFlag = 1;
         std::tie(result,lastInst) = getLastAssignment(v1,operateUser,bb);
         switch(result)
         {
@@ -2125,6 +2128,7 @@ uint32_t JumpTargetManager::setLegalValue(uint32_t &userCodeFlag,bool rangeF){
 	case Instruction::LShr:
 	case Instruction::Or:
 	case Instruction::ICmp:
+	case Instruction::Mul:
 	    handleBinaryOperation(DataFlow[i],next,legalSet1,relatedInstPtr1);
 	break;
 	//case llvm::Instruction::ICmp:

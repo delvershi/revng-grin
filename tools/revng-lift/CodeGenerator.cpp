@@ -1005,7 +1005,8 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       *ptc.exception_syscall = -1;//TODO modify later.
     }
 
-    if(!JumpTargets.haveBB and *ptc.isIndirectJmp and !traverseFLAG)
+    //if(!JumpTargets.haveBB and *ptc.isIndirectJmp and !traverseFLAG)
+    if(!JumpTargets.haveBB and *ptc.isIndirectJmp)
       JumpTargets.handleIndirectInst(BlockBRs,tmpVA);
   
     if(!traverseFLAG){
