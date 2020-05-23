@@ -195,6 +195,13 @@ public:
     ConstantValueAssign, 
     UnknowResult 
   };
+
+  enum TrackbackMode{
+    FullMode,  /* Stopping trackbacking analysis until encountering 
+                * 'rsp' or 'constant' */
+    JumpTableMode /* Stopping trackbacking analysis until encountering 
+                   * 'rax rbx rcx rdx rsi rdi' or 'constant'*/
+  };
    
   void handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock);
   void handleIllegalJumpAddress(llvm::BasicBlock *thisBlock, uint64_t thisAddr);

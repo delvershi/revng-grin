@@ -2366,7 +2366,9 @@ void JumpTargetManager::handleSelectOperation(llvm::Instruction *current,
   auto selectI = dyn_cast<llvm::SelectInst>(current);
   
   if(relatedInstPtr){
-    relatedInstPtr->value.push_back(selectI->getFalseValue());
+    if(dyn_cast<ConstantInt>(selectI->getFalseValue()) == nullptr)
+      relatedInstPtr->value.push_back(selectI->getFalseValue());
+
     relatedInstPtr->I.push_back(current);
     return;
   }
@@ -2388,7 +2390,9 @@ void JumpTargetManager::handleBinaryOperation(llvm::Instruction *current,
 
   if(relatedInstPtr){
     auto v = first ? secondOp:firstOp;
-    relatedInstPtr->value.push_back(v);
+    if(dyn_cast<ConstantInt>(v) == nullptr)
+      relatedInstPtr->value.push_back(v);
+
     relatedInstPtr->I.push_back(current);
     return;
   }
