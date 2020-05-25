@@ -211,10 +211,10 @@ public:
 			  std::vector<llvm::Instruction *> &DataFlow,
 			  TrackbackMode TackType, 
 			  uint32_t &userCodeFlag);
-  void getLegalValueRange(llvm::BasicBlock *thisBlock);
+  uint32_t getLegalValueRange(llvm::BasicBlock *thisBlock);
   uint32_t setLegalValue(std::vector<llvm::Instruction *> &DataFlow,
-		         uint32_t &userCodeFlag, 
-			 bool rangeF);  
+		         std::vector<legalValue> &legalSet,
+		         uint32_t &userCodeFlag);  
   uint32_t range;
 
   using LastAssignmentResultWithInst = std::pair<enum LastAssignmentResult, llvm::Instruction *>;

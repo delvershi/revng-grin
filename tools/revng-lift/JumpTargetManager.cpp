@@ -1863,7 +1863,7 @@ void JumpTargetManager::handleIndirectInst(llvm::BasicBlock *thisBlock,
     errs()<<"Finished analysis indirect Inst access Data Flow!\n";
     nodepCFG = nodetmp;
 
-    getLegalValueRange(thisBlock);
+    range = getLegalValueRange(thisBlock);
     if(!range)
       return;
 
@@ -1923,8 +1923,27 @@ void JumpTargetManager::handleIllegalJumpAddress(llvm::BasicBlock *thisBlock,
     if(*ptc.isIndirectJmp)
       getLegalValueRange(thisBlock);
 
-    setLegalValue(DataFlow,userCodeFlag1,0);
-        
+    std::vector<legalValue> legalSet1;
+    std::vector<legalValue> &legalSet = legalSet1;
+    setLegalValue(DataFlow,legalSet,userCodeFlag1);
+
+    for(auto set : legalSet){
+      for(auto ii : set.I)
+        errs()<<*ii<<" -------------";
+      errs()<<"\n";
+      for(auto vvv : set.value) 
+        errs() <<*vvv<<" +++++++++++\n";
+      
+      errs()<<"\n";
+    }
+
+    //Determine whether is dead code, eg: call 0
+    if(legalSet.size() == 1)
+      return;
+
+    // To assign a legal value
+    foldSet(legalSet1);
+  
     if(!AddressSet.empty()){
       for(auto addr : AddressSet){
         auto integer = dyn_cast<ConstantInt>(addr);
@@ -1935,7 +1954,7 @@ void JumpTargetManager::handleIllegalJumpAddress(llvm::BasicBlock *thisBlock,
   }
 }
 
-void JumpTargetManager::getLegalValueRange(llvm::BasicBlock *thisBlock){
+uint32_t JumpTargetManager::getLegalValueRange(llvm::BasicBlock *thisBlock){
   llvm::Function::iterator nodeBB(thisBlock);
   llvm::Function::iterator begin(thisBlock->getParent()->begin());
   
@@ -1966,7 +1985,7 @@ void JumpTargetManager::getLegalValueRange(llvm::BasicBlock *thisBlock){
   CmpInst::Predicate p = cmp->getPredicate(); 
   if(p == CmpInst::ICMP_EQ || p == CmpInst::ICMP_NE){
     *ptc.isIndirectJmp = 0;
-    return;
+    return 0;
   }
 
   uint32_t userFlag = 1;
@@ -1978,8 +1997,56 @@ void JumpTargetManager::getLegalValueRange(llvm::BasicBlock *thisBlock){
 		     rangeBB,
 		     DataFlow,
 		     FullMode,userFlag1);
-  range = setLegalValue(DataFlow,userFlag1,1);
 
+  std::vector<legalValue> legalSet1;
+  std::vector<legalValue> &legalSet = legalSet1;
+  setLegalValue(DataFlow,legalSet,userFlag1);
+
+  //Log information:
+  for(auto set : legalSet){
+    for(auto ii : set.I)
+      errs()<<*ii<<" -------------";
+    errs()<<"\n";
+    for(auto vvv : set.value) 
+      errs() <<*vvv<<" +++++++++++\n";
+    
+    errs()<<"\n";
+  } 
+
+  //Determine if there have a range.
+  //If all values are constant, there is no range. 
+  for(auto set : legalSet){
+    for(auto value : set.value){
+      if((auto constant = dyn_cast<ConstantInt>(value)) == nullptr)
+        goto go_on;   
+    }
+  }
+  return 0;
+
+go_on:
+  bool firstConst = true;
+  for(auto first : legalSet.first().value){
+    auto constant = dyn_cast<ConstantInt>(first);
+    if(constant==nullptr)
+      firstConst = false;
+  }
+  if(firstConst){
+    if(legalSet.first().value.size() == 1){
+      auto constant = dyn_cast<ConstantInt>(legalSet.first().value.first());
+      revng_assert(constant,"That should a constant value!\n");
+      auto n = constant->getZExtValue();
+      errs()<<n<<" <---range\n";
+      return n;
+    }
+    else{
+      //foldstack();
+      //return n;
+    }
+  }
+
+  //firstConst ==  false;
+  //foldSet(legalSet);
+  //return n;
 }
 
 void JumpTargetManager::getIllegalValueDFG(llvm::Value *v,
@@ -2129,13 +2196,13 @@ NextValue:
 }
 
 uint32_t JumpTargetManager::setLegalValue(std::vector<llvm::Instruction *> &DataFlow,
-		uint32_t &userCodeFlag,
-		bool rangeF){
+		std::vector<legalValue> &legalSet,
+		uint32_t &userCodeFlag){
   if(DataFlow.empty())
     return 0;
 
-  std::vector<legalValue> legalSet;
-  std::vector<legalValue> &legalSet1 = legalSet;
+//  std::vector<legalValue> legalSet;
+//  std::vector<legalValue> &legalSet1 = legalSet;
   legalValue *relatedInstPtr = nullptr;
   legalValue *&relatedInstPtr1 = relatedInstPtr;
 
@@ -2149,10 +2216,10 @@ uint32_t JumpTargetManager::setLegalValue(std::vector<llvm::Instruction *> &Data
     switch(Opcode){
         case Instruction::Load:
 	case Instruction::Store:
-            handleMemoryAccess(DataFlow[i],next,legalSet1,relatedInstPtr1);
+            handleMemoryAccess(DataFlow[i],next,legalSet,relatedInstPtr1);
         break;
 	case Instruction::Select:
-	    handleSelectOperation(DataFlow[i],next,legalSet1,relatedInstPtr1);
+	    handleSelectOperation(DataFlow[i],next,legalSet,relatedInstPtr1);
 	break;
 	case Instruction::Add:
 	case Instruction::Sub:
@@ -2163,11 +2230,11 @@ uint32_t JumpTargetManager::setLegalValue(std::vector<llvm::Instruction *> &Data
 	case Instruction::Or:
 	case Instruction::ICmp:
 	case Instruction::Mul:
-	    handleBinaryOperation(DataFlow[i],next,legalSet1,relatedInstPtr1);
+	    handleBinaryOperation(DataFlow[i],next,legalSet,relatedInstPtr1);
 	break;
 	//case llvm::Instruction::ICmp:
         case llvm::Instruction::IntToPtr:
-	    handleConversionOperations(DataFlow[i],legalSet1,relatedInstPtr1);
+	    handleConversionOperations(DataFlow[i],legalSet,relatedInstPtr1);
 	break;
         case llvm::Instruction::ZExt:
 	case llvm::Instruction::SExt:
@@ -2182,41 +2249,41 @@ uint32_t JumpTargetManager::setLegalValue(std::vector<llvm::Instruction *> &Data
     }
   }
 
-  if(!userCodeFlag){
-    errs()<<"Don't need to assign operation\n";
-    return 0;
-  }
-  
-  for(auto set : legalSet1){
-    for(auto ii : set.I)
-      errs()<<*ii<<" -------------";
-    errs()<<"\n";
-    for(auto vvv : set.value) 
-      errs() <<*vvv<<" +++++++++++\n";
-    
-    errs()<<"\n";
-  } 
-  if(rangeF){
-    for(auto set : legalSet1){
-      for(auto I : set.I){
-        if(I->getOpcode() == Instruction::ICmp){
-	  for(auto value : set.value){
-	    if(auto constant = dyn_cast<ConstantInt>(value)){
-	      auto n = constant->getZExtValue();
-              errs()<<n<<" ddddddddddddddddddddddd\n"; 
-	      return n;
-	    }
-	  }
-	}
-      }
-    }
-  }
-
-  // To assign a legal value
-  foldSet(legalSet1);
-  //revng_abort("\nNeed to assign a value \n");
-
-  return 0;
+//  if(!userCodeFlag){
+//    errs()<<"Don't need to assign operation\n";
+//    return 0;
+//  }
+//  
+//  for(auto set : legalSet1){
+//    for(auto ii : set.I)
+//      errs()<<*ii<<" -------------";
+//    errs()<<"\n";
+//    for(auto vvv : set.value) 
+//      errs() <<*vvv<<" +++++++++++\n";
+//    
+//    errs()<<"\n";
+//  } 
+//  if(rangeF){
+//    for(auto set : legalSet1){
+//      for(auto I : set.I){
+//        if(I->getOpcode() == Instruction::ICmp){
+//	  for(auto value : set.value){
+//	    if(auto constant = dyn_cast<ConstantInt>(value)){
+//	      auto n = constant->getZExtValue();
+//              errs()<<n<<" ddddddddddddddddddddddd\n"; 
+//	      return n;
+//	    }
+//	  }
+//	}
+//      }
+//    }
+//  }
+//
+//  // To assign a legal value
+//  foldSet(legalSet1);
+//  //revng_abort("\nNeed to assign a value \n");
+//
+//  return 0;
 }
 
 void JumpTargetManager::foldSet(std::vector<legalValue> &legalSet){

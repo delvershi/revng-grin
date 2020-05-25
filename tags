@@ -373,7 +373,6 @@ DRVOFC	lib/StackAnalysis/FunctionABI.h	/^  DeadReturnValuesOfFunctionCall DRVOFC
 DRVOFC	lib/StackAnalysis/FunctionABI.h	/^  DeadReturnValuesOfFunctionCall DRVOFC;$/;"	m	class:StackAnalysis::RegisterState
 Data	tools/revng-lift/BinaryFile.h	/^  llvm::ArrayRef<uint8_t> Data;$/;"	m	struct:SegmentInfo
 Data	tools/revng-lift/BinaryFile.h	/^enum Values { Unknown, Code, Data, Section, File };$/;"	e	enum:SymbolType::Values
-DataFlow	tools/revng-lift/JumpTargetManager.h	/^  std::vector<llvm::Instruction *> DataFlow;$/;"	m	class:JumpTargetManager
 DbgMDKind	include/revng/Support/DebugHelper.h	/^  unsigned DbgMDKind;$/;"	m	class:DebugAnnotationWriter
 DbgMDKind	include/revng/Support/DebugHelper.h	/^  unsigned DbgMDKind;$/;"	m	class:DebugHelper
 DbgMDKind	tools/revng-lift/CodeGenerator.h	/^  unsigned DbgMDKind;$/;"	m	class:CodeGenerator
@@ -528,6 +527,7 @@ ForwardedReturnValue	lib/StackAnalysis/IntraproceduralFunctionSummary.h	/^  Forw
 FrameSizeAtCallSite	lib/StackAnalysis/Element.h	/^  std::map<CallSite, llvm::Optional<int32_t>> FrameSizeAtCallSite;$/;"	m	class:StackAnalysis::Intraprocedural::Element
 FrameSizeAtCallSite	lib/StackAnalysis/Intraprocedural.h	/^  std::map<FunctionCall, llvm::Optional<int32_t>> FrameSizeAtCallSite;$/;"	m	class:StackAnalysis::Intraprocedural::Analysis
 FrameSizeAtCallSite	lib/StackAnalysis/IntraproceduralFunctionSummary.h	/^  CallSiteStackSizeMap FrameSizeAtCallSite;$/;"	m	class:StackAnalysis::IntraproceduralFunctionSummary
+FullMode	tools/revng-lift/JumpTargetManager.h	/^    FullMode,  \/* Stopping trackbacking analysis until encountering $/;"	e	enum:JumpTargetManager::TrackbackMode
 FunToNumUnknown	tools/revng-lift/CPUStateAccessAnalysisPass.cpp	/^static std::map<std::string, uint64_t> FunToNumUnknown;$/;"	v	file:
 FunToUnknowns	tools/revng-lift/CPUStateAccessAnalysisPass.cpp	/^static std::map<std::string, std::set<std::string>> FunToUnknowns;$/;"	v	file:
 FunctionABI	lib/StackAnalysis/FunctionABI.h	/^  FunctionABI() {}$/;"	f	class:StackAnalysis::FunctionABI
@@ -770,6 +770,7 @@ JUMPTARGETMANAGER_H	tools/revng-lift/JumpTargetManager.h	2;"	d
 JumpAsm	include/revng/Support/revng.h	/^  llvm::StringRef JumpAsm;$/;"	m	class:Architecture
 JumpInfo	tools/revng-lift/SET.h	/^    JumpInfo(llvm::StoreInst *Instruction,$/;"	f	struct:SETPass::JumpInfo
 JumpInfo	tools/revng-lift/SET.h	/^  struct JumpInfo {$/;"	s	class:SETPass
+JumpTableMode	tools/revng-lift/JumpTargetManager.h	/^    JumpTableMode \/* Stopping trackbacking analysis until encountering $/;"	e	enum:JumpTargetManager::TrackbackMode
 JumpTarget	tools/revng-lift/JumpTargetManager.h	/^    JumpTarget() : BB(nullptr), Reasons(0) {}$/;"	f	class:JumpTargetManager::JumpTarget
 JumpTarget	tools/revng-lift/JumpTargetManager.h	/^    JumpTarget(llvm::BasicBlock *BB) : BB(BB), Reasons(0) {}$/;"	f	class:JumpTargetManager::JumpTarget
 JumpTarget	tools/revng-lift/JumpTargetManager.h	/^    JumpTarget(llvm::BasicBlock *BB, JTReason::Values Reason) :$/;"	f	class:JumpTargetManager::JumpTarget
@@ -1422,6 +1423,7 @@ TheType	tools/revng-lift/OSRA.h	/^      llvm::Type *TheType;$/;"	m	class:OSRAPas
 ToPurge	tools/revng-lift/JumpTargetManager.h	/^  std::set<llvm::BasicBlock *> ToPurge;$/;"	m	class:JumpTargetManager
 ToVisit	include/revng/Support/MonotoneFramework.h	/^  std::set<Label> ToVisit;$/;"	m	class:MonotoneFramework
 Total	lib/StackAnalysis/InterproceduralAnalysis.cpp	/^      unsigned Total; \/\/\/< Number of functions writing this register$/;"	m	struct:StackAnalysis::ClobberedRegistersAnalysis::IterationResult::ECSVote	file:
+TrackbackMode	tools/revng-lift/JumpTargetManager.h	/^  enum TrackbackMode{$/;"	g	class:JumpTargetManager
 TrackedValues	tools/revng-lift/SET.cpp	/^  std::set<uint64_t> TrackedValues;$/;"	m	class:OperationsStack	file:
 Tracking	tools/revng-lift/SET.cpp	/^  TrackingType Tracking;$/;"	m	class:OperationsStack	file:
 TrackingType	tools/revng-lift/SET.cpp	/^  enum TrackingType {$/;"	g	class:OperationsStack	file:
@@ -2446,7 +2448,7 @@ handleEdge	lib/StackAnalysis/IncoherentCallsAnalysis.cpp	/^  llvm::Optional<Elem
 handleEdge	lib/StackAnalysis/Intraprocedural.h	/^  llvm::Optional<Element> handleEdge(const Element &Original,$/;"	f	class:StackAnalysis::Intraprocedural::Analysis
 handleEdge	lib/Support/ExampleAnalysis.cpp	/^  llvm::Optional<LatticeElement> handleEdge(const LatticeElement &Original,$/;"	f	class:ExampleAnalysis::Analysis
 handleGenericInstruction	lib/StackAnalysis/Intraprocedural.cpp	/^  void handleGenericInstruction(Instruction *I) {$/;"	f	class:StackAnalysis::Intraprocedural::BasicBlockState
-handleIllegalJumpAddress	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::handleIllegalJumpAddress(llvm::BasicBlock *thisBlock, $/;"	f	class:JumpTargetManager
+handleIllegalJumpAddress	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::handleIllegalJumpAddress(llvm::BasicBlock *thisBlock,$/;"	f	class:JumpTargetManager
 handleIllegalMemoryAccess	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock){$/;"	f	class:JumpTargetManager
 handleIndirectInst	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::handleIndirectInst(llvm::BasicBlock *thisBlock, $/;"	f	class:JumpTargetManager
 handleInstruction	tools/revng-lift/SET.cpp	/^Value *SET::handleInstruction(Instruction *Target, Value *V) {$/;"	f	class:SET
@@ -3294,7 +3296,7 @@ setDispatcher	tools/revng-lift/NoReturnAnalysis.h	/^  void setDispatcher(llvm::B
 setInactive	tools/revng-lift/OSRA.cpp	/^  void setInactive(unsigned Height) { LastActiveHeight = Height; }$/;"	f	class:Reacher
 setIndentation	include/revng/Support/Debug.h	/^  void setIndentation(unsigned Level) {$/;"	f	class:Logger
 setLastMerge	tools/revng-lift/OSRA.cpp	/^  void setLastMerge(unsigned Height) { LastMergeHeight = Height; }$/;"	f	class:Reacher
-setLegalValue	tools/revng-lift/JumpTargetManager.cpp	/^uint32_t JumpTargetManager::setLegalValue(uint32_t &userCodeFlag,bool rangeF){$/;"	f	class:JumpTargetManager
+setLegalValue	tools/revng-lift/JumpTargetManager.cpp	/^uint32_t JumpTargetManager::setLegalValue(std::vector<llvm::Instruction *> &DataFlow,$/;"	f	class:JumpTargetManager
 setOperand	tools/revng-lift/SimplifyComparisonsPass.cpp	/^  void setOperand(unsigned Index, Term *T) { Operands[Index] = T; }$/;"	f	class:BinaryTerm
 setReason	tools/revng-lift/JumpTargetManager.h	/^    void setReason(JTReason::Values Reason) {$/;"	f	class:JumpTargetManager::JumpTarget
 setReturn	lib/StackAnalysis/ABIIR.h	/^  void setReturn() { IsReturn = true; }$/;"	f	class:StackAnalysis::ABIIRBasicBlock
