@@ -198,25 +198,30 @@ public:
 
   enum TrackbackMode{
     FullMode,  /* Stopping trackbacking analysis until encountering 
-                * 'rsp' or 'constant' */
+                * 'rsp' */
     JumpTableMode /* Stopping trackbacking analysis until encountering 
-                   * 'rax rbx rcx rdx rsi rdi' or 'constant'*/
-  };
-   
+                   * 'rax rbx rcx rdx rsi rdi' */
+  }; 
+
   void handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock);
   void handleIllegalJumpAddress(llvm::BasicBlock *thisBlock, uint64_t thisAddr);
   void handleIndirectInst(llvm::BasicBlock *thisBlock, uint64_t thisAddr);
   void getIllegalValueDFG(llvm::Value *v,llvm::Instruction *I,
 		          llvm::BasicBlock *thisBlock,
+			  std::vector<llvm::Instruction *> &DataFlow,
+			  TrackbackMode TackType, 
 			  uint32_t &userCodeFlag);
   void getLegalValueRange(llvm::BasicBlock *thisBlock);
-  uint32_t setLegalValue(uint32_t &userCodeFlag, bool rangeF);  
+  uint32_t setLegalValue(std::vector<llvm::Instruction *> &DataFlow,
+		         uint32_t &userCodeFlag, 
+			 bool rangeF);  
   uint32_t range;
 
   using LastAssignmentResultWithInst = std::pair<enum LastAssignmentResult, llvm::Instruction *>;
   LastAssignmentResultWithInst getLastAssignment(llvm::Value *v, 
-                                         llvm::User *userInst, 
-                                         llvm::BasicBlock *currentBB);
+                                         llvm::User *userInst,
+                                         llvm::BasicBlock *currentBB,
+					 TrackbackMode TrackType);
   bool islegalAddr(llvm::Value *v);
   unsigned int StrToInt(const char *str);
   /* Judging whether the Block is User define Block area*/
@@ -234,7 +239,6 @@ public:
   void searchpartCFG(uint64_t srcAddr);
 
 private:
-  std::vector<llvm::Instruction *> DataFlow;
   // Record address after setting a legal value 
   std::vector<llvm::Constant *> AddressSet;
   void foldStack(legalValue *&relatedInstPtr);

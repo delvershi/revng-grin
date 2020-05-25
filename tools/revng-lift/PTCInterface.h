@@ -32,8 +32,8 @@ extern PTCInterface ptc;
 #define RBX 98120
 #define RSP 115112
 #define RBP 98112
-#define RSI 115108
-#define RDI 100108
+#define RSI 115105
+#define RDI 100105
 
 #define R_EAX 0
 #define R_ECX 1

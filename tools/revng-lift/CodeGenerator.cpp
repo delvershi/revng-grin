@@ -998,10 +998,8 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       }
     }
     if(*ptc.exception_syscall == 11){
-      if(*ptc.isIndirectJmp)
-        JumpTargets.handleIllegalJumpAddress(BlockBRs,tmpVA);
-      else 
-        JumpTargets.handleIllegalMemoryAccess(BlockBRs);
+      //  JumpTargets.handleIllegalJumpAddress(BlockBRs,tmpVA);
+      JumpTargets.handleIllegalMemoryAccess(BlockBRs);
       *ptc.exception_syscall = -1;//TODO modify later.
     }
 
