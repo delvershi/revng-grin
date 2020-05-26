@@ -1616,6 +1616,7 @@ again	tests/Analysis/arm/memset.S	/^again:$/;"	l
 aliasAnalysis	tools/revng-lift/VariableManager.cpp	/^void VariableManager::aliasAnalysis() {$/;"	f	class:VariableManager
 align	runtime/support.c	/^static const unsigned align = sizeof(target_reg);$/;"	v	file:
 alloc	include/revng/ADT/LazySmallBitVector.h	/^  void alloc(size_t NewSize) {$/;"	f	class:LazySmallBitVector
+analysisLegalValue	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::analysisLegalValue(std::vector<llvm::Instruction *> &DataFlow,$/;"	f	class:JumpTargetManager
 analyze	lib/StackAnalysis/FunctionABI.cpp	/^void FunctionABI::analyze(const ABIFunction &TheFunction) {$/;"	f	class:StackAnalysis::FunctionABI
 analyzeAccess	tools/revng-lift/CPUStateAccessAnalysisPass.cpp	/^void CPUSAOA::analyzeAccess(Instruction *LoadOrStore, bool IsLoad) {$/;"	f	class:CPUSAOA
 annotator	lib/Support/DebugHelper.cpp	/^DAW *DebugHelper::annotator(bool DebugInfo) {$/;"	f	class:DebugHelper
@@ -2346,7 +2347,7 @@ getLarge	include/revng/ADT/LazySmallBitVector.h	/^  LargeStorage &getLarge() {$/
 getLarge	include/revng/ADT/LazySmallBitVector.h	/^  const LargeStorage &getLarge() const {$/;"	f	class:LazySmallBitVector
 getLastAssignment	tools/revng-lift/JumpTargetManager.cpp	/^JumpTargetManager:: getLastAssignment(llvm::Value *v, $/;"	f	class:JumpTargetManager
 getLastUniqueWrite	tools/revng-lift/InstructionTranslator.cpp	/^static StoreInst *getLastUniqueWrite(BasicBlock *BB, const Value *Register) {$/;"	f	file:
-getLegalValueRange	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::getLegalValueRange(llvm::BasicBlock *thisBlock){$/;"	f	class:JumpTargetManager
+getLegalValueRange	tools/revng-lift/JumpTargetManager.cpp	/^uint32_t JumpTargetManager::getLegalValueRange(llvm::BasicBlock *thisBlock){$/;"	f	class:JumpTargetManager
 getLimitedValue	include/revng/Support/IRHelpers.h	/^inline uint64_t getLimitedValue(const llvm::Value *V) {$/;"	f
 getLinkRegister	lib/StackAnalysis/Cache.h	/^  llvm::GlobalVariable *getLinkRegister(llvm::BasicBlock *Function) const {$/;"	f	class:StackAnalysis::Cache
 getLoadAddressValue	tools/revng-lift/CPUStateAccessAnalysisPass.cpp	/^static Value *getLoadAddressValue(Instruction *I) {$/;"	f	file:
@@ -3296,7 +3297,6 @@ setDispatcher	tools/revng-lift/NoReturnAnalysis.h	/^  void setDispatcher(llvm::B
 setInactive	tools/revng-lift/OSRA.cpp	/^  void setInactive(unsigned Height) { LastActiveHeight = Height; }$/;"	f	class:Reacher
 setIndentation	include/revng/Support/Debug.h	/^  void setIndentation(unsigned Level) {$/;"	f	class:Logger
 setLastMerge	tools/revng-lift/OSRA.cpp	/^  void setLastMerge(unsigned Height) { LastMergeHeight = Height; }$/;"	f	class:Reacher
-setLegalValue	tools/revng-lift/JumpTargetManager.cpp	/^uint32_t JumpTargetManager::setLegalValue(std::vector<llvm::Instruction *> &DataFlow,$/;"	f	class:JumpTargetManager
 setOperand	tools/revng-lift/SimplifyComparisonsPass.cpp	/^  void setOperand(unsigned Index, Term *T) { Operands[Index] = T; }$/;"	f	class:BinaryTerm
 setReason	tools/revng-lift/JumpTargetManager.h	/^    void setReason(JTReason::Values Reason) {$/;"	f	class:JumpTargetManager::JumpTarget
 setReturn	lib/StackAnalysis/ABIIR.h	/^  void setReturn() { IsReturn = true; }$/;"	f	class:StackAnalysis::ABIIRBasicBlock

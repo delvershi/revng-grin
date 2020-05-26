@@ -212,7 +212,7 @@ public:
 			  TrackbackMode TackType, 
 			  uint32_t &userCodeFlag);
   uint32_t getLegalValueRange(llvm::BasicBlock *thisBlock);
-  uint32_t setLegalValue(std::vector<llvm::Instruction *> &DataFlow,
+  void analysisLegalValue(std::vector<llvm::Instruction *> &DataFlow,
 		         std::vector<legalValue> &legalSet,
 		         uint32_t &userCodeFlag);  
   uint32_t range;
