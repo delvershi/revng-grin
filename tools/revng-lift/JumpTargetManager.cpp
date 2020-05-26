@@ -1954,8 +1954,10 @@ void JumpTargetManager::handleIllegalJumpAddress(llvm::BasicBlock *thisBlock,
     }
 
     //Determine whether is dead code, eg: call 0
-    if(legalSet.size() == 1)
+    if(legalSet.size() == 1){  
+      errs()<<"This jump address is a dead code.\n";
       return;
+    }
 
     // To assign a legal value
     foldSet(legalSet);
@@ -1963,7 +1965,8 @@ void JumpTargetManager::handleIllegalJumpAddress(llvm::BasicBlock *thisBlock,
     if(!AddressSet.empty()){
       for(auto addr : AddressSet){
         auto integer = dyn_cast<ConstantInt>(addr);
-	harvestBTBasicBlock(thisBlock,thisAddr,integer->getZExtValue());
+	if(integer)
+	  harvestBTBasicBlock(thisBlock,thisAddr,integer->getZExtValue());
       }
       AddressSet.clear();
     }
@@ -2282,10 +2285,17 @@ void JumpTargetManager::foldSet(std::vector<legalValue> &legalSet){
         case Instruction::Load:
 	case Instruction::Store:
 	{
-illegal_addr:
           for(uint32_t n = 0; n<range+1; n++){
-	    auto newoperand = ConstantInt::get(set.I[0]->getType(),n);
-	    base.push_back(newoperand);
+            auto constant = dyn_cast<ConstantInt>(set.value[0]);
+	    if(constant){
+	      uint64_t address = constant->getZExtValue();
+	      auto newoperand = ConstantInt::get(set.I[0]->getType(),address);
+	      base.push_back(newoperand);
+	    }
+	    else{
+	      auto newoperand = ConstantInt::get(set.I[0]->getType(),n);
+	      base.push_back(newoperand);
+	    }
 	  }
 	  break;
 	}
@@ -2309,16 +2319,16 @@ illegal_addr:
 	//case Instruction::Or:
         case llvm::Instruction::IntToPtr:
 	{
-	  auto inttoptr = dyn_cast<IntToPtrInst>(set.I[0]);
+	  //auto inttoptr = dyn_cast<IntToPtrInst>(set.I[0]);
 	  for(uint32_t i = 0; i<base.size(); i++){
 	    auto integer = dyn_cast<ConstantInt>(base[i]);
 	    uint64_t address = integer->getZExtValue();
 	    if(!ptc.isValidExecuteAddr(address)){
-              base.clear();
-	      goto illegal_addr;
+	      errs()<<"\nYielding an illegal addrress\n";
+	      return;
 	    }
 	    uint64_t n = *((uint64_t *)address);
-	    base[i] = ConstantInt::get(inttoptr->getType(),n);
+	    base[i] = ConstantInt::get(base[i]->getType(),n);
 	  }
           break;
 	}
