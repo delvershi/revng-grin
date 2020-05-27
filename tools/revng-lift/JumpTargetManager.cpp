@@ -1865,11 +1865,9 @@ void JumpTargetManager::handleIndirectInst(llvm::BasicBlock *thisBlock,
 
     std::vector<legalValue> legalSet1;
     std::vector<legalValue> &legalSet = legalSet1;
-    analysisLegalValue(DataFlow,legalSet,userCodeFlag1);
+    analysisLegalValue(DataFlow,legalSet);
 
     range = getLegalValueRange(thisBlock);
-    if(!range)
-      return;
 
     //Log information.
     for(auto set : legalSet){
@@ -1880,7 +1878,35 @@ void JumpTargetManager::handleIndirectInst(llvm::BasicBlock *thisBlock,
         errs() <<*vvv<<" +++++++++++\n";
       
       errs()<<"\n";
+    }
+
+    //To match base+offset mode.
+    bool isJmpTable = false;
+    for(unsigned i=0; i<legalSet.size(); i++){
+      if(legalSet[i].I[0]->getOpcode() == Instruction::Add){
+        if(((i+1) < legalSet.size()) and 
+	   (legalSet[i+1].I[0]->getOpcode() == Instruction::Shl)){
+            isJmpTable = true;
+	    break;
+	}
+      }
+      for(unsigned j=0; j<legalSet[i].I.size(); j++){
+        if(legalSet[i].I[j]->getOpcode() == Instruction::Add){
+          if(((j+1) < legalSet[i].I.size()) and 
+	     (legalSet[i].I[j+1]->getOpcode() == Instruction::Shl)){
+            isJmpTable = true;
+	    revng_abort("Not implement!\n");
+	  }
+        }       
+      }
     } 
+    if(!isJmpTable){
+      errs()<<"This indirect jmp is not jmp table type.\n";
+      return;
+    }
+    
+    if(range == 0)
+      revng_abort("Not implement and 'range == 0'\n");
 
     // To assign a legal value
     foldSet(legalSet);
@@ -1936,12 +1962,12 @@ void JumpTargetManager::handleIllegalJumpAddress(llvm::BasicBlock *thisBlock,
     errs()<<"Finished analysis illegal access Data Flow!\n";
     nodepCFG = nodetmp;
 
-    if(*ptc.isIndirectJmp)
-      getLegalValueRange(thisBlock);
-
     std::vector<legalValue> legalSet1;
     std::vector<legalValue> &legalSet = legalSet1;
-    analysisLegalValue(DataFlow,legalSet,userCodeFlag1);
+    analysisLegalValue(DataFlow,legalSet);
+
+    if(*ptc.isIndirectJmp)
+      range = getLegalValueRange(thisBlock);
 
     for(auto set : legalSet){
       for(auto ii : set.I)
@@ -2019,7 +2045,7 @@ uint32_t JumpTargetManager::getLegalValueRange(llvm::BasicBlock *thisBlock){
 
   std::vector<legalValue> legalSet1;
   std::vector<legalValue> &legalSet = legalSet1;
-  analysisLegalValue(DataFlow,legalSet,userFlag1);
+  analysisLegalValue(DataFlow,legalSet);
 
   //Log information:
   for(auto set : legalSet){
@@ -2059,6 +2085,7 @@ go_on:
       return n;
     }
     else{
+      revng_abort("To do more implement!\n");
       //foldstack();
       //return n;
     }
@@ -2216,8 +2243,7 @@ NextValue:
 }
 
 void JumpTargetManager::analysisLegalValue(std::vector<llvm::Instruction *> &DataFlow,
-		std::vector<legalValue> &legalSet,
-		uint32_t &userCodeFlag){
+		std::vector<legalValue> &legalSet){
   if(DataFlow.empty())
     return;
 
@@ -2266,12 +2292,6 @@ void JumpTargetManager::analysisLegalValue(std::vector<llvm::Instruction *> &Dat
 	break;
     }
   }
-
-//  if(!userCodeFlag){
-//    errs()<<"Don't need to assign operation\n";
-//    return 0;
-//  }
-
 }
 
 void JumpTargetManager::foldSet(std::vector<legalValue> &legalSet){

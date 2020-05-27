@@ -213,8 +213,7 @@ public:
 			  uint32_t &userCodeFlag);
   uint32_t getLegalValueRange(llvm::BasicBlock *thisBlock);
   void analysisLegalValue(std::vector<llvm::Instruction *> &DataFlow,
-		         std::vector<legalValue> &legalSet,
-		         uint32_t &userCodeFlag);  
+		         std::vector<legalValue> &legalSet);  
   uint32_t range;
 
   using LastAssignmentResultWithInst = std::pair<enum LastAssignmentResult, llvm::Instruction *>;
