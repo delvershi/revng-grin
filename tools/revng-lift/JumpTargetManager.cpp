@@ -1566,28 +1566,28 @@ void JumpTargetManager::pushpartCFGStack(llvm::BasicBlock *dest,
   partCFG.push_back(std::make_tuple(dest,DAddr,src,SAddr));
   std::get<0>(nodepCFG) = dest;
   std::get<1>(nodepCFG) = src;
-  std::get<2>(nodepCFG) = SAddr;
 }
 
-void JumpTargetManager::searchpartCFG(uint64_t srcAddr){
+void JumpTargetManager::searchpartCFG(std::map<llvm::BasicBlock *,llvm::BasicBlock *> &DONE){
   //Match source BB, to search start entry of one path.
   llvm::Function::iterator it(std::get<1>(nodepCFG));
   llvm::Function::iterator begin(it->getParent()->begin());
-  uint64_t src,dest=0;
+  
   for(; it!=begin; it-- ){
     auto bb = dyn_cast<llvm::BasicBlock>(it);
     for(auto p : partCFG){
       if((bb - std::get<0>(p)) == 0){
+	if(DONE.find(bb) != DONE.end())
+	    break;
         std::get<0>(nodepCFG) = std::get<0>(p);
         std::get<1>(nodepCFG) = std::get<2>(p);
-        std::get<2>(nodepCFG) = std::get<3>(p);
-	dest = std::get<1>(p);
-	src = std::get<3>(p);
-	errs()<<"partCFG--> dest: "<<dest<<" src: "<<src<<"\n";
+	DONE[std::get<0>(p)] = std::get<2>(p);
         return;
-    } 
-  }  
-  }
+      }
+    }
+  } 
+  std::get<0>(nodepCFG) = nullptr;
+  std::get<1>(nodepCFG) = nullptr; 
 }
 
 uint32_t JumpTargetManager::belongToUBlock(llvm::BasicBlock *block){
@@ -2026,15 +2026,18 @@ void JumpTargetManager::handleIllegalJumpAddress(llvm::BasicBlock *thisBlock,
 uint32_t JumpTargetManager::getLegalValueRange(llvm::BasicBlock *thisBlock){
   llvm::Function::iterator nodeBB(thisBlock);
   llvm::Function::iterator begin(thisBlock->getParent()->begin());
-  
+
   llvm::BasicBlock *rangeBB = nullptr;
+  std::map<llvm::BasicBlock *, llvm::BasicBlock *> DoneOFPath1;
+  std::map<llvm::BasicBlock *, llvm::BasicBlock *> &DoneOFPath = DoneOFPath1;
+  DoneOFPath[std::get<0>(nodepCFG)] = std::get<1>(nodepCFG);  
   for(;nodeBB != begin;){
     auto bb = dyn_cast<llvm::BasicBlock>(nodeBB);
     if((std::get<0>(nodepCFG) - bb) == 0){
       llvm::Function::iterator it(std::get<1>(nodepCFG));
       //TODO handle split Block
       nodeBB = it;
-      searchpartCFG(std::get<2>(nodepCFG));   
+      searchpartCFG(DoneOFPath);   
     }
     auto lastBB = dyn_cast<llvm::BasicBlock>(nodeBB);
     BasicBlock::iterator I = --(lastBB->end());
@@ -2133,7 +2136,10 @@ void JumpTargetManager::getIllegalValueDFG(llvm::Value *v,
   std::vector<std::tuple<llvm::Value *,llvm::User *,llvm::BasicBlock *>> vs;
   vs.push_back(std::make_tuple(v,dyn_cast<User>(I),thisBlock));
   DataFlow.push_back(I);
- 
+
+  std::map<llvm::BasicBlock *, llvm::BasicBlock *> DoneOFPath1;
+  std::map<llvm::BasicBlock *, llvm::BasicBlock *> &DoneOFPath = DoneOFPath1;
+  DoneOFPath[std::get<0>(nodepCFG)] = std::get<1>(nodepCFG); 
   // Get illegal access Value's DFG. 
   while(!vs.empty()){
     llvm::BasicBlock *tmpB = nullptr;
@@ -2202,7 +2208,7 @@ void JumpTargetManager::getIllegalValueDFG(llvm::Value *v,
                 nodeBB = it;
 		for(;num>0;num--)
 		  nodeBB++;
-                searchpartCFG(std::get<2>(nodepCFG));
+                searchpartCFG(DoneOFPath);
                 continue;
               }
               break;
@@ -2254,7 +2260,7 @@ void JumpTargetManager::getIllegalValueDFG(llvm::Value *v,
           for(;num>0;num--)
             nodeBB++;
            
-	  searchpartCFG(std::get<2>(nodepCFG));
+	  searchpartCFG(DoneOFPath);
           continue;
          }        
       }

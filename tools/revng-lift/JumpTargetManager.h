@@ -226,16 +226,17 @@ public:
   /* Judging whether the Block is User define Block area*/
   uint32_t belongToUBlock(llvm::BasicBlock *block);
 
-  /* Have explored branches of CFG */
+  /* Have explored branches of CFG 
+   * <dest BB, dest Addr, source BB, source Addr> */
   std::vector<std::tuple<llvm::BasicBlock *, uint64_t, llvm::BasicBlock *,uint64_t>> partCFG;
-  // <destination branch BB,source BB,source Addr> 
-  using NODETYPE = std::tuple<llvm::BasicBlock *, llvm::BasicBlock *,uint64_t>;
+  // <dest BB,source BB> 
+  using NODETYPE = std::pair<llvm::BasicBlock *, llvm::BasicBlock *>;
   NODETYPE nodepCFG;
   void pushpartCFGStack(llvm::BasicBlock *dest, 
 		        uint64_t DAddr,
 		        llvm::BasicBlock *src,
 			uint64_t SAddr);
-  void searchpartCFG(uint64_t srcAddr);
+  void searchpartCFG(std::map<llvm::BasicBlock *, llvm::BasicBlock *> &DONE);
 
 private:
   // Record address after setting a legal value 
