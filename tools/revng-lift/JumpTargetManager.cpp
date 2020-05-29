@@ -1570,14 +1570,24 @@ void JumpTargetManager::pushpartCFGStack(llvm::BasicBlock *dest,
 }
 
 void JumpTargetManager::searchpartCFG(uint64_t srcAddr){
-  for(auto p : partCFG){
-    if((srcAddr - std::get<1>(p)) == 0){
-      std::get<0>(nodepCFG) = std::get<0>(p);
-      std::get<1>(nodepCFG) = std::get<2>(p);
-      std::get<2>(nodepCFG) = std::get<3>(p);
-      break;
+  //Match source BB, to search start entry of one path.
+  llvm::Function::iterator it(std::get<1>(nodepCFG));
+  llvm::Function::iterator begin(it->getParent()->begin());
+  uint64_t src,dest=0;
+  for(; it!=begin; it-- ){
+    auto bb = dyn_cast<llvm::BasicBlock>(it);
+    for(auto p : partCFG){
+      if((bb - std::get<0>(p)) == 0){
+        std::get<0>(nodepCFG) = std::get<0>(p);
+        std::get<1>(nodepCFG) = std::get<2>(p);
+        std::get<2>(nodepCFG) = std::get<3>(p);
+	dest = std::get<1>(p);
+	src = std::get<3>(p);
+	errs()<<"partCFG--> dest: "<<dest<<" src: "<<src<<"\n";
+        return;
     } 
   }  
+  }
 }
 
 uint32_t JumpTargetManager::belongToUBlock(llvm::BasicBlock *block){
@@ -1818,7 +1828,6 @@ void JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock){
  
   std::vector<llvm::Instruction *> DataFlow1;
   std::vector<llvm::Instruction *> &DataFlow = DataFlow1;  
-
   for(;I!=endInst;I++){
     // case 1: load instruction
     if(I->getOpcode() == Instruction::Load){
@@ -1835,7 +1844,21 @@ void JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock){
     }
   }
  
-  //analysisLegalValue(userCodeFlag1,0);
+  std::vector<legalValue> legalSet1;
+  std::vector<legalValue> &legalSet = legalSet1;
+  analysisLegalValue(DataFlow,legalSet);
+  //Log information.
+  for(auto set : legalSet){
+    for(auto ii : set.I)
+      errs()<<*ii<<" -------------";
+    errs()<<"\n";
+    for(auto vvv : set.value) 
+      errs() <<*vvv<<" +++++++++++\n";
+    
+    errs()<<"\n";
+  }
+
+
 }
 
 void JumpTargetManager::handleIndirectInst(llvm::BasicBlock *thisBlock, 
@@ -1942,6 +1965,7 @@ void JumpTargetManager::handleIllegalJumpAddress(llvm::BasicBlock *thisBlock,
 
   auto br = dyn_cast<BranchInst>(--thisBlock->end());
   while(br){
+    revng_abort("I forget!\n");
     thisBlock = dyn_cast<BasicBlock>(br->getOperand(0));
     br = dyn_cast<BranchInst>(--thisBlock->end());
   }
