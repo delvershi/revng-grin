@@ -177,6 +177,7 @@ public:
   int64_t getDestBRPCWrite(llvm::BasicBlock *block);
   bool haveTranslatedPC(uint64_t pc, uint64_t next);
 
+  // destAddr, srcBB, srcAddr.
   std::vector<std::tuple<uint64_t, llvm::BasicBlock *, uint64_t>> BranchTargets;  
 
   void harvestCallBasicBlock(llvm::BasicBlock *thisBlock, uint64_t thisAddr);
