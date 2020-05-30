@@ -2673,10 +2673,10 @@ int64_t JumpTargetManager::getDestBRPCWrite(llvm::BasicBlock *block) {
     auto Store = dyn_cast<StoreInst>(current);
     if(Store){
       auto constantvalue = dyn_cast<ConstantInt>(Store->getValueOperand());
-      if(constantvalue && constantvalue->getSExtValue()>0x400000){
-        auto value = constantvalue->getSExtValue();
-        // outs()<<value<<" ***++*+\n";  
-        return value;
+      if(constantvalue){
+        auto pc = constantvalue->getSExtValue();
+	if(isExecutableAddress(pc) || isInstructionAligned(pc))  
+          return pc;
       }
     }
   }
