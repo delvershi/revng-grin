@@ -220,7 +220,8 @@ public:
   LastAssignmentResultWithInst getLastAssignment(llvm::Value *v, 
                                          llvm::User *userInst,
                                          llvm::BasicBlock *currentBB,
-					 TrackbackMode TrackType);
+					 TrackbackMode TrackType,
+					 uint32_t &NUMOFCONST);
   bool islegalAddr(llvm::Value *v);
   unsigned int StrToInt(const char *str);
   /* Judging whether the Block is User define Block area*/

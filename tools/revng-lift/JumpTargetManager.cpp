@@ -1683,7 +1683,8 @@ JumpTargetManager::LastAssignmentResultWithInst
 JumpTargetManager:: getLastAssignment(llvm::Value *v, 
                                       llvm::User *userInst, 
                                       llvm::BasicBlock *currentBB,
-				      TrackbackMode TrackType){
+				      TrackbackMode TrackType,
+				      uint32_t &NUMOFCONST){
   if(dyn_cast<ConstantInt>(v)){
     return std::make_pair(ConstantValueAssign,nullptr);
   }
@@ -1700,9 +1701,12 @@ JumpTargetManager:: getLastAssignment(llvm::Value *v,
 	  case RCX:
 	  case RDX:
 	  case RSI:
-	  case RDI: 
-	      return std::make_pair(ConstantValueAssign,nullptr);
-	  break;
+	  case RDI:
+	  {
+	    NUMOFCONST--;
+	    if(NUMOFCONST==0) 
+	        return std::make_pair(ConstantValueAssign,nullptr);
+	  }break;
 	}
     }break;
   } 
@@ -2137,6 +2141,9 @@ void JumpTargetManager::getIllegalValueDFG(llvm::Value *v,
   vs.push_back(std::make_tuple(v,dyn_cast<User>(I),thisBlock));
   DataFlow.push_back(I);
 
+  uint32_t NUMOFCONST1 = 3;
+  uint32_t &NUMOFCONST = NUMOFCONST1;
+
   std::map<llvm::BasicBlock *, llvm::BasicBlock *> DoneOFPath1;
   std::map<llvm::BasicBlock *, llvm::BasicBlock *> &DoneOFPath = DoneOFPath1;
   DoneOFPath[std::get<0>(nodepCFG)] = std::get<1>(nodepCFG); 
@@ -2154,7 +2161,7 @@ void JumpTargetManager::getIllegalValueDFG(llvm::Value *v,
 	//Determine whether bb belongs to user code section 
 	//userCodeFlag = belongToUBlock(bb);
 	userCodeFlag = 1;
-        std::tie(result,lastInst) = getLastAssignment(v1,operateUser,bb,TrackType);
+        std::tie(result,lastInst) = getLastAssignment(v1,operateUser,bb,TrackType,NUMOFCONST);
         switch(result)
         {
           case CurrentBlockValueDef:
@@ -2268,6 +2275,7 @@ void JumpTargetManager::getIllegalValueDFG(llvm::Value *v,
     }///?for(;nodeBB != begin;)?
 NextValue:
     errs()<<"Explore next Value of illegal Value of DFG!\n";
+    NUMOFCONST = 3;
     continue;
   }///?while(!vs.empty())?
 }
