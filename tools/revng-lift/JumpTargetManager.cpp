@@ -1970,8 +1970,6 @@ void JumpTargetManager::handleIllegalJumpAddress(llvm::BasicBlock *thisBlock,
   //Some bb may be splitted, so tracking to the end bb of splitted.
   auto br = dyn_cast<BranchInst>(--thisBlock->end());
   while(br){
-    errs()<<*thisBlock;
-    revng_abort("I forget!\n");
     thisBlock = dyn_cast<BasicBlock>(br->getOperand(0));
     br = dyn_cast<BranchInst>(--thisBlock->end());
   }
