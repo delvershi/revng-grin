@@ -1894,8 +1894,6 @@ void JumpTargetManager::handleIndirectInst(llvm::BasicBlock *thisBlock,
     std::vector<legalValue> &legalSet = legalSet1;
     analysisLegalValue(DataFlow,legalSet);
 
-    range = getLegalValueRange(thisBlock);
-
     //Log information.
     for(auto set : legalSet){
       for(auto ii : set.I)
@@ -1932,6 +1930,8 @@ void JumpTargetManager::handleIndirectInst(llvm::BasicBlock *thisBlock,
       return;
     }
     
+    range = getLegalValueRange(thisBlock);
+    errs()<<range<<" <---range\n";
     if(range == 0)
       revng_abort("Not implement and 'range == 0'\n");
 
@@ -2089,18 +2089,17 @@ uint32_t JumpTargetManager::getLegalValueRange(llvm::BasicBlock *thisBlock){
     errs()<<"\n";
   } 
 
-  //Determine if there have a range.
-  //If all values are constant, there is no range. 
-  for(auto set : legalSet){
-    for(auto value : set.value){
-      auto constant = dyn_cast<ConstantInt>(value);
-      if(constant == nullptr)
-        goto go_on;   
-    }
-  }
-  return 0;
+//  //Determine if there have a range.
+//  //If all values are constant, there is no range. 
+//  for(auto set : legalSet){
+//    for(auto value : set.value){
+//      auto constant = dyn_cast<ConstantInt>(value);
+//      if(constant == nullptr)
+//        goto go_on;   
+//    }
+//  }
+//  return 0;
 
-go_on:
   bool firstConst = true;
   for(auto first : legalSet.front().value){
     auto constant = dyn_cast<ConstantInt>(first);
@@ -2112,7 +2111,6 @@ go_on:
       auto constant = dyn_cast<ConstantInt>(legalSet.front().value.front());
       revng_assert(constant,"That should a constant value!\n");
       auto n = constant->getZExtValue();
-      errs()<<n<<" <---range\n";
       return n;
     }
     else{
