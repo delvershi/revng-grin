@@ -1911,7 +1911,8 @@ void JumpTargetManager::handleIndirectInst(llvm::BasicBlock *thisBlock,
       if(legalSet[i].I[0]->getOpcode() == Instruction::Add){
         if(((i+1) < legalSet.size()) and 
 	   (legalSet[i+1].I[0]->getOpcode() == Instruction::Shl)){
-            isJmpTable = true;
+            legalSet.erase(legalSet.begin()+i+2,legalSet.end()-1);
+	    isJmpTable = true;
 	    break;
 	}
       }
@@ -1929,7 +1930,7 @@ void JumpTargetManager::handleIndirectInst(llvm::BasicBlock *thisBlock,
       errs()<<"This indirect jmp is not jmp table type.\n";
       return;
     }
-    
+
     range = getLegalValueRange(thisBlock);
     errs()<<range<<" <---range\n";
     if(range == 0)
@@ -2381,7 +2382,7 @@ void JumpTargetManager::foldSet(std::vector<legalValue> &legalSet){
 	    uint64_t address = integer->getZExtValue();
 	    if(!ptc.isValidExecuteAddr(address)){
 	      errs()<<"\nYielding an illegal addrress\n";
-	      return;
+	      continue;
 	    }
 	    uint64_t n = *((uint64_t *)address);
 	    base[i] = ConstantInt::get(base[i]->getType(),n);
