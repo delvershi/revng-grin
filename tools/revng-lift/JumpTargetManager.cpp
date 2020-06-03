@@ -2345,9 +2345,9 @@ void JumpTargetManager::foldSet(std::vector<legalValue> &legalSet){
           for(uint32_t n = 0; n<range+1; n++){
             auto constant = dyn_cast<ConstantInt>(set.value[0]);
 	    if(constant){
-	      uint64_t address = constant->getZExtValue();
-	      auto newoperand = ConstantInt::get(set.I[0]->getType(),address);
-	      base.push_back(newoperand);
+	      //uint64_t address = constant->getZExtValue();
+	      //auto newoperand = ConstantInt::get(set.I[0]->getType(),address);
+	      base.push_back(dyn_cast<Constant>(set.value[0]));
 	    }
 	    else{
 	      auto newoperand = ConstantInt::get(set.I[0]->getType(),n);
