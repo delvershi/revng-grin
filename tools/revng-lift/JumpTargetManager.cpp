@@ -1791,6 +1791,7 @@ JumpTargetManager:: getLastAssignment(llvm::Value *v,
 	    case llvm::Instruction::LShr:
 	    case llvm::Instruction::AShr:
             case llvm::Instruction::Or:
+	    case llvm::Instruction::Xor:
 	    case llvm::Instruction::Br:
 	    case llvm::Instruction::Call:
 	    case llvm::Instruction::Mul:			  
@@ -2309,6 +2310,7 @@ void JumpTargetManager::analysisLegalValue(std::vector<llvm::Instruction *> &Dat
 	case Instruction::AShr:
 	case Instruction::LShr:
 	case Instruction::Or:
+	case Instruction::Xor:
 	case Instruction::ICmp:
 	case Instruction::Mul:
 	    handleBinaryOperation(DataFlow[i],next,legalSet,relatedInstPtr1);
