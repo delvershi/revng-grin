@@ -1190,7 +1190,8 @@ JumpTargetManager::registerJT(uint64_t PC, JTReason::Values Reason) {
   // Create a case for the address associated to the new block
   auto *PCRegType = PCReg->getType();
   auto *SwitchType = cast<IntegerType>(PCRegType->getPointerElementType());
-  DispatcherSwitch->addCase(ConstantInt::get(SwitchType, PC), NewBlock);
+  auto a = ConstantInt::get(SwitchType, PC);
+  DispatcherSwitch->addCase(a, NewBlock);
 
   // Associate the PC with the chosen basic block
   JumpTargets[PC] = JumpTarget(NewBlock, Reason);
@@ -1816,7 +1817,8 @@ JumpTargetManager:: getLastAssignment(llvm::Value *v,
   return std::make_pair(UnknowResult,nullptr);   
 }
 
-void JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock){
+void JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock,
+		                                 std::vector<uint64_t> &AddrInstrBB){
   uint32_t userCodeFlag = 0;
   uint32_t &userCodeFlag1 = userCodeFlag;
   BasicBlock::iterator I = thisBlock->begin();
@@ -1863,7 +1865,26 @@ void JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock){
     errs()<<"\n";
   }
 
+  thisBlock->eraseFromParent();
+  //Remove from dispatch switch.
+  auto thisAddr = AddrInstrBB.front();
+  auto PCRegType = PCReg->getType();
+  auto SwitchType = cast<IntegerType>(PCRegType->getPointerElementType());
+  auto caseConstantInt = ConstantInt::get(SwitchType,thisAddr);
+  auto caseit = DispatcherSwitch->findCaseValue(caseConstantInt);
+  DispatcherSwitch->removeCase(caseit);
 
+  /* Remove all address : instruction pair of one basic block.
+   * Remove pc : basicblock pair. */
+  for(auto pc : AddrInstrBB){
+    InstructionMap::iterator InstIt = OriginalInstructionAddresses.find(pc);
+    if(InstIt != OriginalInstructionAddresses.end())
+        OriginalInstructionAddresses.erase(InstIt);
+    
+    BlockMap::iterator TargetIt = JumpTargets.find(pc);
+    if(TargetIt != JumpTargets.end())
+        JumpTargets.erase(TargetIt);
+  }
 }
 
 void JumpTargetManager::handleIndirectInst(llvm::BasicBlock *thisBlock, 

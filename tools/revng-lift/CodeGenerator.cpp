@@ -784,10 +784,15 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
   uint64_t jtVirtualAddress;
   uint64_t tmpVA = 0;
   llvm::BasicBlock *srcBB = nullptr;
-  uint64_t srcAddr = 0; 
+  uint64_t srcAddr = 0;
+  //Save all instruction addresses of a basic block.
+  std::vector<uint64_t> AddrInstrBB1;
+  std::vector<uint64_t> &AddrInstrBB = AddrInstrBB1;
+
   while (Entry != nullptr) {
     jjj++;
     BlockBRs = nullptr;
+    AddrInstrBB.clear();
     if(!JumpTargets.haveBB){
       Builder.SetInsertPoint(Entry);
       BlockBRs = Builder.GetInsertBlock();
@@ -846,6 +851,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     IT::TranslationResult Result;
     bool ForceNewBlock = false;
 
+    AddrInstrBB.push_back(PC);
     // Handle the first PTC_INSTRUCTION_op_debug_insn_start
     {
       PTCInstruction *NextInstruction = nullptr;
@@ -866,6 +872,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
                                                    EndPC,
                                                    true,
                                                    false);
+      AddrInstrBB.push_back(PC);
       j++;
     }
 
@@ -904,7 +911,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
                                                      EndPC,
                                                      false,
                                                      ForceNewBlock);
-
+        AddrInstrBB.push_back(PC);
         ForceNewBlock = false;
       } break;
       case PTC_INSTRUCTION_op_call: {
@@ -998,9 +1005,9 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       }
     }
     if(*ptc.exception_syscall == 11){
-      //  JumpTargets.handleIllegalJumpAddress(BlockBRs,tmpVA);
-      JumpTargets.handleIllegalMemoryAccess(BlockBRs);
-      *ptc.exception_syscall = -1;//TODO modify later.
+      JumpTargets.handleIllegalMemoryAccess(BlockBRs,AddrInstrBB);
+      *ptc.exception_syscall = -1;
+      JumpTargets.haveBB = 1;
     }
 
     //if(!JumpTargets.haveBB and *ptc.isIndirectJmp and !traverseFLAG)
@@ -1225,9 +1232,9 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
   Variables.setDataLayout(&TheModule->getDataLayout());
 
   legacy::PassManager PM;
-  PM.add(createSROAPass());
+  //PM.add(createSROAPass());
   PM.add(new CpuLoopExitPass(&Variables));
-  PM.add(Variables.createCPUStateAccessAnalysisPass());
+  //PM.add(Variables.createCPUStateAccessAnalysisPass());
   PM.add(createDeadCodeEliminationPass());
   PM.run(*TheModule);
 
