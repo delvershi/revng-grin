@@ -204,8 +204,7 @@ public:
                    * 'rax rbx rcx rdx rsi rdi' */
   }; 
 
-  void handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock, 
-		  std::vector<uint64_t> &AddrInstrBB);
+  void handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock, uint64_t thisAddr);
   void handleIllegalJumpAddress(llvm::BasicBlock *thisBlock, uint64_t thisAddr);
   void handleIndirectInst(llvm::BasicBlock *thisBlock, uint64_t thisAddr);
   void getIllegalValueDFG(llvm::Value *v,llvm::Instruction *I,
@@ -600,8 +599,8 @@ public:
     for (auto &P : JumpTargets) {
       JumpTarget &JT = P.second;
       TerminatorInst *T = JT.head()->getTerminator();
-      errs()<<(JT.head()->getName())<<"\n";
-      errs()<<JT.head()->empty()<<"      terminator\n";
+     // errs()<<(JT.head()->getName())<<"\n";
+     // errs()<<JT.head()->empty()<<"      terminator\n";
       revng_assert(T != nullptr);
 
       std::vector<Metadata *> Reasons;

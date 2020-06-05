@@ -1818,11 +1818,12 @@ JumpTargetManager:: getLastAssignment(llvm::Value *v,
 }
 
 void JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock,
-		                                 std::vector<uint64_t> &AddrInstrBB){
+		                                  uint64_t thisAddr){
   uint32_t userCodeFlag = 0;
   uint32_t &userCodeFlag1 = userCodeFlag;
   BasicBlock::iterator I = thisBlock->begin();
-  auto endInst = thisBlock->end();
+  BasicBlock::reverse_iterator rendInst = thisBlock->rend();
+  BasicBlock::iterator endInst = thisBlock->end();
 
   BasicBlock::iterator brI = --endInst;
   if(auto branch = dyn_cast<BranchInst>(brI)){
@@ -1865,26 +1866,51 @@ void JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock,
     errs()<<"\n";
   }
 
-  thisBlock->eraseFromParent();
+  uint64_t pc = 0;
+  BasicBlock::reverse_iterator r_it(dyn_cast<llvm::Instruction>(I));
+  for(; r_it != rendInst; r_it++){
+    if(auto marker = dyn_cast<CallInst>(&*r_it)){
+      auto *Callee = marker->getCalledFunction();
+      if(Callee != nullptr && Callee->getName() == "newpc"){
+        pc = getLimitedValue(marker->getArgOperand(0));
+	break;
+      }
+    } 
+  }
+  if(pc == thisAddr){
+    for(auto it=I; it!=endInst; it++){
+      if(auto marker = dyn_cast<CallInst>(&*it)){
+        auto *Callee = marker->getCalledFunction();
+	if(Callee != nullptr && Callee->getName() == "newpc"){
+	  pc = getLimitedValue(marker->getArgOperand(0));
+	  break;
+	}
+      }
+    }
+  }
+  revng_assert(pc!=0);
+   
+  errs()<<format_hex(pc,0)<<" <- Crash point addr\n"; 
+//  thisBlock->eraseFromParent();
   //Remove from dispatch switch.
-  auto thisAddr = AddrInstrBB.front();
-  auto PCRegType = PCReg->getType();
-  auto SwitchType = cast<IntegerType>(PCRegType->getPointerElementType());
-  auto caseConstantInt = ConstantInt::get(SwitchType,thisAddr);
-  auto caseit = DispatcherSwitch->findCaseValue(caseConstantInt);
-  DispatcherSwitch->removeCase(caseit);
+//  auto thisAddr = AddrInstrBB.front();
+//  auto PCRegType = PCReg->getType();
+//  auto SwitchType = cast<IntegerType>(PCRegType->getPointerElementType());
+//  auto caseConstantInt = ConstantInt::get(SwitchType,thisAddr);
+//  auto caseit = DispatcherSwitch->findCaseValue(caseConstantInt);
+//  DispatcherSwitch->removeCase(caseit);
+  
+//  BlockMap::iterator TargetIt = JumpTargets.find(thisAddr);
+//  if(TargetIt != JumpTargets.end())
+//      JumpTargets.erase(TargetIt);
 
   /* Remove all address : instruction pair of one basic block.
    * Remove pc : basicblock pair. */
-  for(auto pc : AddrInstrBB){
-    InstructionMap::iterator InstIt = OriginalInstructionAddresses.find(pc);
-    if(InstIt != OriginalInstructionAddresses.end())
-        OriginalInstructionAddresses.erase(InstIt);
-    
-    BlockMap::iterator TargetIt = JumpTargets.find(pc);
-    if(TargetIt != JumpTargets.end())
-        JumpTargets.erase(TargetIt);
-  }
+//  for(auto pc : AddrInstrBB){
+//    InstructionMap::iterator InstIt = OriginalInstructionAddresses.find(pc);
+//    if(InstIt != OriginalInstructionAddresses.end())
+//        OriginalInstructionAddresses.erase(InstIt);
+//  }
 }
 
 void JumpTargetManager::handleIndirectInst(llvm::BasicBlock *thisBlock, 
