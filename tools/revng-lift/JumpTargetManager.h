@@ -204,7 +204,7 @@ public:
                    * 'rax rbx rcx rdx rsi rdi' */
   }; 
 
-  void handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock, uint64_t thisAddr);
+  llvm::BasicBlock *handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock, uint64_t thisAddr);
   void handleIllegalJumpAddress(llvm::BasicBlock *thisBlock, uint64_t thisAddr);
   void handleIndirectInst(llvm::BasicBlock *thisBlock, uint64_t thisAddr);
   void getIllegalValueDFG(llvm::Value *v,llvm::Instruction *I,
@@ -223,8 +223,9 @@ public:
                                          llvm::BasicBlock *currentBB,
 					 TrackbackMode TrackType,
 					 uint32_t &NUMOFCONST);
-  bool islegalAddr(llvm::Value *v);
-  unsigned int StrToInt(const char *str);
+  bool isAccessMemInst(llvm::Instruction *I);
+  std::pair<bool, uint32_t> islegalAddr(llvm::Value *v);
+  uint32_t StrToInt(const char *str);
   /* Judging whether the Block is User define Block area*/
   uint32_t belongToUBlock(llvm::BasicBlock *block);
 

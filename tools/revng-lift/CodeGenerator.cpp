@@ -785,6 +785,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
   uint64_t tmpVA = 0;
   llvm::BasicBlock *srcBB = nullptr;
   uint64_t srcAddr = 0;
+  llvm::BasicBlock *crashBB = nullptr;
   while (Entry != nullptr) {
     jjj++;
     BlockBRs = nullptr;
@@ -997,8 +998,12 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       }
     }
     if(*ptc.exception_syscall == 11){
-      JumpTargets.handleIllegalMemoryAccess(BlockBRs,tmpVA);
+      crashBB = JumpTargets.handleIllegalMemoryAccess(BlockBRs,tmpVA);
       *ptc.exception_syscall = -1;
+      if(crashBB){
+	BlockBRs = nullptr;
+	DynamicVirtualAddress = tmpVA;
+      }
     }
 
     //if(!JumpTargets.haveBB and *ptc.isIndirectJmp and !traverseFLAG)
@@ -1069,7 +1074,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
 
     if(DynamicVirtualAddress){
       auto tmpBB = JumpTargets.registerJT(DynamicVirtualAddress,JTReason::GlobalData);
-      if(JumpTargets.haveBB){
+      if(JumpTargets.haveBB and (tmpBB != crashBB)){
         // If have translated BB, give Entry an arbitrary value
         Entry = tmpBB;
         VirtualAddress = DynamicVirtualAddress;
@@ -1079,6 +1084,9 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
         if(srcBB)
 	  JumpTargets.pushpartCFGStack(Entry,VirtualAddress,srcBB,srcAddr);
         srcBB = nullptr;
+	crashBB = nullptr;
+	// For handling crash.
+	JumpTargets.haveBB = 0;
       }
       if(BlockBRs != nullptr){  
         auto branchLabeledcontent = Translator.branchcontent(); 

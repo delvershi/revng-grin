@@ -635,6 +635,7 @@ BasicBlock *JumpTargetManager::newPC(uint64_t PC, bool &ShouldContinue) {
   // happens with variable-length instruction encodings.
   if (OriginalInstructionAddresses.count(PC) != 0) {
     ShouldContinue = false;
+    revng_abort("Why this?\n");
     return registerJT(PC, JTReason::AmbigousInstruction);
   }
 
@@ -1616,7 +1617,7 @@ uint32_t JumpTargetManager::belongToUBlock(llvm::BasicBlock *block){
 /* TODO: In the future, there will be modify by 
  *       orignal Inst is judged access memory rather than judge LLVM IR 
  */
-bool JumpTargetManager::islegalAddr(llvm::Value *v){
+std::pair<bool, uint32_t> JumpTargetManager::islegalAddr(llvm::Value *v){
   uint64_t va = 0;
   StringRef Iargs = v->getName();
  
@@ -1627,57 +1628,54 @@ bool JumpTargetManager::islegalAddr(llvm::Value *v){
       va = ptc.regs[R_EAX];
       //errs()<<va<<" :eax\n";
       if(!ptc.is_image_addr(va))
-        return 0;
+        return std::make_pair(0,RAX);
     break;
     case RCX:
       va = ptc.regs[R_ECX];
       //errs()<<ptc.regs[R_ECX]<<" ++\n";
       if(!ptc.is_image_addr(va))
-        return 0;
+        return std::make_pair(0,RCX);
     break;
     case RDX:
       va = ptc.regs[R_EDX];
       //errs()<<ptc.regs[R_EDX]<<" ++\n";
       if(!ptc.is_image_addr(va))
-        return 0;
+        return std::make_pair(0,RDX);
     break;
     case RBX:
       va = ptc.regs[R_EBX];
       //errs()<<ptc.regs[R_EBX]<<" ++\n";
       if(!ptc.is_image_addr(va))
-        return 0;
+        return std::make_pair(0,RBX);
     break;
     case RSP:
       va = ptc.regs[R_ESP];
       //errs()<<ptc.regs[R_ESP]<<" ++\n";
       if(!ptc.is_image_addr(va))
-        return 0;
+        revng_abort("RSP shouldn't be illegal address!\n");
     break;
     case RBP:
       va = ptc.regs[R_EBP];
       //errs()<<ptc.regs[R_EBP]<<" ++\n";
       if(!ptc.is_image_addr(va))
-        return 0;
+        return std::make_pair(0,RBP);
     break;
     case RSI:
       va = ptc.regs[R_ESI];
       //errs()<<ptc.regs[R_ESI]<<" ++\n";
       if(!ptc.is_image_addr(va))
-        return 0;
+        return std::make_pair(0,RSI);
     break;
     case RDI:
       va = ptc.regs[R_EDI];
       //errs()<<ptc.regs[R_EDI]<<" ++\n";
       if(!ptc.is_image_addr(va))
-        return 0;
+        return std::make_pair(0,RDI);
     break;
     default:
       errs()<<"No match register arguments! \n";
   }
-  return 1;
-
-//illegal_addr:
-//  return 0;
+  return std::make_pair(1,0);
 }
 
 JumpTargetManager::LastAssignmentResultWithInst 
@@ -1817,33 +1815,44 @@ JumpTargetManager:: getLastAssignment(llvm::Value *v,
   return std::make_pair(UnknowResult,nullptr);   
 }
 
-void JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock,
+bool isAccessMemInst(llvm::Instruction *I){
+//  BasicBlock::iterator it(I);
+//  BasicBlock::iterator end = I->getParent()->end();
+//  auto v = dyn_cast<llvm::Value>(I);
+//  for(; it!=end; it++)
+    return true;
+}
+
+BasicBlock * JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock,
 		                                  uint64_t thisAddr){
   uint32_t userCodeFlag = 0;
   uint32_t &userCodeFlag1 = userCodeFlag;
   BasicBlock::iterator I = thisBlock->begin();
-  BasicBlock::reverse_iterator rendInst = thisBlock->rend();
+//  BasicBlock::reverse_iterator rendInst = thisBlock->rend();
   BasicBlock::iterator endInst = thisBlock->end();
 
   BasicBlock::iterator brI = --endInst;
   if(auto branch = dyn_cast<BranchInst>(brI)){
     if(branch->isConditional()){
       errs()<<"\nThis Block contains br instruction, don't need analysis partCFG!\n";
-      return;
+      return nullptr;
     }
   }
       //outs()<<*I<<"\n";
- 
+  bool islegal = false;
+  uint32_t registerOP = 0; 
   std::vector<llvm::Instruction *> DataFlow1;
-  std::vector<llvm::Instruction *> &DataFlow = DataFlow1;  
+  std::vector<llvm::Instruction *> &DataFlow = DataFlow1; 
+  NODETYPE nodetmp = nodepCFG; 
   for(;I!=endInst;I++){
     // case 1: load instruction
     if(I->getOpcode() == Instruction::Load){
         errs()<<*I<<"         <-Load \n";
         auto linst = dyn_cast<llvm::LoadInst>(I);
         Value *v = linst->getPointerOperand();
-
-        if(!islegalAddr(v)){
+        std::tie(islegal,registerOP) = islegalAddr(v);
+//	auto access = isAccessMemInst(dyn_cast<llvm::Instruction>(I));
+        if(!islegal){
           getIllegalValueDFG(v,dyn_cast<llvm::Instruction>(I),
 			  thisBlock,DataFlow,FullMode,userCodeFlag1);
           errs()<<"Finished analysis illegal access Data Flow!\n";
@@ -1851,7 +1860,9 @@ void JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock,
         }
     }
   }
- 
+  nodepCFG = nodetmp;
+  revng_assert(I!=endInst);
+
   std::vector<legalValue> legalSet1;
   std::vector<legalValue> &legalSet = legalSet1;
   analysisLegalValue(DataFlow,legalSet);
@@ -1866,44 +1877,85 @@ void JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock,
     errs()<<"\n";
   }
 
-  uint64_t pc = 0;
-  BasicBlock::reverse_iterator r_it(dyn_cast<llvm::Instruction>(I));
-  for(; r_it != rendInst; r_it++){
-    if(auto marker = dyn_cast<CallInst>(&*r_it)){
-      auto *Callee = marker->getCalledFunction();
-      if(Callee != nullptr && Callee->getName() == "newpc"){
-        pc = getLimitedValue(marker->getArgOperand(0));
-	break;
-      }
-    } 
-  }
-  if(pc == thisAddr){
-    for(auto it=I; it!=endInst; it++){
-      if(auto marker = dyn_cast<CallInst>(&*it)){
-        auto *Callee = marker->getCalledFunction();
-	if(Callee != nullptr && Callee->getName() == "newpc"){
-	  pc = getLimitedValue(marker->getArgOperand(0));
-	  break;
-	}
-      }
-    }
-  }
-  revng_assert(pc!=0);
-   
-  errs()<<format_hex(pc,0)<<" <- Crash point addr\n"; 
+//  uint64_t pc = 0;
+//  BasicBlock::reverse_iterator r_it(dyn_cast<llvm::Instruction>(I));
+//  for(; r_it != rendInst; r_it++){
+//    if(auto marker = dyn_cast<CallInst>(&*r_it)){
+//      auto *Callee = marker->getCalledFunction();
+//      if(Callee != nullptr && Callee->getName() == "newpc"){
+//        pc = getLimitedValue(marker->getArgOperand(0));
+//	break;
+//      }
+//    } 
+//  }
+//  if(pc == thisAddr){
+//    for(auto it=I; it!=endInst; it++){
+//      if(auto marker = dyn_cast<CallInst>(&*it)){
+//        auto *Callee = marker->getCalledFunction();
+//	if(Callee != nullptr && Callee->getName() == "newpc"){
+//	  pc = getLimitedValue(marker->getArgOperand(0));
+//	  break;
+//	}
+//      }
+//    }
+//  }
+//  revng_assert(pc!=0);
+//   
+//  errs()<<format_hex(pc,0)<<" <- Crash point addr\n"; 
+
 //  thisBlock->eraseFromParent();
   //Remove from dispatch switch.
-//  auto thisAddr = AddrInstrBB.front();
-//  auto PCRegType = PCReg->getType();
-//  auto SwitchType = cast<IntegerType>(PCRegType->getPointerElementType());
-//  auto caseConstantInt = ConstantInt::get(SwitchType,thisAddr);
-//  auto caseit = DispatcherSwitch->findCaseValue(caseConstantInt);
-//  DispatcherSwitch->removeCase(caseit);
-  
-//  BlockMap::iterator TargetIt = JumpTargets.find(thisAddr);
-//  if(TargetIt != JumpTargets.end())
-//      JumpTargets.erase(TargetIt);
+ 
+ // auto PCRegType = PCReg->getType();
+ // auto SwitchType = cast<IntegerType>(PCRegType->getPointerElementType());
+ // auto caseConstantInt = ConstantInt::get(SwitchType,thisAddr);
+ // auto caseit = DispatcherSwitch->findCaseValue(caseConstantInt);
+ // DispatcherSwitch->removeCase(caseit);
+ 
 
+
+  //BlockMap::iterator TargetIt = JumpTargets.find(thisAddr);
+  //if(TargetIt != JumpTargets.end())
+  //    JumpTargets.erase(TargetIt);
+
+ 
+  switch(registerOP){
+      case RAX:
+          ptc.regs[R_EAX] = ptc.regs[R_ESP];
+          break;
+      case RCX:
+          ptc.regs[R_ECX] = ptc.regs[R_ESP];
+          break;
+      case RDX:
+          ptc.regs[R_EDX] = ptc.regs[R_ESP];
+          break;
+      case RBX:
+          ptc.regs[R_EBX] = ptc.regs[R_ESP];
+          break;
+      case RBP:
+          ptc.regs[R_EBP] = ptc.regs[R_ESP];
+          break;
+      case RSI:
+          ptc.regs[R_ESI] = ptc.regs[R_ESP];
+          break;
+      case RDI:
+          ptc.regs[R_EDI] = ptc.regs[R_ESP];
+          break;
+      default:
+          revng_abort("Unknow register operate.\n");
+	  break;
+  }
+  ToPurge.insert(thisBlock);
+  Unexplored.push_back(BlockWithAddress(thisAddr, thisBlock));
+
+  return thisBlock;
+  //ptc.regs[R_EAX] = ptc.regs[R_ESP];
+
+
+
+  //thisBlock->eraseFromParent();
+  
+ 
   /* Remove all address : instruction pair of one basic block.
    * Remove pc : basicblock pair. */
 //  for(auto pc : AddrInstrBB){
@@ -2628,8 +2680,8 @@ bool JumpTargetManager::isCorrelationWithNext(llvm::Value *preValue, llvm::Instr
   return 0;
 }
 
-unsigned int JumpTargetManager::StrToInt(const char *str){
-  unsigned int dest =  (str[1]*1000)+str[2];
+uint32_t JumpTargetManager::StrToInt(const char *str){
+  uint32_t dest =  (str[1]*1000)+str[2];
   return dest;
 }
 
