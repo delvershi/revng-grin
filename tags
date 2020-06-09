@@ -1093,6 +1093,14 @@ Queue	include/revng/Support/MonotoneFramework.h	/^  UniquedQueue<Iterated> Queue
 QueueImpl	include/revng/ADT/Queue.h	/^class QueueImpl {$/;"	c
 QuickMetadata	include/revng/Support/IRHelpers.h	/^  QuickMetadata(llvm::LLVMContext &Context) :$/;"	f	class:QuickMetadata
 QuickMetadata	include/revng/Support/IRHelpers.h	/^class QuickMetadata {$/;"	c
+R10	tools/revng-lift/PTCInterface.h	39;"	d
+R11	tools/revng-lift/PTCInterface.h	40;"	d
+R12	tools/revng-lift/PTCInterface.h	41;"	d
+R13	tools/revng-lift/PTCInterface.h	42;"	d
+R14	tools/revng-lift/PTCInterface.h	43;"	d
+R15	tools/revng-lift/PTCInterface.h	44;"	d
+R8	tools/revng-lift/PTCInterface.h	37;"	d
+R9	tools/revng-lift/PTCInterface.h	38;"	d
 RAI_H	include/revng/Support/RandomAccessIterator.h	2;"	d
 RANGE_H	include/revng/Support/Range.h	2;"	d
 RAOFC	lib/StackAnalysis/FunctionABI.h	/^  RegisterArgumentsOfFunctionCall RAOFC;$/;"	m	class:StackAnalysis::CallSiteRegisterState
@@ -1145,14 +1153,22 @@ RHS	tools/revng-lift/SimplifyComparisonsPass.h	/^    llvm::Value *RHS;$/;"	m	str
 ROA	lib/StackAnalysis/ASSlot.h	250;"	d
 RSI	tools/revng-lift/PTCInterface.h	35;"	d
 RSP	tools/revng-lift/PTCInterface.h	33;"	d
-R_EAX	tools/revng-lift/PTCInterface.h	38;"	d
-R_EBP	tools/revng-lift/PTCInterface.h	43;"	d
-R_EBX	tools/revng-lift/PTCInterface.h	41;"	d
-R_ECX	tools/revng-lift/PTCInterface.h	39;"	d
-R_EDI	tools/revng-lift/PTCInterface.h	45;"	d
-R_EDX	tools/revng-lift/PTCInterface.h	40;"	d
-R_ESI	tools/revng-lift/PTCInterface.h	44;"	d
-R_ESP	tools/revng-lift/PTCInterface.h	42;"	d
+R_10	tools/revng-lift/PTCInterface.h	56;"	d
+R_11	tools/revng-lift/PTCInterface.h	57;"	d
+R_12	tools/revng-lift/PTCInterface.h	58;"	d
+R_13	tools/revng-lift/PTCInterface.h	59;"	d
+R_14	tools/revng-lift/PTCInterface.h	60;"	d
+R_15	tools/revng-lift/PTCInterface.h	61;"	d
+R_8	tools/revng-lift/PTCInterface.h	54;"	d
+R_9	tools/revng-lift/PTCInterface.h	55;"	d
+R_EAX	tools/revng-lift/PTCInterface.h	46;"	d
+R_EBP	tools/revng-lift/PTCInterface.h	51;"	d
+R_EBX	tools/revng-lift/PTCInterface.h	49;"	d
+R_ECX	tools/revng-lift/PTCInterface.h	47;"	d
+R_EDI	tools/revng-lift/PTCInterface.h	53;"	d
+R_EDX	tools/revng-lift/PTCInterface.h	48;"	d
+R_ESI	tools/revng-lift/PTCInterface.h	52;"	d
+R_ESP	tools/revng-lift/PTCInterface.h	50;"	d
 R_MIPS_IMPLICIT_RELATIVE	tools/revng-lift/BinaryFile.cpp	/^const unsigned char R_MIPS_IMPLICIT_RELATIVE = 255;$/;"	v
 RaiseException	lib/FunctionIsolation/IsolateFunctions.cpp	/^  Function *RaiseException;$/;"	m	class:IsolateFunctionsImpl	file:
 RandomAccessIterator	include/revng/Support/RandomAccessIterator.h	/^  RandomAccessIterator() : Index(0) {}$/;"	f	class:RandomAccessIterator
@@ -1335,7 +1351,7 @@ Storage	include/revng/ADT/LazySmallBitVector.h	/^  uintptr_t Storage;$/;"	m	clas
 Store	lib/StackAnalysis/ABIIR.h	/^  enum Opcode { Load, Store, DirectCall, IndirectCall };$/;"	e	enum:StackAnalysis::ABIIRInstruction::Opcode
 StoreCallSiteOffsets	tools/revng-lift/CPUStateAccessAnalysisPass.cpp	/^  ValueCallSiteOffsetMap StoreCallSiteOffsets;$/;"	m	class:CPUStateAccessOffsetAnalysis	file:
 StoreOffsets	tools/revng-lift/CPUStateAccessAnalysisPass.cpp	/^  AccessOffsetMap &StoreOffsets; \/\/ result, maps store or store-memcpy to$/;"	m	class:CPUStateAccessOffsetAnalysis	file:
-StrToInt	tools/revng-lift/JumpTargetManager.cpp	/^unsigned int JumpTargetManager::StrToInt(const char *str){$/;"	f	class:JumpTargetManager
+StrToInt	tools/revng-lift/JumpTargetManager.cpp	/^uint32_t JumpTargetManager::StrToInt(const char *str){$/;"	f	class:JumpTargetManager
 Stream	include/revng/Support/Debug.h	/^  O &Stream;$/;"	m	class:StreamWrapper
 StreamWrapper	include/revng/Support/Debug.h	/^  StreamWrapper(O &Stream) : Stream(Stream) {}$/;"	f	class:StreamWrapper
 StreamWrapper	include/revng/Support/Debug.h	/^class StreamWrapper : public StreamWrapperBase {$/;"	c
@@ -2450,7 +2466,7 @@ handleEdge	lib/StackAnalysis/Intraprocedural.h	/^  llvm::Optional<Element> handl
 handleEdge	lib/Support/ExampleAnalysis.cpp	/^  llvm::Optional<LatticeElement> handleEdge(const LatticeElement &Original,$/;"	f	class:ExampleAnalysis::Analysis
 handleGenericInstruction	lib/StackAnalysis/Intraprocedural.cpp	/^  void handleGenericInstruction(Instruction *I) {$/;"	f	class:StackAnalysis::Intraprocedural::BasicBlockState
 handleIllegalJumpAddress	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::handleIllegalJumpAddress(llvm::BasicBlock *thisBlock,$/;"	f	class:JumpTargetManager
-handleIllegalMemoryAccess	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock){$/;"	f	class:JumpTargetManager
+handleIllegalMemoryAccess	tools/revng-lift/JumpTargetManager.cpp	/^BasicBlock * JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock,$/;"	f	class:JumpTargetManager
 handleIndirectInst	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::handleIndirectInst(llvm::BasicBlock *thisBlock, $/;"	f	class:JumpTargetManager
 handleInstruction	tools/revng-lift/SET.cpp	/^Value *SET::handleInstruction(Instruction *Target, Value *V) {$/;"	f	class:SET
 handleInstructionWithOSRA	tools/revng-lift/SET.cpp	/^bool SET::handleInstructionWithOSRA(Instruction *Target, Value *V) {$/;"	f	class:SET
@@ -2582,6 +2598,7 @@ is64	tools/revng-lift/BinaryFile.cpp	/^bool DwarfReader<object::ELF32LE>::is64()
 is64	tools/revng-lift/BinaryFile.cpp	/^bool DwarfReader<object::ELF64BE>::is64() const {$/;"	f	class:DwarfReader
 is64	tools/revng-lift/BinaryFile.cpp	/^bool DwarfReader<object::ELF64LE>::is64() const {$/;"	f	class:DwarfReader
 isAbsoluteValue	tools/revng-lift/BinaryFile.h	/^  bool isAbsoluteValue() const { return Type == LabelType::AbsoluteValue; }$/;"	f	class:Label
+isAccessMemInst	tools/revng-lift/JumpTargetManager.cpp	/^bool JumpTargetManager::isAccessMemInst(llvm::Instruction *I){$/;"	f	class:JumpTargetManager
 isActive	tools/revng-lift/OSRA.cpp	/^  bool isActive(unsigned CurrentHeight) const {$/;"	f	class:Reacher
 isApproximate	tools/revng-lift/SET.cpp	/^  bool isApproximate() const { return Approximate; }$/;"	f	class:OperationsStack
 isArgument	lib/StackAnalysis/FunctionABI.h	/^  bool isArgument() const {$/;"	f	class:StackAnalysis::RegisterState
@@ -2715,7 +2732,7 @@ is_cyclic	scripts/monotone-framework.py	/^def is_cyclic(graph, entry):$/;"	f
 is_either	include/revng/ADT/LazySmallBitVector.h	/^constexpr bool is_either() {$/;"	f
 is_executable	runtime/support.c	/^bool is_executable(uint64_t pc) {$/;"	f
 isa_with_op	include/revng/Support/IRHelpers.h	/^inline I *isa_with_op(llvm::Instruction *Inst) {$/;"	f
-islegalAddr	tools/revng-lift/JumpTargetManager.cpp	/^bool JumpTargetManager::islegalAddr(llvm::Value *v){$/;"	f	class:JumpTargetManager
+islegalAddr	tools/revng-lift/JumpTargetManager.cpp	/^std::pair<bool, uint32_t> JumpTargetManager::islegalAddr(llvm::Value *v){$/;"	f	class:JumpTargetManager
 iterator	include/revng/Support/IRHelpers.h	/^  static llvm::BasicBlock::iterator iterator(llvm::Instruction *I) {$/;"	f	struct:IteratorDirection
 iterator	include/revng/Support/IRHelpers.h	/^  static llvm::BasicBlock::reverse_iterator iterator(llvm::Instruction *I) {$/;"	f	struct:IteratorDirection
 jmp_buffer	runtime/support.c	/^jmp_buf jmp_buffer;$/;"	v
@@ -3270,7 +3287,7 @@ saofc	tests/Analysis/x86_64/StackAnalysis/saofc.S	/^saofc:$/;"	l
 saved_argc	runtime/support.c	/^static int saved_argc;$/;"	v	file:
 saved_argv	runtime/support.c	/^static char **saved_argv;$/;"	v	file:
 saved_registers	runtime/support.c	/^target_reg *saved_registers;$/;"	v
-searchpartCFG	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::searchpartCFG(uint64_t srcAddr){$/;"	f	class:JumpTargetManager
+searchpartCFG	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::searchpartCFG(std::map<llvm::BasicBlock *,llvm::BasicBlock *> &DONE){$/;"	f	class:JumpTargetManager
 segments	tools/revng-lift/BinaryFile.h	/^  const std::vector<SegmentInfo> &segments() const { return Segments; }$/;"	f	class:BinaryFile
 segments	tools/revng-lift/BinaryFile.h	/^  std::vector<SegmentInfo> &segments() { return Segments; }$/;"	f	class:BinaryFile
 selectNextSource	tools/revng-lift/CPUStateAccessAnalysisPass.cpp	/^  bool selectNextSource(WorkItem &Item) {$/;"	f	class:CPUStateAccessOffsetAnalysis	file:

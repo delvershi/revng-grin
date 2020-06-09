@@ -34,6 +34,14 @@ extern PTCInterface ptc;
 #define RBP 98112
 #define RSI 115105
 #define RDI 100105
+#define R8  56000
+#define R9  57000
+#define R10 49048
+#define R11 49049
+#define R12 49050
+#define R13 49051
+#define R14 49052
+#define R15 49053
 
 #define R_EAX 0
 #define R_ECX 1
@@ -43,5 +51,13 @@ extern PTCInterface ptc;
 #define R_EBP 5
 #define R_ESI 6
 #define R_EDI 7
+#define R_8 8
+#define R_9 9
+#define R_10 10
+#define R_11 11
+#define R_12 12
+#define R_13 13
+#define R_14 14
+#define R_15 15
 
 #endif // PTCINTERFACE_H
