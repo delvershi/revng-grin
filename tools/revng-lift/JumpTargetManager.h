@@ -224,6 +224,7 @@ public:
 					 TrackbackMode TrackType,
 					 uint32_t &NUMOFCONST);
   bool isAccessMemInst(llvm::Instruction *I);
+  uint64_t getCrashInstrPC(llvm::Instruction *I);
   std::pair<bool, uint32_t> islegalAddr(llvm::Value *v);
   uint32_t StrToInt(const char *str);
   /* Judging whether the Block is User define Block area*/

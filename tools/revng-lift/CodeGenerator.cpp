@@ -1000,10 +1000,8 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     if(*ptc.exception_syscall == 11){
       crashBB = JumpTargets.handleIllegalMemoryAccess(BlockBRs,tmpVA);
       *ptc.exception_syscall = -1;
-      if(crashBB){
-	BlockBRs = nullptr;
-	DynamicVirtualAddress = tmpVA;
-      }
+      if(crashBB)
+	  BlockBRs = nullptr;
     }
 
     //if(!JumpTargets.haveBB and *ptc.isIndirectJmp and !traverseFLAG)
@@ -1074,7 +1072,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
 
     if(DynamicVirtualAddress){
       auto tmpBB = JumpTargets.registerJT(DynamicVirtualAddress,JTReason::GlobalData);
-      if(JumpTargets.haveBB and (tmpBB != crashBB)){
+      if(JumpTargets.haveBB and (crashBB==nullptr)){
         // If have translated BB, give Entry an arbitrary value
         Entry = tmpBB;
         VirtualAddress = DynamicVirtualAddress;
@@ -1096,7 +1094,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
                                    Translator.branchsize(), 
                                    branchLabeledcontent);
       }
-      std::cerr<<std::hex<<DynamicVirtualAddress<<" \n";
+      std::cerr<<std::hex<<VirtualAddress<<" \n";
     }
 
     if(JumpTargets.BranchTargets.empty()){

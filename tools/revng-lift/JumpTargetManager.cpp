@@ -1909,12 +1909,28 @@ bool JumpTargetManager::isAccessMemInst(llvm::Instruction *I){
   return false;
 }
 
+uint64_t JumpTargetManager::getCrashInstrPC(llvm::Instruction *I){
+  BasicBlock::reverse_iterator it(I);
+  BasicBlock::reverse_iterator rend = I->getParent()->rend();
+
+  for(; it!=rend; it++){
+    auto callI = dyn_cast<CallInst>(&*it);
+    if(callI){
+        auto *Callee = callI->getCalledFunction();
+	if(Callee != nullptr && Callee->getName() == "newpc"){
+	    return getLimitedValue(callI->getArgOperand(0));
+            //errs()<<format_hex(pc,0)<<" <- Crash Instruction Address.\n";
+	}
+    }
+  }
+  return 0;
+}
+
 BasicBlock * JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock,
 		                                  uint64_t thisAddr){
   uint32_t userCodeFlag = 0;
   uint32_t &userCodeFlag1 = userCodeFlag;
   BasicBlock::iterator I = thisBlock->begin();
-//  BasicBlock::reverse_iterator rendInst = thisBlock->rend();
   BasicBlock::iterator endInst = thisBlock->end();
 
   BasicBlock::iterator brI = --endInst;
@@ -1922,7 +1938,7 @@ BasicBlock * JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *this
       errs()<<"\nThis Block contains br instruction, don't need analysis partCFG!\n";
       return nullptr;  
   }
-      //outs()<<*I<<"\n";
+
   bool islegal = false;
   uint32_t registerOP = 0; 
   std::vector<llvm::Instruction *> DataFlow1;
@@ -1944,8 +1960,8 @@ BasicBlock * JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *this
     }
   }
   nodepCFG = nodetmp;
-
-  if(thisAddr == 0x406598 or thisAddr==0x401b9d or thisAddr==0x4065f9 or thisAddr==0x402698
+  //0x406598
+  if(thisAddr==0x401b9d or thisAddr==0x4065f9 or thisAddr==0x402698
 		  or thisAddr == 0x401bce or thisAddr==0x401bad or thisAddr==0x401bbe
 		  or thisAddr==0x406858)
 	  return nullptr;
@@ -1968,7 +1984,21 @@ BasicBlock * JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *this
     errs()<<"\n";
   }
 
-
+  llvm::BasicBlock *Block = nullptr;
+  auto lastSet = legalSet.back();
+  auto v = lastSet.value.front();  
+  if(v->getName().equals("rsp")){
+    auto PC = getCrashInstrPC(dyn_cast<Instruction>(I));
+    revng_assert(isExecutableAddress(PC));
+    if(PC == thisAddr){
+      // This Crash instruction PC is the start address of this block.
+      ToPurge.insert(thisBlock);
+      Unexplored.push_back(BlockWithAddress(thisAddr, thisBlock));
+      Block = thisBlock;
+    }
+    else
+      Block = registerJT(PC,JTReason::GlobalData);
+  }  
 
   switch(registerOP){
       case RAX:
@@ -2020,10 +2050,8 @@ BasicBlock * JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *this
           revng_abort("Unknow register operate.\n");
 	  break;
   }
-  ToPurge.insert(thisBlock);
-  Unexplored.push_back(BlockWithAddress(thisAddr, thisBlock));
 
-  return thisBlock;
+  return Block;
 }
 
 void JumpTargetManager::handleIndirectInst(llvm::BasicBlock *thisBlock, 
