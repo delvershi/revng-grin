@@ -1960,11 +1960,7 @@ BasicBlock * JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *this
     }
   }
   nodepCFG = nodetmp;
-  //0x406598
-  if(thisAddr==0x401b9d or thisAddr==0x4065f9 or thisAddr==0x402698
-		  or thisAddr == 0x401bce or thisAddr==0x401bad or thisAddr==0x401bbe
-		  or thisAddr==0x406858)
-	  return nullptr;
+  //0x406858
   if(I==endInst){
 	  errs()<<format_hex(ptc.regs[R_ESP],0)<<"\n";
 	  errs()<<*thisBlock<<"\n";}
