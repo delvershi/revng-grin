@@ -373,6 +373,8 @@ DRVOFC	lib/StackAnalysis/FunctionABI.h	/^  DeadReturnValuesOfFunctionCall DRVOFC
 DRVOFC	lib/StackAnalysis/FunctionABI.h	/^  DeadReturnValuesOfFunctionCall DRVOFC;$/;"	m	class:StackAnalysis::RegisterState
 Data	tools/revng-lift/BinaryFile.h	/^  llvm::ArrayRef<uint8_t> Data;$/;"	m	struct:SegmentInfo
 Data	tools/revng-lift/BinaryFile.h	/^enum Values { Unknown, Code, Data, Section, File };$/;"	e	enum:SymbolType::Values
+DataSegmEndAddr	tools/revng-lift/JumpTargetManager.h	/^  uint64_t DataSegmEndAddr;$/;"	m	class:JumpTargetManager
+DataSegmStartAddr	tools/revng-lift/JumpTargetManager.h	/^  uint64_t DataSegmStartAddr;$/;"	m	class:JumpTargetManager
 DbgMDKind	include/revng/Support/DebugHelper.h	/^  unsigned DbgMDKind;$/;"	m	class:DebugAnnotationWriter
 DbgMDKind	include/revng/Support/DebugHelper.h	/^  unsigned DbgMDKind;$/;"	m	class:DebugHelper
 DbgMDKind	tools/revng-lift/CodeGenerator.h	/^  unsigned DbgMDKind;$/;"	m	class:CodeGenerator
@@ -2330,6 +2332,7 @@ getContext	include/revng/Support/IRHelpers.h	/^inline llvm::LLVMContext &getCont
 getContext	include/revng/Support/IRHelpers.h	/^inline llvm::LLVMContext &getContext(const llvm::Instruction *I) {$/;"	f
 getContext	include/revng/Support/IRHelpers.h	/^inline llvm::LLVMContext &getContext(const llvm::Module *M) {$/;"	f
 getContext	include/revng/Support/IRHelpers.h	/^inline llvm::LLVMContext &getContext(const llvm::Value *I) {$/;"	f
+getCrashInstrPC	tools/revng-lift/JumpTargetManager.cpp	/^uint64_t JumpTargetManager::getCrashInstrPC(llvm::Instruction *I){$/;"	f	class:JumpTargetManager
 getCurSourceRootCall	tools/revng-lift/CPUStateAccessAnalysisPass.cpp	/^getCurSourceRootCall(const WorkItem &Item, const Function *Root) {$/;"	f	file:
 getDestBRPCWrite	tools/revng-lift/JumpTargetManager.cpp	/^int64_t JumpTargetManager::getDestBRPCWrite(llvm::BasicBlock *block) {$/;"	f	class:JumpTargetManager
 getEdge	tools/revng-lift/OSRA.cpp	/^  getEdge(BasicBlock *BB, BasicBlock *Predecessor, const Value *V) {$/;"	f	class:BVMap
@@ -2628,6 +2631,7 @@ isContradiction	include/revng/StackAnalysis/FunctionsSummary.h	/^  bool isContra
 isContradiction	include/revng/StackAnalysis/FunctionsSummary.h	/^  bool isContradiction() const { return Value == Contradiction; }$/;"	f	class:StackAnalysis::FunctionReturnValue
 isContradiction	include/revng/StackAnalysis/FunctionsSummary.h	/^  bool isContradiction() const { return Value == Contradiction; }$/;"	f	class:StackAnalysis::RegisterArgument
 isCorrelationWithNext	tools/revng-lift/JumpTargetManager.cpp	/^bool JumpTargetManager::isCorrelationWithNext(llvm::Value *preValue, llvm::Instruction *Inst){$/;"	f	class:JumpTargetManager
+isDataSegmAddr	tools/revng-lift/JumpTargetManager.cpp	/^bool JumpTargetManager::isDataSegmAddr(uint64_t PC){$/;"	f	class:JumpTargetManager
 isDead	tools/revng-lift/OSRA.cpp	/^bool OSRA::isDead(Instruction *I) const {$/;"	f	class:OSRA
 isDestroyed	include/revng/Support/ClassSentinel.h	/^  bool isDestroyed() const { return Destroyed; }$/;"	f	class:ClassSentinel
 isECS	lib/StackAnalysis/InterproceduralAnalysis.cpp	/^      bool isECS() const { return ECS > Total \/ 2; }$/;"	f	struct:StackAnalysis::ClobberedRegistersAnalysis::IterationResult::ECSVote

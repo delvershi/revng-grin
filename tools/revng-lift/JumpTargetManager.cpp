@@ -421,8 +421,13 @@ JumpTargetManager::JumpTargetManager(Function *TheFunction,
   ExitTB = cast<Function>(TheModule.getOrInsertFunction("exitTB", ExitTBTy));
   createDispatcher(TheFunction, PCReg);
 
-  for (auto &Segment : Binary.segments())
+  for (auto &Segment : Binary.segments()){
     Segment.insertExecutableRanges(std::back_inserter(ExecutableRanges));
+    if(Segment.IsWriteable and !Segment.IsExecutable){
+      DataSegmStartAddr = Segment.StartVirtualAddress; 
+      DataSegmEndAddr = Segment.EndVirtualAddress;
+    }
+  }
 
   // Configure GlobalValueNumbering
   StringMap<cl::Option *> &Options(cl::getRegisteredOptions());
@@ -1614,108 +1619,126 @@ uint32_t JumpTargetManager::belongToUBlock(llvm::BasicBlock *block){
   return 0;
 }
 
-/* TODO: In the future, there will be modify by 
- *       orignal Inst is judged access memory rather than judge LLVM IR 
- */
+bool JumpTargetManager::isDataSegmAddr(uint64_t PC){
+  return ptc.is_image_addr(PC);  
+} 
+
 std::pair<bool, uint32_t> JumpTargetManager::islegalAddr(llvm::Value *v){
   uint64_t va = 0;
   StringRef Iargs = v->getName();
+  uint32_t registerName = 0;
  
   auto op = StrToInt(Iargs.data());
   //errs()<<op<<"+++\n"; 
   switch(op){
     case RAX:
       va = ptc.regs[R_EAX];
+      registerName = RAX;
       errs()<<va<<" :eax\n";
-      if(!ptc.is_image_addr(va))
+      if(!isDataSegmAddr(va))
         return std::make_pair(0,RAX);
     break;
     case RCX:
       va = ptc.regs[R_ECX];
+      registerName = RCX;
       //errs()<<ptc.regs[R_ECX]<<" ++\n";
-      if(!ptc.is_image_addr(va))
+      if(!isDataSegmAddr(va))
         return std::make_pair(0,RCX);
     break;
     case RDX:
       va = ptc.regs[R_EDX];
+      registerName = RDX;
       errs()<<ptc.regs[R_EDX]<<" ++\n";
-      if(!ptc.is_image_addr(va))
+      if(!isDataSegmAddr(va))
         return std::make_pair(0,RDX);
     break;
     case RBX:
       va = ptc.regs[R_EBX];
+      registerName = RBX;
       //errs()<<ptc.regs[R_EBX]<<" ++\n";
-      if(!ptc.is_image_addr(va))
+      if(!isDataSegmAddr(va))
         return std::make_pair(0,RBX);
     break;
     case RSP:
       va = ptc.regs[R_ESP];
+      registerName = RSP;
       //errs()<<ptc.regs[R_ESP]<<" ++\n";
-      if(!ptc.is_image_addr(va))
+      if(!isDataSegmAddr(va))
         revng_abort("RSP shouldn't be illegal address!\n");
     break;
     case RBP:
       va = ptc.regs[R_EBP];
-      //errs()<<ptc.regs[R_EBP]<<" ++\n";
-      if(!ptc.is_image_addr(va))
+      registerName = RBP;
+      errs()<<ptc.regs[R_EBP]<<" ++\n";
+      if(!isDataSegmAddr(va))
         return std::make_pair(0,RBP);
     break;
     case RSI:
       va = ptc.regs[R_ESI];
+      registerName = RSI;
       //errs()<<ptc.regs[R_ESI]<<" ++\n";
-      if(!ptc.is_image_addr(va))
+      if(!isDataSegmAddr(va))
         return std::make_pair(0,RSI);
     break;
     case RDI:
       va = ptc.regs[R_EDI];
+      registerName = RDI;
       errs()<<ptc.regs[R_EDI]<<" ++\n";
-      if(!ptc.is_image_addr(va))
+      if(!isDataSegmAddr(va))
         return std::make_pair(0,RDI);
     break;
     case R8:
       va = ptc.regs[R_8];
-      if(!ptc.is_image_addr(va))
+      registerName = R8;
+      if(!isDataSegmAddr(va))
 	return std::make_pair(0,R8);
     break;
     case R9:
       va = ptc.regs[R_9];
-      if(!ptc.is_image_addr(va))
+      registerName = R9;
+      if(!isDataSegmAddr(va))
         return std::make_pair(0,R9);
     break;
     case R10:
       va = ptc.regs[R_10];
-      if(!ptc.is_image_addr(va))
+      registerName = R10;
+      if(!isDataSegmAddr(va))
 	return std::make_pair(0,R10);
     break;
     case R11:
       va = ptc.regs[R_11];
-      if(!ptc.is_image_addr(va))
+      registerName = R11;
+      if(!isDataSegmAddr(va))
 	return std::make_pair(0,R11);
     break;
     case R12:
       va = ptc.regs[R_12];
-      if(!ptc.is_image_addr(va))
+      registerName = R12;
+      if(!isDataSegmAddr(va))
         return std::make_pair(0,R12);
     break;
     case R13:
       va = ptc.regs[R_13];
-      if(!ptc.is_image_addr(va))
+      registerName = R13;
+      if(!isDataSegmAddr(va))
         return std::make_pair(0,R13);
     break;
     case R14:
       va = ptc.regs[R_14];
-      if(!ptc.is_image_addr(va))
+      registerName = R14;
+      if(!isDataSegmAddr(va))
         return std::make_pair(0,R14);
     break;
     case R15:
       va = ptc.regs[R_15];
-      if(!ptc.is_image_addr(va))
+      registerName = R15;
+      if(!isDataSegmAddr(va))
         return std::make_pair(0,R15);
     break;
     default:
       errs()<<"No match register arguments! \n";
   }
-  return std::make_pair(1,0);
+  return std::make_pair(1,registerName);
 }
 
 JumpTargetManager::LastAssignmentResultWithInst 
@@ -1960,7 +1983,36 @@ BasicBlock * JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *this
     }
   }
   nodepCFG = nodetmp;
-  //0x406858
+  std::vector<uint32_t> op;
+  if(I==endInst){
+    // Handle tow valid addr added together to yield invalid addr.
+    I = ++thisBlock->begin();
+    for(; I!=endInst; I++){
+      if(I->getOpcode() == Instruction::Load){
+          auto load = dyn_cast<llvm::LoadInst>(I);
+          Value *V = load->getPointerOperand();
+          std::tie(islegal,registerOP) = islegalAddr(V);
+          if(islegal && registerOP != 0 &&
+	     isAccessMemInst(dyn_cast<llvm::Instruction>(I))){
+	    op.push_back(registerOP);
+	  }         
+      }
+      if(I->getOpcode() == Instruction::Call){
+          auto callI = dyn_cast<CallInst>(&*I);
+	  auto *Callee = callI->getCalledFunction();
+	  if(Callee != nullptr && Callee->getName() == "newpc"){
+	    if(op.size() > 1){
+	      registerOP = op.front();
+	      I = thisBlock->begin();
+	      break;
+	    }
+	    else
+	      op.clear();
+	  }
+      }
+    }
+  }
+
   if(I==endInst){
 	  errs()<<format_hex(ptc.regs[R_ESP],0)<<"\n";
 	  errs()<<*thisBlock<<"\n";}
@@ -1980,72 +2032,130 @@ BasicBlock * JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *this
     errs()<<"\n";
   }
 
-  llvm::BasicBlock *Block = nullptr;
-  auto lastSet = legalSet.back();
-  auto v = lastSet.value.front();  
-  if(v->getName().equals("rsp")){
-    auto PC = getCrashInstrPC(dyn_cast<Instruction>(I));
-    revng_assert(isExecutableAddress(PC));
-    if(PC == thisAddr){
-      // This Crash instruction PC is the start address of this block.
-      ToPurge.insert(thisBlock);
-      Unexplored.push_back(BlockWithAddress(thisAddr, thisBlock));
-      Block = thisBlock;
+  if(!legalSet.empty()){
+    auto lastSet = legalSet.back();
+    auto v = lastSet.value.front();  
+    auto constv = dyn_cast<ConstantInt>(v);
+    if(constv){
+      auto global = constv->getZExtValue();
+      if(isDataSegmAddr(global))
+          *((uint64_t *) global) = ptc.regs[R_ESP];
+      else{
+        if(thisAddr == 0x402d47 or thisAddr==0x405cf8)
+		errs()<<"hhhi\n";
+	else
+          revng_abort("Let's see");  
+      }
     }
-    else
-      Block = registerJT(PC,JTReason::GlobalData);
-  }  
+  }
 
   switch(registerOP){
       case RAX:
-          ptc.regs[R_EAX] = ptc.regs[R_ESP];
+	  if(op.size()>1)
+            ptc.regs[R_EAX] = 0;
+	  else
+            ptc.regs[R_EAX] = ptc.regs[R_ESP];
           break;
       case RCX:
-          ptc.regs[R_ECX] = ptc.regs[R_ESP];
+	  if(op.size()>1)
+	    ptc.regs[R_ECX] = 0;
+	  else
+            ptc.regs[R_ECX] = ptc.regs[R_ESP];
           break;
       case RDX:
-          ptc.regs[R_EDX] = ptc.regs[R_ESP];
+	  if(op.size()>1)
+	    ptc.regs[R_EDX] = 0;
+	  else
+            ptc.regs[R_EDX] = ptc.regs[R_ESP];
           break;
       case RBX:
-          ptc.regs[R_EBX] = ptc.regs[R_ESP];
+	  if(op.size()>1)
+	    ptc.regs[R_EBX] = 0;
+	  else
+            ptc.regs[R_EBX] = ptc.regs[R_ESP];
           break;
       case RBP:
-          ptc.regs[R_EBP] = ptc.regs[R_ESP];
+	  if(op.size()>1)
+	    ptc.regs[R_EBP] = 0;
+	  else
+            ptc.regs[R_EBP] = ptc.regs[R_ESP];
           break;
       case RSI:
-          ptc.regs[R_ESI] = ptc.regs[R_ESP];
+	  if(op.size()>1)
+	    ptc.regs[R_ESI] = 0;
+	  else
+            ptc.regs[R_ESI] = ptc.regs[R_ESP];
           break;
       case RDI:
-          ptc.regs[R_EDI] = ptc.regs[R_ESP];
+	  if(op.size()>1)
+	    ptc.regs[R_EDI] = 0;
+	  else
+            ptc.regs[R_EDI] = ptc.regs[R_ESP];
           break;
       case R8:
-          ptc.regs[R_8] = ptc.regs[R_ESP];
+	  if(op.size()>1)
+            ptc.regs[R_8] = 0;
+	  else
+            ptc.regs[R_8] = ptc.regs[R_ESP];
           break;
       case R9:
-          ptc.regs[R_9] = ptc.regs[R_ESP];
+	  if(op.size()>1)
+	    ptc.regs[R_9] = 0;
+	  else
+            ptc.regs[R_9] = ptc.regs[R_ESP];
           break;
       case R10:
-          ptc.regs[R_10] = ptc.regs[R_ESP];
+	  if(op.size()>1)
+	    ptc.regs[R_10] = 0;
+	  else
+            ptc.regs[R_10] = ptc.regs[R_ESP];
           break;
       case R11:
-          ptc.regs[R_11] = ptc.regs[R_ESP];
+	  if(op.size()>1)
+	    ptc.regs[R_11] = 0;
+	  else
+            ptc.regs[R_11] = ptc.regs[R_ESP];
           break;
       case R12:
-          ptc.regs[R_12] = ptc.regs[R_ESP];
+	  if(op.size()>1)
+	    ptc.regs[R_12] = 0;
+	  else
+            ptc.regs[R_12] = ptc.regs[R_ESP];
           break;
       case R13:
-          ptc.regs[R_13] = ptc.regs[R_ESP];
+	  if(op.size()>1)
+            ptc.regs[R_13] = 0;
+	  else
+            ptc.regs[R_13] = ptc.regs[R_ESP];
           break;
       case R14:
-          ptc.regs[R_14] = ptc.regs[R_ESP];
+	  if(op.size()>1)
+	    ptc.regs[R_14] = 0;
+	  else
+            ptc.regs[R_14] = ptc.regs[R_ESP];
           break;
       case R15:
-          ptc.regs[R_15] = ptc.regs[R_ESP];
+	  if(op.size()>1)
+	    ptc.regs[R_15] = 0;
+	  else
+            ptc.regs[R_15] = ptc.regs[R_ESP];
           break;
       default:
           revng_abort("Unknow register operate.\n");
 	  break;
   }
+
+  llvm::BasicBlock *Block = nullptr;
+  auto PC = getCrashInstrPC(dyn_cast<Instruction>(I));
+  revng_assert(isExecutableAddress(PC));
+  if(PC == thisAddr){
+      // This Crash instruction PC is the start address of this block.
+      ToPurge.insert(thisBlock);
+      Unexplored.push_back(BlockWithAddress(thisAddr, thisBlock));
+      Block = thisBlock;
+  }
+  else
+      Block = registerJT(PC,JTReason::GlobalData);
 
   return Block;
 }

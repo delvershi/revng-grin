@@ -226,7 +226,12 @@ public:
   bool isAccessMemInst(llvm::Instruction *I);
   uint64_t getCrashInstrPC(llvm::Instruction *I);
   std::pair<bool, uint32_t> islegalAddr(llvm::Value *v);
+  bool isDataSegmAddr(uint64_t PC);
   uint32_t StrToInt(const char *str);
+
+  uint64_t DataSegmStartAddr;
+  uint64_t DataSegmEndAddr;
+
   /* Judging whether the Block is User define Block area*/
   uint32_t belongToUBlock(llvm::BasicBlock *block);
 
