@@ -1953,8 +1953,12 @@ BasicBlock * JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *this
 		                                  uint64_t thisAddr){
   uint32_t userCodeFlag = 0;
   uint32_t &userCodeFlag1 = userCodeFlag;
-  BasicBlock::iterator I = thisBlock->begin();
+  BasicBlock::iterator beginInst = thisBlock->begin();
   BasicBlock::iterator endInst = thisBlock->end();
+  BasicBlock::iterator I = beginInst; 
+
+  if(*ptc.isIndirect || *ptc.isIndirectJmp) 
+    return nullptr;
 
   BasicBlock::iterator brI = --endInst;
   if(dyn_cast<BranchInst>(brI)){
@@ -1964,6 +1968,39 @@ BasicBlock * JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *this
 
   bool islegal = false;
   uint32_t registerOP = 0; 
+
+  /* Handle tow valid addr added together to yield invalid addr.
+   * If so, We skip the crash point analysis and return. */
+  std::vector<uint32_t> op;
+  I = ++beginInst;
+  for(; I!=endInst; I++){
+    if(I->getOpcode() == Instruction::Load){
+        auto load = dyn_cast<llvm::LoadInst>(I);
+        Value *V = load->getPointerOperand();
+	if(dyn_cast<Constant>(V)){
+            std::tie(islegal,registerOP) = islegalAddr(V);
+            if(registerOP != 0 &&
+               isAccessMemInst(dyn_cast<llvm::Instruction>(I)))
+                op.push_back(registerOP);
+	}         
+    }
+    if(I->getOpcode() == Instruction::Call){
+        auto callI = dyn_cast<CallInst>(&*I);
+        auto *Callee = callI->getCalledFunction();
+        if(Callee != nullptr && Callee->getName() == "newpc"){
+          if(op.size() > 1){
+            auto PC = getLimitedValue(callI->getArgOperand(0));
+	    revng_assert(PC != thisAddr);
+	    return registerJT(PC,JTReason::GlobalData);
+	  }
+          else
+            op.clear();
+        }
+    }
+  }
+
+  revng_assert(op.size() < 2);
+  I = beginInst;
   std::vector<llvm::Instruction *> DataFlow1;
   std::vector<llvm::Instruction *> &DataFlow = DataFlow1; 
   NODETYPE nodetmp = nodepCFG; 
@@ -1983,39 +2020,10 @@ BasicBlock * JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *this
     }
   }
   nodepCFG = nodetmp;
-  std::vector<uint32_t> op;
-  if(I==endInst){
-    // Handle tow valid addr added together to yield invalid addr.
-    I = ++thisBlock->begin();
-    for(; I!=endInst; I++){
-      if(I->getOpcode() == Instruction::Load){
-          auto load = dyn_cast<llvm::LoadInst>(I);
-          Value *V = load->getPointerOperand();
-          std::tie(islegal,registerOP) = islegalAddr(V);
-          if(islegal && registerOP != 0 &&
-	     isAccessMemInst(dyn_cast<llvm::Instruction>(I))){
-	    op.push_back(registerOP);
-	  }         
-      }
-      if(I->getOpcode() == Instruction::Call){
-          auto callI = dyn_cast<CallInst>(&*I);
-	  auto *Callee = callI->getCalledFunction();
-	  if(Callee != nullptr && Callee->getName() == "newpc"){
-	    if(op.size() > 1){
-	      registerOP = op.front();
-	      I = thisBlock->begin();
-	      break;
-	    }
-	    else
-	      op.clear();
-	  }
-      }
-    }
-  }
 
-  if(I==endInst){
+  if(I==endInst){////////////////////////////////////////////
 	  errs()<<format_hex(ptc.regs[R_ESP],0)<<"\n";
-	  errs()<<*thisBlock<<"\n";}
+	  errs()<<*thisBlock<<"\n";}//////////////////////////
   revng_assert(I!=endInst);
 
   std::vector<legalValue> legalSet1;
@@ -2040,12 +2048,6 @@ BasicBlock * JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *this
       auto global = constv->getZExtValue();
       if(isDataSegmAddr(global))
           *((uint64_t *) global) = ptc.regs[R_ESP];
-      else{
-        if(thisAddr == 0x402d47 or thisAddr==0x405cf8)
-		errs()<<"hhhi\n";
-	else
-          revng_abort("Let's see");  
-      }
     }
   }
 
