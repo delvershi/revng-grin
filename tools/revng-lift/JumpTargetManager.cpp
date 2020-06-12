@@ -2332,25 +2332,37 @@ uint32_t JumpTargetManager::getLegalValueRange(llvm::BasicBlock *thisBlock){
   llvm::BasicBlock *rangeBB = nullptr;
   std::map<llvm::BasicBlock *, llvm::BasicBlock *> DoneOFPath1;
   std::map<llvm::BasicBlock *, llvm::BasicBlock *> &DoneOFPath = DoneOFPath1;
-  DoneOFPath[std::get<0>(nodepCFG)] = std::get<1>(nodepCFG);  
-  for(;nodeBB != begin;){
+  DoneOFPath[std::get<0>(nodepCFG)] = std::get<1>(nodepCFG); 
+  // We set a backtrack window to control the loop. 
+  for(int i=0; i<20; i++){
     auto bb = dyn_cast<llvm::BasicBlock>(nodeBB);
     if((std::get<0>(nodepCFG) - bb) == 0){
-      llvm::Function::iterator it(std::get<1>(nodepCFG));
-      //TODO handle split Block
+      bb = std::get<1>(nodepCFG);
+      llvm::Function::iterator it(bb);
+      // Handle split Block
       nodeBB = it;
-      searchpartCFG(DoneOFPath);   
+      searchpartCFG(DoneOFPath);  
+      while(true){
+        auto I = --(bb->end());
+	auto branch = dyn_cast<BranchInst>(I);
+	if(branch && !branch->isConditional())
+	  bb = dyn_cast<BasicBlock>(branch->getOperand(0));
+	else
+          break;
+      } 
     }
-    auto lastBB = dyn_cast<llvm::BasicBlock>(nodeBB);
-    BasicBlock::iterator I = --(lastBB->end());
+    BasicBlock::iterator I = --(bb->end());
     if(auto branch = dyn_cast<BranchInst>(I)){
       if(branch->isConditional()){
-	rangeBB = lastBB;
-        break;
+	  rangeBB = bb;
+          break;
       }
     }
     nodeBB--;
   }
+
+  if(rangeBB==nullptr)
+    return 0;
 
   BasicBlock::iterator I = --rangeBB->end();
   auto br = dyn_cast<BranchInst>(I);
