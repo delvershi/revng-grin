@@ -2024,6 +2024,7 @@ BasicBlock * JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *this
   if(I==endInst){////////////////////////////////////////////
 	  errs()<<format_hex(ptc.regs[R_ESP],0)<<"\n";
 	  errs()<<*thisBlock<<"\n";}//////////////////////////
+  return nullptr;
   revng_assert(I!=endInst);
 
   std::vector<legalValue> legalSet1;
@@ -2445,8 +2446,8 @@ void JumpTargetManager::getIllegalValueDFG(llvm::Value *v,
   llvm::Value *v1 = nullptr;
   LastAssignmentResult result;
   llvm::Instruction *lastInst = nullptr;
-  std::vector<std::tuple<llvm::Value *,llvm::User *,llvm::BasicBlock *>> vs;
-  vs.push_back(std::make_tuple(v,dyn_cast<User>(I),thisBlock));
+  std::vector<std::tuple<llvm::Value *,llvm::User *,llvm::BasicBlock *,NODETYPE>> vs;
+  vs.push_back(std::make_tuple(v,dyn_cast<User>(I),thisBlock,nodepCFG));
   DataFlow.push_back(I);
 
   uint32_t NUMOFCONST1 = 3;
@@ -2454,11 +2455,13 @@ void JumpTargetManager::getIllegalValueDFG(llvm::Value *v,
 
   std::map<llvm::BasicBlock *, llvm::BasicBlock *> DoneOFPath1;
   std::map<llvm::BasicBlock *, llvm::BasicBlock *> &DoneOFPath = DoneOFPath1;
-  DoneOFPath[std::get<0>(nodepCFG)] = std::get<1>(nodepCFG); 
   // Get illegal access Value's DFG. 
   while(!vs.empty()){
     llvm::BasicBlock *tmpB = nullptr;
-    std::tie(v1,operateUser,tmpB) = vs.back();
+    std::tie(v1,operateUser,tmpB,nodepCFG) = vs.back();
+    DoneOFPath.clear();
+    DoneOFPath[std::get<0>(nodepCFG)] = std::get<1>(nodepCFG);
+
     llvm::Function::iterator nodeBB(tmpB);
     llvm::Function::iterator begin(tmpB->getParent()->begin());
     vs.pop_back();
@@ -2477,13 +2480,14 @@ void JumpTargetManager::getIllegalValueDFG(llvm::Value *v,
               if(lastInst->getOpcode() == Instruction::Select){
                 auto select = dyn_cast<llvm::SelectInst>(lastInst);
                 v1 = select->getTrueValue();
-                vs.push_back(std::make_tuple(select->getFalseValue(),dyn_cast<User>(lastInst),bb));
+                vs.push_back(std::make_tuple(select->getFalseValue(),
+					dyn_cast<User>(lastInst),bb,nodepCFG));
               }
               else{
                 auto nums = lastInst->getNumOperands();
                 for(Use &lastU : lastInst->operands()){
                   Value *lastv = lastU.get();
-                  vs.push_back(std::make_tuple(lastv,dyn_cast<User>(lastInst),bb));
+                  vs.push_back(std::make_tuple(lastv,dyn_cast<User>(lastInst),bb,nodepCFG));
                 }
                 v1 = std::get<0>(vs[vs.size()-nums]);
                 vs.erase(vs.begin()+vs.size()-nums);

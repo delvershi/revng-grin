@@ -780,7 +780,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
   uint64_t DynamicVirtualAddress;
   // To register branch inst of BB into vector
   BasicBlock *BlockBRs;
-  bool traverseFLAG = 0;
+  bool traverseFLAG = 1;
   uint64_t jtVirtualAddress;
   uint64_t tmpVA = 0;
   llvm::BasicBlock *srcBB = nullptr;
@@ -1047,7 +1047,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     if(traverseFLAG){
    
     //handle invalid address
-    if(!ptc.isValidExecuteAddr(DynamicVirtualAddress)  
+    if(!JumpTargets.isExecutableAddress(DynamicVirtualAddress) 
        and !JumpTargets.haveBB)
     {
       outs()<<"occure invalid address: "<<format_hex(DynamicVirtualAddress,0)
