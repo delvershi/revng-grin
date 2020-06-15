@@ -780,7 +780,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
   uint64_t DynamicVirtualAddress;
   // To register branch inst of BB into vector
   BasicBlock *BlockBRs;
-  bool traverseFLAG = 1;
+  bool traverseFLAG = 0;
   uint64_t jtVirtualAddress;
   uint64_t tmpVA = 0;
   llvm::BasicBlock *srcBB = nullptr;
