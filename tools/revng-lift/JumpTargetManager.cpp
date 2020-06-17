@@ -1907,7 +1907,8 @@ bool JumpTargetManager::isAccessMemInst(llvm::Instruction *I){
 	}
 	if(Callee != nullptr && (
 			Callee->getName() == "helper_fldt_ST0"||
-			Callee->getName() == "helper_fstt_ST0"))
+			Callee->getName() == "helper_fstt_ST0"||
+			Callee->getName() == "helper_divq_EAX"))
 	    return true;
 	break;
     }
@@ -1953,6 +1954,21 @@ uint64_t JumpTargetManager::getCrashInstrPC(llvm::Instruction *I){
   return 0;
 }
 
+BasicBlock * JumpTargetManager::getSplitedBlock(llvm::BranchInst *branch){
+  revng_assert(!branch->isConditional());
+  auto bb = dyn_cast<BasicBlock>(branch->getOperand(0));
+  auto call = dyn_cast<CallInst>(bb->begin());
+  auto *Callee = call->getCalledFunction(); 
+  if(Callee != nullptr && Callee->getName() == "newpc"){
+    auto PC = getLimitedValue(call->getArgOperand(0));
+    // This Crash instruction PC is the start address of this block.
+    ToPurge.insert(bb);
+    Unexplored.push_back(BlockWithAddress(PC, bb));
+    return bb;
+  }
+  return nullptr;
+}
+
 BasicBlock * JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock,
 		                                  uint64_t thisAddr){
   uint32_t userCodeFlag = 0;
@@ -1964,12 +1980,6 @@ BasicBlock * JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *this
   if(*ptc.isIndirect || *ptc.isIndirectJmp || *ptc.isRet) 
     return nullptr;
 
-  BasicBlock::iterator brI = --endInst;
-  if(dyn_cast<BranchInst>(brI)){
-      errs()<<"\nThis Block contains br instruction, don't need analysis partCFG!\n";
-      return nullptr;  
-  }
-
   bool islegal = false;
   uint32_t registerOP = 0; 
 
@@ -1978,7 +1988,7 @@ BasicBlock * JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *this
    * case 2:  [reg + imm]       10+1
    * case 3:  [reg + reg + imm] 10+10+1;
    * case 4:  [reg + reg]       10+10 */
-  uint32_t accessNUM;
+  uint32_t accessNUM = 0;
   I = ++beginInst;
   for(; I!=endInst; I++){
     if(I->getOpcode() == Instruction::Load){
@@ -1994,9 +2004,14 @@ BasicBlock * JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *this
     if(I->getOpcode() == Instruction::Store){
         auto store = dyn_cast<llvm::StoreInst>(I);
 	Value *constV = store->getValueOperand();
-	if(dyn_cast<ConstantInt>(constV)){
-	    if(isAccessMemInst(dyn_cast<llvm::Instruction>(I)))
-	      accessNUM = accessNUM+1;
+	auto imm = dyn_cast<ConstantInt>(constV); 
+	if(imm){
+	    if(isAccessMemInst(dyn_cast<llvm::Instruction>(I))){
+	      if(isExecutableAddress(imm->getZExtValue()))
+	        accessNUM = accessNUM+10;
+	      else
+		accessNUM = accessNUM+1;
+	    }
 	}
     }
     if(I->getOpcode() == Instruction::Call){
@@ -2011,6 +2026,14 @@ BasicBlock * JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *this
           else
             accessNUM = 0;;
         }
+    }
+  }
+  if(accessNUM > 11){
+    BasicBlock::iterator brI = endInst;
+    brI--;
+    auto branch = dyn_cast<BranchInst>(brI);
+    if(branch){
+      return getSplitedBlock(branch);
     }
   }
 
@@ -2036,8 +2059,38 @@ BasicBlock * JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *this
   }
   nodepCFG = nodetmp;
 
+  if(I==endInst){
+      BasicBlock::iterator brI = endInst;
+      brI--;
+      auto branch = dyn_cast<BranchInst>(brI);
+      if(branch){ 
+	if(!branch->isConditional())
+          return getSplitedBlock(branch);
+	else{
+          auto bb = dyn_cast<BasicBlock>(brI->getOperand(1));
+          auto br = dyn_cast<BranchInst>(--bb->end());
+          while(br){
+            bb = dyn_cast<BasicBlock>(br->getOperand(0));
+            br = dyn_cast<BranchInst>(--bb->end());
+          }
+	  auto PC = getDestBRPCWrite(bb);
+	  revng_assert(PC != 0);
+	  auto block =  registerJT(PC,JTReason::GlobalData);
+	  if(haveBB)
+	    return nullptr;
+	  else
+	    return block;
+	} 
+
+      } 
+  }
+  if(thisAddr==0x41041e or thisAddr==0x41065e)
+	  return nullptr;
+
+
   if(I==endInst){////////////////////////////////////////////
-	  errs()<<format_hex(ptc.regs[R_ESP],0)<<"\n";
+	  errs()<<format_hex(ptc.regs[R_14],0)<<" r14\n";
+	  errs()<<format_hex(ptc.regs[R_15],0)<<" r15\n";
 	  errs()<<*thisBlock<<"\n";}//////////////////////////
   revng_assert(I!=endInst);
 
@@ -2127,10 +2180,15 @@ BasicBlock * JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *this
           auto *Callee = callI->getCalledFunction();
           if(Callee != nullptr && Callee->getName() == "newpc"){
             auto nextPC = getLimitedValue(callI->getArgOperand(0));
-	    Block = registerJT(nextPC,JTReason::GlobalData);
-	    break;
+	    return registerJT(nextPC,JTReason::GlobalData);
 	  }
         } 
+      }
+      BasicBlock::iterator brI = endInst;
+      brI--;
+      auto branch = dyn_cast<BranchInst>(brI);
+      if(branch){
+        return getSplitedBlock(branch);
       }
       revng_assert(I != endInst);
       // This Crash instruction PC is the start address of this block.
@@ -2903,8 +2961,13 @@ void JumpTargetManager::harvestCallBasicBlock(llvm::BasicBlock *thisBlock,uint64
       ptc.storeCPUState();
       // Recover stack state
       ptc.regs[R_ESP] = ptc.regs[R_ESP] - 8;
+
       /* Recording not execute branch destination relationship with current BasicBlock */
-      // thisBlock = nullptr; 
+      /* If we rewrite a Block that instructions of part have been rewritten, 
+       * this Block ends this rewrite and add a br to jump to already existing Block,
+       * So,this Block will not contain a call instruction, that has been splited
+       * but we still record this relationship, because when we backtracking,
+       * we will check splited Block. */ 
       BranchTargets.push_back(std::make_tuple(*ptc.CallNext,thisBlock,thisAddr)); 
       errs()<<format_hex(*ptc.CallNext,0)<<" <- Call next target add\n";
     }

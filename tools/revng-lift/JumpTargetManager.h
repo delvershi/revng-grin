@@ -205,6 +205,7 @@ public:
   }; 
 
   llvm::BasicBlock *handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock, uint64_t thisAddr);
+  llvm::BasicBlock *getSplitedBlock(llvm::BranchInst *branch);
   void handleIllegalJumpAddress(llvm::BasicBlock *thisBlock, uint64_t thisAddr);
   void handleIndirectInst(llvm::BasicBlock *thisBlock, uint64_t thisAddr);
   void getIllegalValueDFG(llvm::Value *v,llvm::Instruction *I,

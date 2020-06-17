@@ -1000,8 +1000,8 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     if(*ptc.exception_syscall == 11){
       crashBB = JumpTargets.handleIllegalMemoryAccess(BlockBRs,tmpVA);
       *ptc.exception_syscall = -1;
-      if(crashBB)
-	  BlockBRs = nullptr;
+      //if(crashBB)
+	//  BlockBRs = nullptr;
     }
 
     //if(!JumpTargets.haveBB and *ptc.isIndirectJmp and !traverseFLAG)
