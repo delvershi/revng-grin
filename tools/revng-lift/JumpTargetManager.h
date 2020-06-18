@@ -206,6 +206,7 @@ public:
 
   llvm::BasicBlock *handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock, uint64_t thisAddr);
   llvm::BasicBlock *getSplitedBlock(llvm::BranchInst *branch);
+  uint32_t REGLABLE(uint32_t RegOP);
   void handleIllegalJumpAddress(llvm::BasicBlock *thisBlock, uint64_t thisAddr);
   void handleIndirectInst(llvm::BasicBlock *thisBlock, uint64_t thisAddr);
   void getIllegalValueDFG(llvm::Value *v,llvm::Instruction *I,
@@ -225,7 +226,7 @@ public:
 					 TrackbackMode TrackType,
 					 uint32_t &NUMOFCONST);
   bool isAccessMemInst(llvm::Instruction *I);
-  uint64_t getCrashInstrPC(llvm::Instruction *I);
+  uint64_t getInstructionPC(llvm::Instruction *I);
   std::pair<bool, uint32_t> islegalAddr(llvm::Value *v);
   bool isDataSegmAddr(uint64_t PC);
   uint32_t StrToInt(const char *str);

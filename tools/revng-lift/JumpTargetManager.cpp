@@ -1937,7 +1937,62 @@ bool JumpTargetManager::isAccessMemInst(llvm::Instruction *I){
   return false;
 }
 
-uint64_t JumpTargetManager::getCrashInstrPC(llvm::Instruction *I){
+uint32_t JumpTargetManager::REGLABLE(uint32_t RegOP){
+  switch(RegOP){
+      case RAX:
+            return R_EAX;
+          break;
+      case RCX:
+            return R_ECX;
+          break;
+      case RDX:
+            return R_EDX;
+          break;
+      case RBX:
+            return R_EBX;
+          break;
+      case RBP:{
+	    //memset((void *)(ptc.regs[R_ESP]+8),0,1<12);
+            return R_EBP;
+          break;
+      }
+      case RSI:
+            return R_ESI;
+          break;
+      case RDI:
+            return R_EDI;
+          break;
+      case R8:
+            return R_8;
+          break;
+      case R9:
+            return R_9;
+          break;
+      case R10:
+            return R_10;
+          break;
+      case R11:
+            return R_11;
+          break;
+      case R12:
+            return R_12;
+          break;
+      case R13:
+            return R_13;
+          break;
+      case R14:
+            return R_14;
+          break;
+      case R15:
+            return R_15;
+          break;
+      default:
+          revng_abort("Unknow register operate.\n");
+	  break;
+  }
+}
+
+uint64_t JumpTargetManager::getInstructionPC(llvm::Instruction *I){
   BasicBlock::reverse_iterator it(I);
   BasicBlock::reverse_iterator rend = I->getParent()->rend();
 
@@ -2084,15 +2139,12 @@ BasicBlock * JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *this
 
       } 
   }
-  if(thisAddr==0x41041e or thisAddr==0x41065e)
-	  return nullptr;
-
 
   if(I==endInst){////////////////////////////////////////////
 	  errs()<<format_hex(ptc.regs[R_14],0)<<" r14\n";
 	  errs()<<format_hex(ptc.regs[R_15],0)<<" r15\n";
 	  errs()<<*thisBlock<<"\n";}//////////////////////////
-  revng_assert(I!=endInst);
+  //revng_assert(I!=endInst);
 
   std::vector<legalValue> legalSet1;
   std::vector<legalValue> &legalSet = legalSet1;
@@ -2119,59 +2171,11 @@ BasicBlock * JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *this
     }
   }
 
-  switch(registerOP){
-      case RAX:
-            ptc.regs[R_EAX] = ptc.regs[R_ESP];
-          break;
-      case RCX:
-            ptc.regs[R_ECX] = ptc.regs[R_ESP];
-          break;
-      case RDX:
-            ptc.regs[R_EDX] = ptc.regs[R_ESP];
-          break;
-      case RBX:
-            ptc.regs[R_EBX] = ptc.regs[R_ESP];
-          break;
-      case RBP:
-            ptc.regs[R_EBP] = ptc.regs[R_ESP];
-          break;
-      case RSI:
-            ptc.regs[R_ESI] = ptc.regs[R_ESP];
-          break;
-      case RDI:
-            ptc.regs[R_EDI] = ptc.regs[R_ESP];
-          break;
-      case R8:
-            ptc.regs[R_8] = ptc.regs[R_ESP];
-          break;
-      case R9:
-            ptc.regs[R_9] = ptc.regs[R_ESP];
-          break;
-      case R10:
-            ptc.regs[R_10] = ptc.regs[R_ESP];
-          break;
-      case R11:
-            ptc.regs[R_11] = ptc.regs[R_ESP];
-          break;
-      case R12:
-            ptc.regs[R_12] = ptc.regs[R_ESP];
-          break;
-      case R13:
-            ptc.regs[R_13] = ptc.regs[R_ESP];
-          break;
-      case R14:
-            ptc.regs[R_14] = ptc.regs[R_ESP];
-          break;
-      case R15:
-            ptc.regs[R_15] = ptc.regs[R_ESP];
-          break;
-      default:
-          revng_abort("Unknow register operate.\n");
-	  break;
-  }
+  if(I!=endInst)
+    ptc.regs[REGLABLE(registerOP)] = ptc.regs[R_ESP];
 
   llvm::BasicBlock *Block = nullptr;
-  auto PC = getCrashInstrPC(dyn_cast<Instruction>(I));
+  auto PC = getInstructionPC(dyn_cast<Instruction>(I));
   revng_assert(isExecutableAddress(PC));
   if(PC == thisAddr){
       for(; I!=endInst; I++){
@@ -2248,6 +2252,7 @@ void JumpTargetManager::handleIndirectInst(llvm::BasicBlock *thisBlock,
       if(legalSet[i].I[0]->getOpcode() == Instruction::Add){
         if(((i+1) < legalSet.size()) and 
 	   (legalSet[i+1].I[0]->getOpcode() == Instruction::Shl)){
+	    legalSet.back().value[0] = dyn_cast<Value>(legalSet.back().I[0]);
             legalSet.erase(legalSet.begin()+i+2,legalSet.end()-1);
 	    isJmpTable = true;
 	    break;
