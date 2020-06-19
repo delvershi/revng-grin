@@ -203,14 +203,17 @@ public:
     JumpTableMode /* Stopping trackbacking analysis until encountering 
                    * 'rax rbx rcx rdx rsi rdi' */
   }; 
-  
-  void handleStaticAddr(llvm::BasicBlock *thisBlock);
+   
+  using IndirectBlocksMap = std::map<uint64_t, bool>; 
+  IndirectBlocksMap IndirectBlocks;
+  void isContainIndirectInst(uint64_t nextAddr, uint64_t thisAddr, llvm::BasicBlock *nextBlock);
 
+  void handleIndirectCall(llvm::BasicBlock *thisBlock, uint64_t thisAddr);
   llvm::BasicBlock *handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock, uint64_t thisAddr);
   llvm::BasicBlock *getSplitedBlock(llvm::BranchInst *branch);
   uint32_t REGLABLE(uint32_t RegOP);
   void handleIllegalJumpAddress(llvm::BasicBlock *thisBlock, uint64_t thisAddr);
-  void handleIndirectInst(llvm::BasicBlock *thisBlock, uint64_t thisAddr);
+  void handleIndirectJmp(llvm::BasicBlock *thisBlock, uint64_t thisAddr);
   void getIllegalValueDFG(llvm::Value *v,llvm::Instruction *I,
 		          llvm::BasicBlock *thisBlock,
 			  std::vector<llvm::Instruction *> &DataFlow,

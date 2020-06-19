@@ -668,6 +668,7 @@ IndentLevel	lib/Support/Debug.cpp	/^unsigned Logger<X>::IndentLevel;$/;"	m	class
 Index	include/revng/Support/RandomAccessIterator.h	/^  unsigned Index;$/;"	m	class:RandomAccessIterator
 Index	lib/StackAnalysis/FunctionABI.cpp	/^  static const size_t Index = NextIndex - 1;$/;"	m	struct:StackAnalysis::AnalysesWrapperHelpers	file:
 Index	tools/revng-lift/OSRA.h	/^      uint64_t Index;$/;"	m	class:OSRAPass::OSR::BoundsIterator
+IndirectBlocks	tools/revng-lift/JumpTargetManager.h	/^  std::map<uint64_t, bool> IndirectBlocks;$/;"	m	class:JumpTargetManager
 IndirectCall	include/revng/StackAnalysis/FunctionsSummary.h	/^  IndirectCall,$/;"	e	enum:StackAnalysis::BranchType::Values
 IndirectCall	lib/StackAnalysis/ABIIR.h	/^  enum Opcode { Load, Store, DirectCall, IndirectCall };$/;"	e	enum:StackAnalysis::ABIIRInstruction::Opcode
 IndirectTailCall	include/revng/StackAnalysis/FunctionsSummary.h	/^  IndirectTailCall, \/\/\/< A function with no returns but at least an indirect$/;"	e	enum:StackAnalysis::FunctionType::Values
@@ -2472,14 +2473,14 @@ handleEdge	lib/Support/ExampleAnalysis.cpp	/^  llvm::Optional<LatticeElement> ha
 handleGenericInstruction	lib/StackAnalysis/Intraprocedural.cpp	/^  void handleGenericInstruction(Instruction *I) {$/;"	f	class:StackAnalysis::Intraprocedural::BasicBlockState
 handleIllegalJumpAddress	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::handleIllegalJumpAddress(llvm::BasicBlock *thisBlock,$/;"	f	class:JumpTargetManager
 handleIllegalMemoryAccess	tools/revng-lift/JumpTargetManager.cpp	/^BasicBlock * JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock,$/;"	f	class:JumpTargetManager
-handleIndirectInst	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::handleIndirectInst(llvm::BasicBlock *thisBlock, $/;"	f	class:JumpTargetManager
+handleIndirectCall	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::handleIndirectCall(llvm::BasicBlock *thisBlock, uint64_t thisAddr){$/;"	f	class:JumpTargetManager
+handleIndirectJmp	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::handleIndirectJmp(llvm::BasicBlock *thisBlock, $/;"	f	class:JumpTargetManager
 handleInstruction	tools/revng-lift/SET.cpp	/^Value *SET::handleInstruction(Instruction *Target, Value *V) {$/;"	f	class:SET
 handleInstructionWithOSRA	tools/revng-lift/SET.cpp	/^bool SET::handleInstructionWithOSRA(Instruction *Target, Value *V) {$/;"	f	class:SET
 handleLogicalOperator	tools/revng-lift/OSRA.cpp	/^void OSRA::handleLogicalOperator(Instruction *I) {$/;"	f	class:OSRA
 handleMemoryAccess	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::handleMemoryAccess(llvm::Instruction *current, $/;"	f	class:JumpTargetManager
 handleMemoryOperation	tools/revng-lift/OSRA.cpp	/^void OSRA::handleMemoryOperation(Instruction *I) {$/;"	f	class:OSRA
 handleSelectOperation	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::handleSelectOperation(llvm::Instruction *current, $/;"	f	class:JumpTargetManager
-handleStaticAddr	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::handleStaticAddr(llvm::BasicBlock *thisBlock){$/;"	f	class:JumpTargetManager
 handleSumJump	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::handleSumJump(Instruction *SumJump) {$/;"	f	class:JumpTargetManager
 handleTerminator	lib/StackAnalysis/Intraprocedural.cpp	/^Interrupt Analysis::handleTerminator(TerminatorInst *T,$/;"	f	class:StackAnalysis::Intraprocedural::Analysis
 handleUnaryOperator	tools/revng-lift/OSRA.cpp	/^void OSRA::handleUnaryOperator(Instruction *I) {$/;"	f	class:OSRA

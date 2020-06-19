@@ -1134,6 +1134,22 @@ void JumpTargetManager::purgeTranslation(BasicBlock *Start) {
   }
 }
 
+void JumpTargetManager::isContainIndirectInst(uint64_t nextAddr, 
+		                              uint64_t thisAddr,
+		                              llvm::BasicBlock *nextBlock){
+  if(!haveBB)
+    return;
+  if(nextAddr==thisAddr)
+    return;
+
+  IndirectBlocksMap::iterator it = IndirectBlocks.find(nextAddr);
+  if(it != IndirectBlocks.end()){
+    haveBB = 0;
+    ToPurge.insert(nextBlock);
+    Unexplored.push_back(BlockWithAddress(nextAddr, nextBlock));   
+  }
+}
+
 // TODO: register Reason
 BasicBlock *
 JumpTargetManager::registerJT(uint64_t PC, JTReason::Values Reason) {
@@ -1151,7 +1167,7 @@ JumpTargetManager::registerJT(uint64_t PC, JTReason::Values Reason) {
     // Case 1: there's already a BasicBlock for that address, return it
     BasicBlock *BB = TargetIt->second.head();
     TargetIt->second.setReason(Reason);
-
+    
     haveBB = 1;
     
     unvisit(BB);
@@ -1878,38 +1894,9 @@ JumpTargetManager:: getLastAssignment(llvm::Value *v,
   return std::make_pair(UnknowResult,nullptr);   
 }
 
-void JumpTargetManager::handleStaticAddr(llvm::BasicBlock *thisBlock){
-  BasicBlock::reverse_iterator I(thisBlock->rbegin());
-  BasicBlock::reverse_iterator rend(thisBlock->rend());
-  bool staticFlag = 1;
+void JumpTargetManager::handleIndirectCall(llvm::BasicBlock *thisBlock, uint64_t thisAddr){
+  IndirectBlocks[thisAddr] = 1;
 
-  auto branch = dyn_cast<BranchInst>(&*I); 
-  if(branch && !branch->isConditional())
-    staticFlag = 0;
-
-  for(; I!=rend; I++){
-    if(staticFlag){
-      auto callI = dyn_cast<CallInst>(&*I);
-      if(callI){
-        auto *Callee = callI->getCalledFunction();
-  	if(Callee != nullptr && Callee->getName() == "newpc")
-	staticFlag = 0;
-      }
-    }
-    if(!staticFlag){
-      if(I->getOpcode()==Instruction::Store){
-        auto store = dyn_cast<llvm::StoreInst>(&*I);
-	auto v = store->getValueOperand();
-        if(dyn_cast<ConstantInt>(v)){
-	  auto pc = getLimitedValue(v);
-	  if(isExecutableAddress(pc)){
-	    errs()<<format_hex(pc,0)<<" &&&&&&&&&&&\n";
-	  }
-	}
-      }
-    }
-  }
- // return 0;
 }
 
 bool JumpTargetManager::isAccessMemInst(llvm::Instruction *I){
@@ -2240,10 +2227,11 @@ BasicBlock * JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *this
   return Block;
 }
 
-void JumpTargetManager::handleIndirectInst(llvm::BasicBlock *thisBlock, 
+void JumpTargetManager::handleIndirectJmp(llvm::BasicBlock *thisBlock, 
 		                                 uint64_t thisAddr){
   uint32_t userCodeFlag = 0;
   uint32_t &userCodeFlag1 = userCodeFlag;
+  IndirectBlocks[thisAddr] = 1;
 
   // Contains indirect instruction's Block, it must have a store instruction.
   BasicBlock::iterator I = --thisBlock->end(); 
