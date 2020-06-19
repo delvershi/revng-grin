@@ -1145,6 +1145,7 @@ REGISTER_XMM4	runtime/support.h	/^  REGISTER_XMM4 = 0x8658,$/;"	e	enum:__anon4
 REGISTER_XMM5	runtime/support.h	/^  REGISTER_XMM5 = 0x8698,$/;"	e	enum:__anon4
 REGISTER_XMM6	runtime/support.h	/^  REGISTER_XMM6 = 0x86d8,$/;"	e	enum:__anon4
 REGISTER_XMM7	runtime/support.h	/^  REGISTER_XMM7 = 0x8718$/;"	e	enum:__anon4
+REGLABLE	tools/revng-lift/JumpTargetManager.cpp	/^uint32_t JumpTargetManager::REGLABLE(uint32_t RegOP){$/;"	f	class:JumpTargetManager
 REVAMB_H	include/revng/Support/revng.h	2;"	d
 REVNG_ABORT_0	include/revng/Support/Assert.h	174;"	d
 REVNG_ABORT_1	include/revng/Support/Assert.h	175;"	d
@@ -2332,7 +2333,6 @@ getContext	include/revng/Support/IRHelpers.h	/^inline llvm::LLVMContext &getCont
 getContext	include/revng/Support/IRHelpers.h	/^inline llvm::LLVMContext &getContext(const llvm::Instruction *I) {$/;"	f
 getContext	include/revng/Support/IRHelpers.h	/^inline llvm::LLVMContext &getContext(const llvm::Module *M) {$/;"	f
 getContext	include/revng/Support/IRHelpers.h	/^inline llvm::LLVMContext &getContext(const llvm::Value *I) {$/;"	f
-getCrashInstrPC	tools/revng-lift/JumpTargetManager.cpp	/^uint64_t JumpTargetManager::getCrashInstrPC(llvm::Instruction *I){$/;"	f	class:JumpTargetManager
 getCurSourceRootCall	tools/revng-lift/CPUStateAccessAnalysisPass.cpp	/^getCurSourceRootCall(const WorkItem &Item, const Function *Root) {$/;"	f	file:
 getDestBRPCWrite	tools/revng-lift/JumpTargetManager.cpp	/^int64_t JumpTargetManager::getDestBRPCWrite(llvm::BasicBlock *block) {$/;"	f	class:JumpTargetManager
 getEdge	tools/revng-lift/OSRA.cpp	/^  getEdge(BasicBlock *BB, BasicBlock *Predecessor, const Value *V) {$/;"	f	class:BVMap
@@ -2356,6 +2356,7 @@ getFunctionSummary	lib/StackAnalysis/Intraprocedural.h	/^  const Intraprocedural
 getGCBIOrNull	include/revng/ReachingDefinitions/ReachingDefinitionsAnalysisImpl.h	/^getGCBIOrNull<GeneratedCodeBasicInfo>(const GeneratedCodeBasicInfo &GCBI) {$/;"	f	namespace:RDA
 getGCBIOrNull	include/revng/ReachingDefinitions/ReachingDefinitionsAnalysisImpl.h	/^inline const GeneratedCodeBasicInfo *getGCBIOrNull(const T &Obj) {$/;"	f	namespace:RDA
 getIllegalValueDFG	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::getIllegalValueDFG(llvm::Value *v,$/;"	f	class:JumpTargetManager
+getInstructionPC	tools/revng-lift/JumpTargetManager.cpp	/^uint64_t JumpTargetManager::getInstructionPC(llvm::Instruction *I){$/;"	f	class:JumpTargetManager
 getInterval	tools/revng-lift/OSRA.cpp	/^  static boost::icl::interval_set<T> getInterval(const BoundedValue &BV) {$/;"	f	class:BoundedValueHelpers
 getJTReasons	include/revng/BasicAnalyses/GeneratedCodeBasicInfo.h	/^  uint32_t getJTReasons(llvm::BasicBlock *BB) const {$/;"	f	class:GeneratedCodeBasicInfo
 getJTReasons	include/revng/BasicAnalyses/GeneratedCodeBasicInfo.h	/^  uint32_t getJTReasons(llvm::TerminatorInst *T) const {$/;"	f	class:GeneratedCodeBasicInfo
@@ -2431,6 +2432,7 @@ getSExtValue	include/revng/Support/IRHelpers.h	/^inline uint64_t getSExtValue(ll
 getSignedLimitedValue	include/revng/Support/IRHelpers.h	/^inline uint64_t getSignedLimitedValue(const llvm::Value *V) {$/;"	f
 getSize	include/revng/Support/MemoryAccess.h	/^  unsigned getSize(llvm::Type *T) {$/;"	f	class:TypeSizeProvider
 getSmall	include/revng/ADT/LazySmallBitVector.h	/^  uintptr_t getSmall() const {$/;"	f	class:LazySmallBitVector
+getSplitedBlock	tools/revng-lift/JumpTargetManager.cpp	/^BasicBlock * JumpTargetManager::getSplitedBlock(llvm::BranchInst *branch){$/;"	f	class:JumpTargetManager
 getStoreAddressValue	tools/revng-lift/CPUStateAccessAnalysisPass.cpp	/^static Value *getStoreAddressValue(Instruction *I) {$/;"	f	file:
 getStoredType	tools/revng-lift/CPUStateAccessAnalysisPass.cpp	/^static Type *getStoredType(Instruction *I) {$/;"	f	file:
 getTemporaryName	tools/revng-lift/PTCDump.cpp	/^static void getTemporaryName(char *Buffer,$/;"	f	file:
@@ -2477,6 +2479,7 @@ handleLogicalOperator	tools/revng-lift/OSRA.cpp	/^void OSRA::handleLogicalOperat
 handleMemoryAccess	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::handleMemoryAccess(llvm::Instruction *current, $/;"	f	class:JumpTargetManager
 handleMemoryOperation	tools/revng-lift/OSRA.cpp	/^void OSRA::handleMemoryOperation(Instruction *I) {$/;"	f	class:OSRA
 handleSelectOperation	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::handleSelectOperation(llvm::Instruction *current, $/;"	f	class:JumpTargetManager
+handleStaticAddr	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::handleStaticAddr(llvm::BasicBlock *thisBlock){$/;"	f	class:JumpTargetManager
 handleSumJump	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::handleSumJump(Instruction *SumJump) {$/;"	f	class:JumpTargetManager
 handleTerminator	lib/StackAnalysis/Intraprocedural.cpp	/^Interrupt Analysis::handleTerminator(TerminatorInst *T,$/;"	f	class:StackAnalysis::Intraprocedural::Analysis
 handleUnaryOperator	tools/revng-lift/OSRA.cpp	/^void OSRA::handleUnaryOperator(Instruction *I) {$/;"	f	class:OSRA

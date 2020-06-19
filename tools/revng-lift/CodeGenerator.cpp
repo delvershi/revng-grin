@@ -978,6 +978,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     // Obtain a new program counter to translate
     std::tie(VirtualAddress, Entry) = JumpTargets.peek();
 
+
     if(*ptc.isCall and traverseFLAG){
       errs()<<*((unsigned long *)ptc.regs[4])<<"<--store callnext\n";
       errs()<<*ptc.CallNext<<"\n";
@@ -1002,6 +1003,9 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       *ptc.exception_syscall = -1;
       //if(crashBB)
 	//  BlockBRs = nullptr;
+    }
+    if(!JumpTargets.haveBB && crashBB==nullptr && traverseFLAG){
+      JumpTargets.handleStaticAddr(BlockBRs);
     }
 
     //if(!JumpTargets.haveBB and *ptc.isIndirectJmp and !traverseFLAG)

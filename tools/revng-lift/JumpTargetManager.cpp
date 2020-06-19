@@ -1878,6 +1878,40 @@ JumpTargetManager:: getLastAssignment(llvm::Value *v,
   return std::make_pair(UnknowResult,nullptr);   
 }
 
+void JumpTargetManager::handleStaticAddr(llvm::BasicBlock *thisBlock){
+  BasicBlock::reverse_iterator I(thisBlock->rbegin());
+  BasicBlock::reverse_iterator rend(thisBlock->rend());
+  bool staticFlag = 1;
+
+  auto branch = dyn_cast<BranchInst>(&*I); 
+  if(branch && !branch->isConditional())
+    staticFlag = 0;
+
+  for(; I!=rend; I++){
+    if(staticFlag){
+      auto callI = dyn_cast<CallInst>(&*I);
+      if(callI){
+        auto *Callee = callI->getCalledFunction();
+  	if(Callee != nullptr && Callee->getName() == "newpc")
+	staticFlag = 0;
+      }
+    }
+    if(!staticFlag){
+      if(I->getOpcode()==Instruction::Store){
+        auto store = dyn_cast<llvm::StoreInst>(&*I);
+	auto v = store->getValueOperand();
+        if(dyn_cast<ConstantInt>(v)){
+	  auto pc = getLimitedValue(v);
+	  if(isExecutableAddress(pc)){
+	    errs()<<format_hex(pc,0)<<" &&&&&&&&&&&\n";
+	  }
+	}
+      }
+    }
+  }
+ // return 0;
+}
+
 bool JumpTargetManager::isAccessMemInst(llvm::Instruction *I){
   BasicBlock::iterator it(I);
   BasicBlock::iterator end = I->getParent()->end();
@@ -2711,7 +2745,7 @@ void JumpTargetManager::foldSet(std::vector<legalValue> &legalSet){
         case Instruction::Load:
 	case Instruction::Store:
 	{
-          for(uint32_t n = 0; n<range+1; n++){
+          for(uint64_t n = 0; n<range+1; n++){
             auto constant = dyn_cast<ConstantInt>(set.value[0]);
 	    if(constant){
 	      //uint64_t address = constant->getZExtValue();

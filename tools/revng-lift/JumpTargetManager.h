@@ -203,6 +203,8 @@ public:
     JumpTableMode /* Stopping trackbacking analysis until encountering 
                    * 'rax rbx rcx rdx rsi rdi' */
   }; 
+  
+  void handleStaticAddr(llvm::BasicBlock *thisBlock);
 
   llvm::BasicBlock *handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock, uint64_t thisAddr);
   llvm::BasicBlock *getSplitedBlock(llvm::BranchInst *branch);
