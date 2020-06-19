@@ -1895,7 +1895,7 @@ JumpTargetManager:: getLastAssignment(llvm::Value *v,
 }
 
 void JumpTargetManager::handleIndirectCall(llvm::BasicBlock *thisBlock, uint64_t thisAddr){
-  IndirectBlocks[thisAddr] = 1;
+  IndirectBlocks.insert(std::pair<uint64_t,bool>(thisAddr,1));
 
 }
 
