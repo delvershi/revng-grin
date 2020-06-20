@@ -200,8 +200,10 @@ public:
   enum TrackbackMode{
     FullMode,  /* Stopping trackbacking analysis until encountering 
                 * 'rsp' */
-    JumpTableMode /* Stopping trackbacking analysis until encountering 
+    JumpTableMode, /* Stopping trackbacking analysis until encountering 
                    * 'rax rbx rcx rdx rsi rdi' */
+    InterprocessMode /* Stopping trackbacking analysis until encountering
+                      * 'rsp' N times*/
   }; 
    
   using IndirectBlocksMap = std::map<uint64_t, bool>; 
@@ -255,11 +257,9 @@ public:
   void searchpartCFG(std::map<llvm::BasicBlock *, llvm::BasicBlock *> &DONE);
 
 private:
-  // Record address after setting a legal value 
-  std::vector<llvm::Constant *> AddressSet;
   void foldStack(legalValue *&relatedInstPtr);
 
-  void foldSet(std::vector<legalValue> &legalSet);
+  llvm::Constant *foldSet(std::vector<legalValue> &legalSet, uint64_t n);
 
   void handleMemoryAccess(llvm::Instruction *current, 
                           llvm::Instruction *next,

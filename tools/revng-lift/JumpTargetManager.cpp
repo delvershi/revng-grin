@@ -1771,6 +1771,14 @@ JumpTargetManager:: getLastAssignment(llvm::Value *v,
         if(v->getName().equals("rsp"))
           return std::make_pair(ConstantValueAssign,nullptr);       
     }break;
+    case InterprocessMode:{
+        if(v->getName().equals("rsp")){    
+	  NUMOFCONST--;
+	  if(NUMOFCONST==0)
+	    return std::make_pair(ConstantValueAssign,nullptr);
+	}
+
+    }
     case JumpTableMode:{
         auto op = StrToInt(v->getName().data());
         switch(op){ 
@@ -1895,8 +1903,90 @@ JumpTargetManager:: getLastAssignment(llvm::Value *v,
 }
 
 void JumpTargetManager::handleIndirectCall(llvm::BasicBlock *thisBlock, uint64_t thisAddr){
+  IndirectBlocksMap::iterator it = IndirectBlocks.find(thisAddr);
+  if(it != IndirectBlocks.end()){
+    return;
+  }
   IndirectBlocks.insert(std::pair<uint64_t,bool>(thisAddr,1));
+  
 
+  uint32_t userCodeFlag = 0;
+  uint32_t &userCodeFlag1 = userCodeFlag;
+
+  // Contains indirect instruction's Block, it must have a store instruction.
+  BasicBlock::iterator I = --thisBlock->end();
+  if(dyn_cast<BranchInst>(I))
+    return;
+  errs()<<"indirect call&&&&&\n";
+  I--; 
+  auto store = dyn_cast<llvm::StoreInst>(--I);
+  if(store){
+    range = 0;
+    // Seeking Value of assign to pc. 
+    // eg:store i64 value, i64* @pc 
+    NODETYPE nodetmp = nodepCFG;
+    std::vector<llvm::Instruction *> DataFlow1;
+    std::vector<llvm::Instruction *> &DataFlow = DataFlow1;
+    getIllegalValueDFG(store->getValueOperand(),
+		       dyn_cast<llvm::Instruction>(store),
+		       thisBlock,
+		       DataFlow,
+		       InterprocessMode,
+		       userCodeFlag1);
+    errs()<<"Finished analysis indirect Inst access Data Flow!\n";
+    nodepCFG = nodetmp;
+
+    std::vector<legalValue> legalSet1;
+    std::vector<legalValue> &legalSet = legalSet1;
+    analysisLegalValue(DataFlow,legalSet);
+
+    //Log information.
+    for(auto set : legalSet){
+      for(auto ii : set.I)
+        errs()<<*ii<<" -------------";
+      errs()<<"\n";
+      for(auto vvv : set.value) 
+        errs() <<*vvv<<" +++++++++++\n";
+      
+      errs()<<"\n";
+    }
+    //To match base+offset mode.
+    bool isJmpTable = false;
+    for(unsigned i=0; i<legalSet.size(); i++){
+      if(legalSet[i].I[0]->getOpcode() == Instruction::Add){
+        if(((i+1) < legalSet.size()) and 
+	   (legalSet[i+1].I[0]->getOpcode() == Instruction::Shl)){
+	    legalSet.back().value[0] = dyn_cast<Value>(legalSet.back().I[0]);
+            legalSet.erase(legalSet.begin()+i+2,legalSet.end()-1);
+	    isJmpTable = true;
+	    break;
+	}
+      }
+      for(unsigned j=0; j<legalSet[i].I.size(); j++){
+        if(legalSet[i].I[j]->getOpcode() == Instruction::Add){
+          if(((j+1) < legalSet[i].I.size()) and 
+	     (legalSet[i].I[j+1]->getOpcode() == Instruction::Shl)){
+            isJmpTable = true;
+	    revng_abort("Not implement!\n");
+	  }
+        }       
+      }
+    }
+    if(isJmpTable){ 
+      //To assign a legal value
+      for(uint64_t n = 0;;n++){
+        auto addrConst = foldSet(legalSet,n);
+	if(addrConst==nullptr)
+	  break;
+        auto integer = dyn_cast<ConstantInt>(addrConst);
+	if(isExecutableAddress(integer->getZExtValue()))
+            harvestBTBasicBlock(thisBlock,thisAddr,integer->getZExtValue());
+        else
+          break;
+      }
+    }
+
+  }
 }
 
 bool JumpTargetManager::isAccessMemInst(llvm::Instruction *I){
@@ -2301,14 +2391,10 @@ void JumpTargetManager::handleIndirectJmp(llvm::BasicBlock *thisBlock,
       revng_abort("Not implement and 'range == 0'\n");
 
     // To assign a legal value
-    foldSet(legalSet);
-
-    if(!AddressSet.empty()){
-      for(auto addr : AddressSet){
-        auto integer = dyn_cast<ConstantInt>(addr);
-	harvestBTBasicBlock(thisBlock,thisAddr,integer->getZExtValue());
-      }
-      AddressSet.clear();
+    for(uint64_t n = 0; n<range; n++){
+      auto addrConst = foldSet(legalSet,n);
+      auto integer = dyn_cast<ConstantInt>(addrConst);
+      harvestBTBasicBlock(thisBlock,thisAddr,integer->getZExtValue());
     }
   }
 }
@@ -2382,16 +2468,10 @@ void JumpTargetManager::handleIllegalJumpAddress(llvm::BasicBlock *thisBlock,
     }
 
     // To assign a legal value
-    foldSet(legalSet);
-  
-    if(!AddressSet.empty()){
-      for(auto addr : AddressSet){
-        auto integer = dyn_cast<ConstantInt>(addr);
-	if(integer)
-	  harvestBTBasicBlock(thisBlock,thisAddr,integer->getZExtValue());
-      }
-      AddressSet.clear();
-    }
+    auto addrConst = foldSet(legalSet,0);
+    revng_assert(addrConst);
+    auto integer = dyn_cast<ConstantInt>(addrConst);
+    harvestBTBasicBlock(thisBlock,thisAddr,integer->getZExtValue());
   }
 }
 
@@ -2529,6 +2609,8 @@ void JumpTargetManager::getIllegalValueDFG(llvm::Value *v,
 
   uint32_t NUMOFCONST1 = 3;
   uint32_t &NUMOFCONST = NUMOFCONST1;
+  if(TrackType==InterprocessMode)
+    NUMOFCONST = 8;
 
   std::map<llvm::BasicBlock *, llvm::BasicBlock *> DoneOFPath1;
   std::map<llvm::BasicBlock *, llvm::BasicBlock *> &DoneOFPath = DoneOFPath1;
@@ -2722,29 +2804,27 @@ void JumpTargetManager::analysisLegalValue(std::vector<llvm::Instruction *> &Dat
   }
 }
 
-void JumpTargetManager::foldSet(std::vector<legalValue> &legalSet){
+llvm::Constant *JumpTargetManager::foldSet(std::vector<legalValue> &legalSet, uint64_t n){
   const DataLayout &DL = TheModule.getDataLayout();
-  std::vector<Constant *> base;
+  Constant *base = nullptr;
   //TODO:Fold Set instruction
   for(auto set : make_range(legalSet.rbegin(),legalSet.rend())){
-    revng_assert(set.I.size()==1, "Stack must have one Instruction!");
+    if(set.I.size()>1)
+      return nullptr;
+
     auto op = set.I[0]->getOpcode();
     switch(op){
         case Instruction::Load:
 	case Instruction::Store:
 	{
-          for(uint64_t n = 0; n<range+1; n++){
-            auto constant = dyn_cast<ConstantInt>(set.value[0]);
-	    if(constant){
-	      //uint64_t address = constant->getZExtValue();
-	      //auto newoperand = ConstantInt::get(set.I[0]->getType(),address);
-	      base.push_back(dyn_cast<Constant>(set.value[0]));
-	    }
-	    else{
-	      auto newoperand = ConstantInt::get(set.I[0]->getType(),n);
-	      base.push_back(newoperand);
-	    }
+          auto constant = dyn_cast<ConstantInt>(set.value[0]);
+	  if(constant){
+	    //uint64_t address = constant->getZExtValue(); 
+	    //auto newoperand = ConstantInt::get(set.I[0]->getType(),address);
+	    base = dyn_cast<Constant>(set.value[0]);
 	  }
+	  else
+            base = ConstantInt::get(Type::getInt64Ty(Context),n);
 	  break;
 	}
 	//case Instruction::Select:
@@ -2756,10 +2836,8 @@ void JumpTargetManager::foldSet(std::vector<legalValue> &legalSet){
 	{
 	  Constant *op2 = dyn_cast<Constant>(set.value[0]);
           op2 = ConstantExpr::getTruncOrBitCast(op2,set.I[0]->getOperand(1)->getType());
-	  for(uint32_t i = 0; i<base.size(); i++){
-            base[i] = ConstantExpr::getTruncOrBitCast(base[i],set.I[0]->getOperand(0)->getType());
-            base[i] = ConstantFoldBinaryOpOperands(op,base[i],op2,DL);
-	  }
+          base = ConstantExpr::getTruncOrBitCast(base,set.I[0]->getOperand(0)->getType());
+          base = ConstantFoldBinaryOpOperands(op,base,op2,DL);
 	  break;
 	}
 	//case Instruction::AShr:
@@ -2768,16 +2846,14 @@ void JumpTargetManager::foldSet(std::vector<legalValue> &legalSet){
         case llvm::Instruction::IntToPtr:
 	{
 	  //auto inttoptr = dyn_cast<IntToPtrInst>(set.I[0]);
-	  for(uint32_t i = 0; i<base.size(); i++){
-	    auto integer = dyn_cast<ConstantInt>(base[i]);
-	    uint64_t address = integer->getZExtValue();
-	    if(!ptc.isValidExecuteAddr(address)){
-	      errs()<<"\nYielding an illegal addrress\n";
-	      continue;
-	    }
-	    uint64_t n = *((uint64_t *)address);
-	    base[i] = ConstantInt::get(base[i]->getType(),n);
+	  auto integer = dyn_cast<ConstantInt>(base);
+	  uint64_t address = integer->getZExtValue();
+	  if(!ptc.isValidExecuteAddr(address)){
+	    errs()<<"\nYielding an illegal addrress\n";
+	    continue;
 	  }
+	  uint64_t addr = *((uint64_t *)address);
+	  base = ConstantInt::get(base->getType(),addr);
           break;
 	}
         default:
@@ -2786,8 +2862,7 @@ void JumpTargetManager::foldSet(std::vector<legalValue> &legalSet){
         break;	    
     }/// end switch(...
   }/// end for(auto..
-  AddressSet.clear();
-  AddressSet = base;
+  return base;
 }
 
 /* TODO: To assign a value  

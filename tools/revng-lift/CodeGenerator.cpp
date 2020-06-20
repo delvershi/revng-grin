@@ -1007,7 +1007,6 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     if(!JumpTargets.haveBB and *ptc.isIndirect)
       JumpTargets.handleIndirectCall(BlockBRs,tmpVA);
 
-    //if(!JumpTargets.haveBB and *ptc.isIndirectJmp and !traverseFLAG)
     if(!JumpTargets.haveBB and *ptc.isIndirectJmp)
       JumpTargets.handleIndirectJmp(BlockBRs,tmpVA);
   
@@ -1075,7 +1074,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
 
     if(DynamicVirtualAddress){
       auto tmpBB = JumpTargets.registerJT(DynamicVirtualAddress,JTReason::GlobalData);
-      JumpTargets.isContainIndirectInst(DynamicVirtualAddress,tmpVA,tmpBB);
+      //JumpTargets.isContainIndirectInst(DynamicVirtualAddress,tmpVA,tmpBB);
       if(JumpTargets.haveBB and (crashBB==nullptr)){
         // If have translated BB, give Entry an arbitrary value
         Entry = tmpBB;
