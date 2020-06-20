@@ -1979,8 +1979,11 @@ void JumpTargetManager::handleIndirectCall(llvm::BasicBlock *thisBlock, uint64_t
 	if(addrConst==nullptr)
 	  break;
         auto integer = dyn_cast<ConstantInt>(addrConst);
-	if(isExecutableAddress(integer->getZExtValue()))
-            harvestBTBasicBlock(thisBlock,thisAddr,integer->getZExtValue());
+	auto newaddr = integer->getZExtValue();
+	if(newaddr==0)
+            continue;
+	if(isExecutableAddress(newaddr))
+            harvestBTBasicBlock(thisBlock,thisAddr,newaddr);
         else
           break;
       }
