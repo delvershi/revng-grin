@@ -640,8 +640,12 @@ BasicBlock *JumpTargetManager::newPC(uint64_t PC, bool &ShouldContinue) {
   // happens with variable-length instruction encodings.
   if (OriginalInstructionAddresses.count(PC) != 0) {
     ShouldContinue = false;
-    revng_abort("Why this?\n");
-    return registerJT(PC, JTReason::AmbigousInstruction);
+    InstructionMap::iterator InstrIt = OriginalInstructionAddresses.find(PC);
+    Instruction *I = InstrIt->second;
+    haveBB = 1;
+    return I->getParent();
+    //revng_abort("Why this?\n");
+    //return registerJT(PC, JTReason::AmbigousInstruction);
   }
 
   // We don't know anything about this PC
@@ -1970,14 +1974,26 @@ void JumpTargetManager::harvestStaticAddr(llvm::BasicBlock *thisBlock){
 }
 
 void JumpTargetManager::handleStaticAddr(void){
-  for(auto PC : StaticAddrs){
-    BlockMap::iterator TargetIt = JumpTargets.find(PC);
-    BlockMap::iterator upper;
-    upper = JumpTargets.upper_bound(PC);
-    if(TargetIt == JumpTargets.end() && upper != JumpTargets.end()){
-      errs()<<format_hex(PC,0)<<" <- static address\n";  
+  if(UnexploreStaticAddr.empty()){
+    for(auto PC : StaticAddrs){
+      BlockMap::iterator TargetIt = JumpTargets.find(PC);
+      BlockMap::iterator upper;
+      upper = JumpTargets.upper_bound(PC);
+      if(TargetIt == JumpTargets.end() && upper != JumpTargets.end()){
+	errs()<<format_hex(upper->first,0)<<"  :first\n";
+        errs()<<format_hex(PC,0)<<" <- static address\n";  
+	UnexploreStaticAddr.push_back(PC);
+      }
     }
+    StaticAddrs.clear();
   }
+  uint64_t PC = 0;
+again:  
+  PC = UnexploreStaticAddr.back();
+  UnexploreStaticAddr.pop_back();
+  registerJT(PC,JTReason::GlobalData);
+  if(haveBB)
+    goto again;  
 }
 
 
@@ -2509,8 +2525,8 @@ void JumpTargetManager::harvestBTBasicBlock(llvm::BasicBlock *thisBlock,
 void JumpTargetManager::handleIllegalJumpAddress(llvm::BasicBlock *thisBlock,
 		                                 uint64_t thisAddr){
   if(*ptc.isRet || *ptc.isIndirectJmp)
-      return;
-      
+    return;
+      	
   uint32_t userCodeFlag = 0;
   uint32_t &userCodeFlag1 = userCodeFlag;
 

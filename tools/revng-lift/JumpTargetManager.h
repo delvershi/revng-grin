@@ -212,6 +212,7 @@ public:
   void isContainIndirectInst(uint64_t nextAddr, uint64_t thisAddr, llvm::BasicBlock *nextBlock);
   
   std::vector<uint64_t> StaticAddrs;
+  std::vector<uint64_t> UnexploreStaticAddr;
   void harvestStaticAddr(llvm::BasicBlock *thisBlock);
   void handleStaticAddr(void);
 

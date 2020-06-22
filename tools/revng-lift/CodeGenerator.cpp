@@ -786,6 +786,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
   llvm::BasicBlock *srcBB = nullptr;
   uint64_t srcAddr = 0;
   llvm::BasicBlock *crashBB = nullptr;
+  bool StaticAddrFlag = false;
   while (Entry != nullptr) {
     jjj++;
     BlockBRs = nullptr;
@@ -1004,6 +1005,8 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       //if(crashBB)
 	//  BlockBRs = nullptr;
     }
+    if(StaticAddrFlag and *ptc.isRet)
+      DynamicVirtualAddress = 0;
 
     if(!JumpTargets.haveBB && crashBB==nullptr && traverseFLAG)
       JumpTargets.harvestStaticAddr(BlockBRs);
@@ -1106,11 +1109,14 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
 
     if(JumpTargets.BranchTargets.empty())
       DynamicVirtualAddress = 0;
-    
+
     }////?end if(traverseFLAG)
     
     if(Entry==nullptr){
       JumpTargets.handleStaticAddr();
+      StaticAddrFlag = true;
+      std::tie(VirtualAddress, Entry) = JumpTargets.peek();
+      std::cerr<<std::hex<<VirtualAddress<<" \n";
     }
 
   } // End translations loop

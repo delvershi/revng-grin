@@ -1346,6 +1346,7 @@ Start	tools/revng-lift/BinaryFile.cpp	/^  const uint8_t *Start;$/;"	m	class:Dwar
 StartVirtualAddress	tools/revng-lift/BinaryFile.h	/^  uint64_t StartVirtualAddress;$/;"	m	struct:SegmentInfo
 State	include/revng/Support/MonotoneFramework.h	/^  std::map<Label, LatticeElement> State;$/;"	m	class:MonotoneFramework
 State	lib/StackAnalysis/Element.h	/^  Container State;$/;"	m	class:StackAnalysis::Intraprocedural::Element
+StaticAddrs	tools/revng-lift/JumpTargetManager.h	/^  std::vector<uint64_t> StaticAddrs;$/;"	m	class:JumpTargetManager
 StaticSymbol	tools/revng-lift/BinaryFile.h	/^enum Values { Unknown, StaticSymbol, DynamicSymbol, DynamicRelocation };$/;"	e	enum:LabelOrigin::Values
 Stop	tools/revng-lift/InstructionTranslator.h	/^    Stop, \/\/\/< Do not proceed with translation$/;"	e	enum:InstructionTranslator::TranslationResult
 StopNow	include/revng/Support/IRHelpers.h	/^  StopNow \/\/\/< Interrupt immediately the visit$/;"	e	enum:VisitAction
@@ -2219,6 +2220,8 @@ first	include/revng/ADT/SmallMap.h	/^  struct first {$/;"	s	class:Iteratall
 first	scripts/monotone-framework.py	/^    first = False$/;"	v
 first	scripts/monotone-framework.py	/^  first = True$/;"	v
 fixEnv2EnvMemCopies	tools/revng-lift/CPUStateAccessAnalysisPass.cpp	/^static void fixEnv2EnvMemCopies(const Module &M,$/;"	f	file:
+flag	tools/revng-lift/JumpTargetManager.cpp	/^bool flag,flag2 = false;$/;"	v
+flag2	tools/revng-lift/JumpTargetManager.cpp	/^bool flag,flag2 = false;$/;"	v
 flip	tools/revng-lift/OSRA.h	/^    void flip() {$/;"	f	class:OSRAPass::BoundedValue
 flush_trace_buffer	runtime/support.c	/^static void flush_trace_buffer(void) {$/;"	f	file:
 flush_trace_buffer_signal_handler	runtime/support.c	/^void flush_trace_buffer_signal_handler(int signal) {$/;"	f
@@ -2481,6 +2484,7 @@ handleLogicalOperator	tools/revng-lift/OSRA.cpp	/^void OSRA::handleLogicalOperat
 handleMemoryAccess	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::handleMemoryAccess(llvm::Instruction *current, $/;"	f	class:JumpTargetManager
 handleMemoryOperation	tools/revng-lift/OSRA.cpp	/^void OSRA::handleMemoryOperation(Instruction *I) {$/;"	f	class:OSRA
 handleSelectOperation	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::handleSelectOperation(llvm::Instruction *current, $/;"	f	class:JumpTargetManager
+handleStaticAddr	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::handleStaticAddr(void){$/;"	f	class:JumpTargetManager
 handleSumJump	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::handleSumJump(Instruction *SumJump) {$/;"	f	class:JumpTargetManager
 handleTerminator	lib/StackAnalysis/Intraprocedural.cpp	/^Interrupt Analysis::handleTerminator(TerminatorInst *T,$/;"	f	class:StackAnalysis::Intraprocedural::Analysis
 handleUnaryOperator	tools/revng-lift/OSRA.cpp	/^void OSRA::handleUnaryOperator(Instruction *I) {$/;"	f	class:OSRA
@@ -2489,6 +2493,7 @@ harvest	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::harvest
 harvestBTBasicBlock	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::harvestBTBasicBlock(llvm::BasicBlock *thisBlock,$/;"	f	class:JumpTargetManager
 harvestCallBasicBlock	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::harvestCallBasicBlock(llvm::BasicBlock *thisBlock,uint64_t thisAddr){$/;"	f	class:JumpTargetManager
 harvestGlobalData	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::harvestGlobalData() {$/;"	f	class:JumpTargetManager
+harvestStaticAddr	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::harvestStaticAddr(llvm::BasicBlock *thisBlock){$/;"	f	class:JumpTargetManager
 harvestbranchBasicBlock	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::harvestbranchBasicBlock(uint64_t nextAddr,$/;"	f	class:JumpTargetManager
 hasDirectContent	lib/StackAnalysis/Element.h	/^  bool hasDirectContent() const { return !DirectContent.isInvalid(); }$/;"	f	class:StackAnalysis::Intraprocedural::Value
 hasEnv	tools/revng-lift/VariableManager.h	/^  bool hasEnv() const { return Env != nullptr; }$/;"	f	class:VariableManager
