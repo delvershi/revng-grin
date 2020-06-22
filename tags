@@ -45,7 +45,6 @@ Address	tools/revng-lift/BinaryFile.cpp	/^  uint64_t Address;$/;"	m	class:DwarfR
 Address	tools/revng-lift/BinaryFile.cpp	/^  uint64_t Address;$/;"	m	class:FilePortion	file:
 Address	tools/revng-lift/BinaryFile.h	/^    uint64_t Address;$/;"	m	struct:BinaryFile::__anon9
 Address	tools/revng-lift/BinaryFile.h	/^  uint64_t Address;$/;"	m	class:Label
-AddressSet	tools/revng-lift/JumpTargetManager.h	/^  std::vector<llvm::Constant *> AddressSet;$/;"	m	class:JumpTargetManager
 AddressSpace	lib/StackAnalysis/Element.h	/^  AddressSpace(ASID ID) : ID(ID) {}$/;"	f	class:StackAnalysis::Intraprocedural::AddressSpace
 AddressSpace	lib/StackAnalysis/Element.h	/^class AddressSpace {$/;"	c	namespace:StackAnalysis::Intraprocedural
 AffectingLoads	tools/revng-lift/OSRA.cpp	/^    SmallVector<const LoadInst *, 3> AffectingLoads;$/;"	m	struct:OSRA::ComparisonOperand	file:
@@ -668,7 +667,6 @@ IndentLevel	lib/Support/Debug.cpp	/^unsigned Logger<X>::IndentLevel;$/;"	m	class
 Index	include/revng/Support/RandomAccessIterator.h	/^  unsigned Index;$/;"	m	class:RandomAccessIterator
 Index	lib/StackAnalysis/FunctionABI.cpp	/^  static const size_t Index = NextIndex - 1;$/;"	m	struct:StackAnalysis::AnalysesWrapperHelpers	file:
 Index	tools/revng-lift/OSRA.h	/^      uint64_t Index;$/;"	m	class:OSRAPass::OSR::BoundsIterator
-IndirectBlocks	tools/revng-lift/JumpTargetManager.h	/^  std::map<uint64_t, bool> IndirectBlocks;$/;"	m	class:JumpTargetManager
 IndirectCall	include/revng/StackAnalysis/FunctionsSummary.h	/^  IndirectCall,$/;"	e	enum:StackAnalysis::BranchType::Values
 IndirectCall	lib/StackAnalysis/ABIIR.h	/^  enum Opcode { Load, Store, DirectCall, IndirectCall };$/;"	e	enum:StackAnalysis::ABIIRInstruction::Opcode
 IndirectTailCall	include/revng/StackAnalysis/FunctionsSummary.h	/^  IndirectTailCall, \/\/\/< A function with no returns but at least an indirect$/;"	e	enum:StackAnalysis::FunctionType::Values
@@ -705,6 +703,7 @@ Int64Ty	tools/revng-lift/CPUStateAccessAnalysisPass.cpp	/^  Type *Int64Ty;$/;"	m
 IntMax	include/revng/ADT/LazySmallBitVector.h	/^  static const unsigned IntMax = std::numeric_limits<int32_t>::max();$/;"	m	class:LazySmallBitVector
 InterproceduralAnalysis	lib/StackAnalysis/InterproceduralAnalysis.h	/^  InterproceduralAnalysis(Cache &TheCache,$/;"	f	class:StackAnalysis::InterproceduralAnalysis
 InterproceduralAnalysis	lib/StackAnalysis/InterproceduralAnalysis.h	/^class InterproceduralAnalysis {$/;"	c	namespace:StackAnalysis
+InterprocessMode	tools/revng-lift/JumpTargetManager.h	/^    InterprocessMode, \/* Stopping trackbacking analysis until encountering$/;"	e	enum:JumpTargetManager::TrackbackMode
 Interrupt	include/revng/ReachingDefinitions/ReachingDefinitionsAnalysisImpl.h	/^  Interrupt(InterruptType Type) : Type(Type) { revng_assert(Type != Regular); }$/;"	f	class:RDA::Interrupt
 Interrupt	include/revng/ReachingDefinitions/ReachingDefinitionsAnalysisImpl.h	/^  Interrupt(InterruptType Type, MISet E) : Type(Type), E(E) {$/;"	f	class:RDA::Interrupt
 Interrupt	include/revng/ReachingDefinitions/ReachingDefinitionsAnalysisImpl.h	/^class Interrupt {$/;"	c	namespace:RDA
@@ -773,7 +772,7 @@ JUMPTARGETMANAGER_H	tools/revng-lift/JumpTargetManager.h	2;"	d
 JumpAsm	include/revng/Support/revng.h	/^  llvm::StringRef JumpAsm;$/;"	m	class:Architecture
 JumpInfo	tools/revng-lift/SET.h	/^    JumpInfo(llvm::StoreInst *Instruction,$/;"	f	struct:SETPass::JumpInfo
 JumpInfo	tools/revng-lift/SET.h	/^  struct JumpInfo {$/;"	s	class:SETPass
-JumpTableMode	tools/revng-lift/JumpTargetManager.h	/^    JumpTableMode \/* Stopping trackbacking analysis until encountering $/;"	e	enum:JumpTargetManager::TrackbackMode
+JumpTableMode	tools/revng-lift/JumpTargetManager.h	/^    JumpTableMode, \/* Stopping trackbacking analysis until encountering $/;"	e	enum:JumpTargetManager::TrackbackMode
 JumpTarget	tools/revng-lift/JumpTargetManager.h	/^    JumpTarget() : BB(nullptr), Reasons(0) {}$/;"	f	class:JumpTargetManager::JumpTarget
 JumpTarget	tools/revng-lift/JumpTargetManager.h	/^    JumpTarget(llvm::BasicBlock *BB) : BB(BB), Reasons(0) {}$/;"	f	class:JumpTargetManager::JumpTarget
 JumpTarget	tools/revng-lift/JumpTargetManager.h	/^    JumpTarget(llvm::BasicBlock *BB, JTReason::Values Reason) :$/;"	f	class:JumpTargetManager::JumpTarget
@@ -1410,6 +1409,7 @@ TermUse	tools/revng-lift/SimplifyComparisonsPass.cpp	/^  TermUse() : T(nullptr),
 TermUse	tools/revng-lift/SimplifyComparisonsPass.cpp	/^  TermUse(BinaryTerm *Op, unsigned OpIndex) : T(Op), OpIndex(OpIndex) {}$/;"	f	class:TermUse
 TermUse	tools/revng-lift/SimplifyComparisonsPass.cpp	/^class TermUse {$/;"	c	file:
 TestClass	tests/Unit/classsentinel.cpp	/^struct TestClass {$/;"	s	file:
+TestMode	tools/revng-lift/JumpTargetManager.h	/^    TestMode$/;"	e	enum:JumpTargetManager::TrackbackMode
 TestType	tests/Unit/ReachingDefinitionsPass.cpp	/^enum TestType { Regular, Conditional, Both };$/;"	g	file:
 TextRepresentation	include/revng/StackAnalysis/StackAnalysis.h	/^  std::string TextRepresentation;$/;"	m	class:StackAnalysis::StackAnalysis
 TheABIIR	lib/StackAnalysis/Intraprocedural.h	/^  ABIFunction TheABIIR; \/\/\/< The ABI IR$/;"	m	class:StackAnalysis::Intraprocedural::Analysis
@@ -2227,7 +2227,7 @@ foldOffsets	tools/revng-lift/CPUStateAccessAnalysisPass.cpp	/^  CSVOffsets foldO
 foldOffsets	tools/revng-lift/CPUStateAccessAnalysisPass.cpp	/^  CSVOffsets foldOffsets(CSVOffsets::Kind ResultKind,$/;"	f	class:AddSubOffsetFolder	file:
 foldOffsets	tools/revng-lift/CPUStateAccessAnalysisPass.cpp	/^  CSVOffsets foldOffsets(CSVOffsets::Kind ResultKind,$/;"	f	class:GEPOffsetFolder	file:
 foldOffsets	tools/revng-lift/CPUStateAccessAnalysisPass.cpp	/^  CSVOffsets foldOffsets(CSVOffsets::Kind ResultKind,$/;"	f	class:NumericOffsetFolder	file:
-foldSet	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::foldSet(std::vector<legalValue> &legalSet){$/;"	f	class:JumpTargetManager
+foldSet	tools/revng-lift/JumpTargetManager.cpp	/^llvm::Constant *JumpTargetManager::foldSet(std::vector<legalValue> &legalSet, uint64_t n){$/;"	f	class:JumpTargetManager
 foldStack	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::foldStack(legalValue *&relatedInstPtr){$/;"	f	class:JumpTargetManager
 forceBV	tools/revng-lift/OSRA.cpp	/^  BoundedValue &forceBV(BasicBlock *BB, Value *V, BoundedValue BV) {$/;"	f	class:BVMap
 forceBV	tools/revng-lift/OSRA.cpp	/^  BoundedValue &forceBV(Instruction *V, BoundedValue BV) {$/;"	f	class:BVMap
@@ -2631,6 +2631,7 @@ isCoherent	lib/StackAnalysis/Intraprocedural.cpp	/^bool Analysis::isCoherent(con
 isCompatible	tools/revng-lift/InstructionTranslator.cpp	/^  bool isCompatible(const InstructionArgumentsIterator &r) const {$/;"	f	class:PTC::InstructionArgumentsIterator
 isConstant	tools/revng-lift/OSRA.h	/^    bool isConstant() const {$/;"	f	class:OSRAPass::BoundedValue
 isConstant	tools/revng-lift/OSRA.h	/^    bool isConstant() const {$/;"	f	class:OSRAPass::OSR
+isContainIndirectInst	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::isContainIndirectInst(uint64_t nextAddr, $/;"	f	class:JumpTargetManager
 isContradiction	include/revng/StackAnalysis/FunctionsSummary.h	/^  bool isContradiction() const { return Value == Contradiction; }$/;"	f	class:StackAnalysis::FunctionCallReturnValue
 isContradiction	include/revng/StackAnalysis/FunctionsSummary.h	/^  bool isContradiction() const { return Value == Contradiction; }$/;"	f	class:StackAnalysis::FunctionReturnValue
 isContradiction	include/revng/StackAnalysis/FunctionsSummary.h	/^  bool isContradiction() const { return Value == Contradiction; }$/;"	f	class:StackAnalysis::RegisterArgument

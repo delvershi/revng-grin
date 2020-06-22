@@ -1134,20 +1134,39 @@ void JumpTargetManager::purgeTranslation(BasicBlock *Start) {
   }
 }
 
+bool flag,flag2 = false;
 void JumpTargetManager::isContainIndirectInst(uint64_t nextAddr, 
 		                              uint64_t thisAddr,
 		                              llvm::BasicBlock *nextBlock){
-  if(!haveBB)
-    return;
-  if(nextAddr==thisAddr)
-    return;
+ 
+  if(thisAddr ==0x41e4aa)
+	flag = true;
 
-  IndirectBlocksMap::iterator it = IndirectBlocks.find(nextAddr);
-  if(it != IndirectBlocks.end()){
-    haveBB = 0;
-    ToPurge.insert(nextBlock);
-    Unexplored.push_back(BlockWithAddress(nextAddr, nextBlock));   
+  if(flag){
+    if(haveBB){
+      haveBB = 0;
+      ToPurge.insert(nextBlock);
+      Unexplored.push_back(BlockWithAddress(nextAddr, nextBlock));
+      flag2 = true;
+      return;
+    }
+    if(flag2){
+      if(*ptc.isIndirect)
+        flag = false;
+    }  
   }
+
+//  if(!haveBB)
+//    return;
+//  if(nextAddr==thisAddr)
+//    return;
+//
+//  IndirectBlocksMap::iterator it = IndirectBlocks.find(nextAddr);
+//  if(it != IndirectBlocks.end()){
+//    haveBB = 0;
+//    ToPurge.insert(nextBlock);
+//    Unexplored.push_back(BlockWithAddress(nextAddr, nextBlock));   
+//  }
 }
 
 // TODO: register Reason
@@ -1779,6 +1798,14 @@ JumpTargetManager:: getLastAssignment(llvm::Value *v,
 	}
 
     }
+    case TestMode:{
+        if(v->getName().equals("rsp")){    
+	  NUMOFCONST--;
+	  if(NUMOFCONST==0)
+	    return std::make_pair(ConstantValueAssign,nullptr);
+	}
+
+    }
     case JumpTableMode:{
         auto op = StrToInt(v->getName().data());
         switch(op){ 
@@ -1902,6 +1929,58 @@ JumpTargetManager:: getLastAssignment(llvm::Value *v,
   return std::make_pair(UnknowResult,nullptr);   
 }
 
+void JumpTargetManager::harvestStaticAddr(llvm::BasicBlock *thisBlock){
+  BasicBlock::reverse_iterator I(thisBlock->rbegin());
+  BasicBlock::reverse_iterator rend(thisBlock->rend());
+  bool staticFlag = 1;
+
+  auto branch = dyn_cast<BranchInst>(&*I); 
+  if(branch && !branch->isConditional())
+    staticFlag = 0;
+
+  for(; I!=rend; I++){
+    if(staticFlag){
+      auto callI = dyn_cast<CallInst>(&*I);
+      if(callI){
+        auto *Callee = callI->getCalledFunction();
+  	if(Callee != nullptr && Callee->getName() == "newpc")
+          staticFlag = 0;
+      }
+    }
+    if(!staticFlag){
+      if(I->getOpcode()==Instruction::Call){
+        auto other = dyn_cast<CallInst>(&*I);
+	if(other){
+          auto *Callee = other->getCalledFunction();
+	  if(Callee != nullptr && Callee->getName() != "newpc")
+	    staticFlag = 1;
+	}
+      }
+      if(I->getOpcode()==Instruction::Store){
+        auto store = dyn_cast<llvm::StoreInst>(&*I);
+        auto v = store->getValueOperand();
+        if(dyn_cast<ConstantInt>(v)){
+          auto pc = getLimitedValue(v);
+	  if(isExecutableAddress(pc))
+	    StaticAddrs.push_back(pc);
+        }
+      }
+    }
+  }
+}
+
+void JumpTargetManager::handleStaticAddr(void){
+  for(auto PC : StaticAddrs){
+    BlockMap::iterator TargetIt = JumpTargets.find(PC);
+    BlockMap::iterator upper;
+    upper = JumpTargets.upper_bound(PC);
+    if(TargetIt == JumpTargets.end() && upper != JumpTargets.end()){
+      errs()<<format_hex(PC,0)<<" <- static address\n";  
+    }
+  }
+}
+
+
 void JumpTargetManager::handleIndirectCall(llvm::BasicBlock *thisBlock, uint64_t thisAddr){
   IndirectBlocksMap::iterator it = IndirectBlocks.find(thisAddr);
   if(it != IndirectBlocks.end()){
@@ -1927,11 +2006,14 @@ void JumpTargetManager::handleIndirectCall(llvm::BasicBlock *thisBlock, uint64_t
     NODETYPE nodetmp = nodepCFG;
     std::vector<llvm::Instruction *> DataFlow1;
     std::vector<llvm::Instruction *> &DataFlow = DataFlow1;
+    auto mode = InterprocessMode;
+    if(thisAddr==0x41e8dd)
+	    mode = TestMode;
     getIllegalValueDFG(store->getValueOperand(),
 		       dyn_cast<llvm::Instruction>(store),
 		       thisBlock,
 		       DataFlow,
-		       InterprocessMode,
+		       mode,
 		       userCodeFlag1);
     errs()<<"Finished analysis indirect Inst access Data Flow!\n";
     nodepCFG = nodetmp;
@@ -2158,6 +2240,14 @@ BasicBlock * JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *this
    * case 3:  [reg + reg + imm] 10+10+1;
    * case 4:  [reg + reg]       10+10 */
   uint32_t accessNUM = 0;
+  BasicBlock::iterator lastInst = endInst;
+  lastInst--;
+  if(!dyn_cast<BranchInst>(lastInst)){
+    auto PC = getInstructionPC(dyn_cast<Instruction>(lastInst));
+    revng_assert(PC != thisAddr);
+    return registerJT(PC,JTReason::GlobalData);
+  }
+
   I = ++beginInst;
   for(; I!=endInst; I++){
     if(I->getOpcode() == Instruction::Load){
@@ -2193,7 +2283,7 @@ BasicBlock * JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *this
 	    return registerJT(PC,JTReason::GlobalData);
 	  }
           else
-            accessNUM = 0;;
+            accessNUM = 0;
         }
     }
   }
@@ -2614,6 +2704,8 @@ void JumpTargetManager::getIllegalValueDFG(llvm::Value *v,
   uint32_t &NUMOFCONST = NUMOFCONST1;
   if(TrackType==InterprocessMode)
     NUMOFCONST = 8;
+  if(TrackType==TestMode)
+    NUMOFCONST = 30;
 
   std::map<llvm::BasicBlock *, llvm::BasicBlock *> DoneOFPath1;
   std::map<llvm::BasicBlock *, llvm::BasicBlock *> &DoneOFPath = DoneOFPath1;

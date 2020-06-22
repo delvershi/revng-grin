@@ -202,13 +202,18 @@ public:
                 * 'rsp' */
     JumpTableMode, /* Stopping trackbacking analysis until encountering 
                    * 'rax rbx rcx rdx rsi rdi' */
-    InterprocessMode /* Stopping trackbacking analysis until encountering
-                      * 'rsp' N times*/
+    InterprocessMode, /* Stopping trackbacking analysis until encountering
+                       * 'rsp' N times*/
+    TestMode
   }; 
    
   using IndirectBlocksMap = std::map<uint64_t, bool>; 
   IndirectBlocksMap IndirectBlocks;
   void isContainIndirectInst(uint64_t nextAddr, uint64_t thisAddr, llvm::BasicBlock *nextBlock);
+  
+  std::vector<uint64_t> StaticAddrs;
+  void harvestStaticAddr(llvm::BasicBlock *thisBlock);
+  void handleStaticAddr(void);
 
   void handleIndirectCall(llvm::BasicBlock *thisBlock, uint64_t thisAddr);
   llvm::BasicBlock *handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock, uint64_t thisAddr);

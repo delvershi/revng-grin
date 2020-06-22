@@ -1004,6 +1004,10 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       //if(crashBB)
 	//  BlockBRs = nullptr;
     }
+
+    if(!JumpTargets.haveBB && crashBB==nullptr && traverseFLAG)
+      JumpTargets.harvestStaticAddr(BlockBRs);
+
     if(!JumpTargets.haveBB and *ptc.isIndirect)
       JumpTargets.handleIndirectCall(BlockBRs,tmpVA);
 
@@ -1100,11 +1104,15 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       std::cerr<<std::hex<<VirtualAddress<<" \n";
     }
 
-    if(JumpTargets.BranchTargets.empty()){
+    if(JumpTargets.BranchTargets.empty())
       DynamicVirtualAddress = 0;
-    }
+    
     }////?end if(traverseFLAG)
     
+    if(Entry==nullptr){
+      JumpTargets.handleStaticAddr();
+    }
+
   } // End translations loop
  
   outs()<<"\nRewrite Successful\n";
