@@ -2500,7 +2500,7 @@ void JumpTargetManager::handleIndirectJmp(llvm::BasicBlock *thisBlock,
       revng_abort("Not implement and 'range == 0'\n");
 
     // To assign a legal value
-    for(uint64_t n = 0; n<range; n++){
+    for(uint64_t n = 0; n<=range; n++){
       auto addrConst = foldSet(legalSet,n);
       auto integer = dyn_cast<ConstantInt>(addrConst);
       harvestBTBasicBlock(thisBlock,thisAddr,integer->getZExtValue());
