@@ -1986,6 +1986,8 @@ void JumpTargetManager::handleStaticAddr(void){
       }
     }
     StaticAddrs.clear();
+    if(UnexploreStaticAddr.empty())
+      return;
   }
   uint64_t PC = 0;
 again:  
