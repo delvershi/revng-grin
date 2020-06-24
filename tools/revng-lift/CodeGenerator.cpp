@@ -1065,7 +1065,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       DynamicVirtualAddress = 0;
    
     }
-    if(*ptc.isRet){
+    if(*ptc.isRet and !JumpTargets.haveBB){
 	bool isRecord = false; 
         for(auto item : JumpTargets.BranchTargets){
 	  if(std::get<0>(item) == DynamicVirtualAddress){
