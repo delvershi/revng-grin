@@ -2498,9 +2498,23 @@ void JumpTargetManager::handleIndirectJmp(llvm::BasicBlock *thisBlock,
 
     range = getLegalValueRange(thisBlock);
     errs()<<range<<" <---range\n";
-    if(range == 0)
-      revng_abort("Not implement and 'range == 0'\n");
-
+    if(range == 0){
+      //revng_abort("Not implement and 'range == 0'\n");
+      for(uint64_t n = 0;;n++){
+        auto addrConst = foldSet(legalSet,n);
+	if(addrConst==nullptr)
+	  break;
+        auto integer = dyn_cast<ConstantInt>(addrConst);
+	auto newaddr = integer->getZExtValue();
+	if(newaddr==0)
+            continue;
+	if(isExecutableAddress(newaddr))
+            harvestBTBasicBlock(thisBlock,thisAddr,newaddr);
+        else
+          break;
+      }
+      return;
+    }
     // To assign a legal value
     for(uint64_t n = 0; n<=range; n++){
       auto addrConst = foldSet(legalSet,n);
