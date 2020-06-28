@@ -3235,10 +3235,11 @@ void JumpTargetManager::harvestbranchBasicBlock(uint64_t nextAddr,
   }
 
   if(!branchJT.empty()){
-    revng_assert(branchJT.size()==2,"There should have tow jump targets!");
-    /***
-    * TODO: check in registerJT
-    */ 
+    //revng_assert(branchJT.size()==2,"There should have tow jump targets!");
+    //If there have one jump target, return it. 
+    if(branchJT.size() < 2)
+      return;
+    
     for (auto destAddrSrcBB : branchJT){
       if(!haveTranslatedPC(destAddrSrcBB.first, nextAddr)){
 	bool isRecord = false;
