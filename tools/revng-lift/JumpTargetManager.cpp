@@ -2486,6 +2486,7 @@ void JumpTargetManager::handleIndirectJmp(llvm::BasicBlock *thisBlock,
           if(((j+1) < legalSet[i].I.size()) and 
 	     (legalSet[i].I[j+1]->getOpcode() == Instruction::Shl)){
             isJmpTable = true;
+	    return;
 	   // revng_abort("Not implement!\n");
 	  }
         }       
