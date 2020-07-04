@@ -2595,7 +2595,8 @@ void JumpTargetManager::handleIllegalJumpAddress(llvm::BasicBlock *thisBlock,
 
     // To assign a legal value
     auto addrConst = foldSet(legalSet,0);
-    revng_assert(addrConst);
+    if(addrConst == nullptr)
+        return;
     auto integer = dyn_cast<ConstantInt>(addrConst);
     harvestBTBasicBlock(thisBlock,thisAddr,integer->getZExtValue());
   }
