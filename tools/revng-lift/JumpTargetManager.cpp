@@ -2122,7 +2122,8 @@ bool JumpTargetManager::isAccessMemInst(llvm::Instruction *I){
 	if(Callee != nullptr && (
 			Callee->getName() == "helper_fldt_ST0"||
 			Callee->getName() == "helper_fstt_ST0"||
-			Callee->getName() == "helper_divq_EAX"))
+			Callee->getName() == "helper_divq_EAX"||
+			Callee->getName() == "helper_idivl_EAX"))
 	    return true;
 	break;
     }
