@@ -1819,6 +1819,15 @@ JumpTargetManager:: getLastAssignment(llvm::Value *v,
 	  case RDX:
 	  case RSI:
 	  case RDI:
+          case RSP:
+	  case R8:
+	  case R9:
+	  case R10:
+	  case R11:
+	  case R12:
+	  case R13:
+	  case R14:
+          case R15:
 	  {
 	    NUMOFCONST--;
 	    if(NUMOFCONST==0) 
@@ -2024,14 +2033,11 @@ void JumpTargetManager::handleIndirectCall(llvm::BasicBlock *thisBlock, uint64_t
     NODETYPE nodetmp = nodepCFG;
     std::vector<llvm::Instruction *> DataFlow1;
     std::vector<llvm::Instruction *> &DataFlow = DataFlow1;
-    auto mode = InterprocessMode;
-    if(thisAddr==0x41e8dd)
-	    mode = TestMode;
     getIllegalValueDFG(store->getValueOperand(),
 		       dyn_cast<llvm::Instruction>(store),
 		       thisBlock,
 		       DataFlow,
-		       mode,
+		       InterprocessMode,
 		       userCodeFlag1);
     errs()<<"Finished analysis indirect Inst access Data Flow!\n";
     nodepCFG = nodetmp;
@@ -2735,7 +2741,7 @@ void JumpTargetManager::getIllegalValueDFG(llvm::Value *v,
   vs.push_back(std::make_tuple(v,dyn_cast<User>(I),thisBlock,nodepCFG));
   DataFlow.push_back(I);
 
-  uint32_t NUMOFCONST1 = 3;
+  uint32_t NUMOFCONST1 = 5;
   uint32_t &NUMOFCONST = NUMOFCONST1;
   if(TrackType==InterprocessMode)
     NUMOFCONST = 8;
@@ -2958,9 +2964,8 @@ llvm::Constant *JumpTargetManager::foldSet(std::vector<legalValue> &legalSet, ui
 	  break;
 	}
 	//case Instruction::Select:
-	//case Instruction::And:
+	case Instruction::And:
 	case Instruction::Sub:
-	break;
 	case Instruction::Add:
 	case Instruction::Shl:
 	{
