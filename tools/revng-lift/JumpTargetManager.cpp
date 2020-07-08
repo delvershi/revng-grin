@@ -1801,14 +1801,13 @@ JumpTargetManager:: getLastAssignment(llvm::Value *v,
 	    return std::make_pair(ConstantValueAssign,nullptr);
 	}
 
-    }
+    }break;
     case TestMode:{
         if(v->getName().equals("rsp")){    
 	  NUMOFCONST--;
 	  if(NUMOFCONST==0)
 	    return std::make_pair(ConstantValueAssign,nullptr);
 	}
-
     }
     case JumpTableMode:{
         auto op = StrToInt(v->getName().data());
@@ -1832,6 +1831,29 @@ JumpTargetManager:: getLastAssignment(llvm::Value *v,
 	    NUMOFCONST--;
 	    if(NUMOFCONST==0) 
 	        return std::make_pair(ConstantValueAssign,nullptr);
+	  }break;
+	}
+    }break;
+    case RangeMode:{
+        auto op = StrToInt(v->getName().data());
+        switch(op){ 
+	  case RAX:
+	  case RBX:
+	  case RCX:
+	  case RDX:
+	  case RSI:
+	  case RDI:
+          case RSP:
+	  case R8:
+	  case R9:
+	  case R10:
+	  case R11:
+	  case R12:
+	  case R13:
+	  case R14:
+          case R15:
+	  {
+	    return std::make_pair(ConstantValueAssign,nullptr);
 	  }break;
 	}
     }break;
@@ -2526,6 +2548,8 @@ void JumpTargetManager::handleIndirectJmp(llvm::BasicBlock *thisBlock,
     // To assign a legal value
     for(uint64_t n = 0; n<=range; n++){
       auto addrConst = foldSet(legalSet,n);
+      if(addrConst==nullptr)
+        return;
       auto integer = dyn_cast<ConstantInt>(addrConst);
       harvestBTBasicBlock(thisBlock,thisAddr,integer->getZExtValue());
     }
@@ -2674,7 +2698,7 @@ uint32_t JumpTargetManager::getLegalValueRange(llvm::BasicBlock *thisBlock){
 		     dyn_cast<llvm::Instruction>(br),
 		     rangeBB,
 		     DataFlow,
-		     FullMode,userFlag1);
+		     RangeMode,userFlag1);
 
   std::vector<legalValue> legalSet1;
   std::vector<legalValue> &legalSet = legalSet1;
@@ -2741,8 +2765,10 @@ void JumpTargetManager::getIllegalValueDFG(llvm::Value *v,
   vs.push_back(std::make_tuple(v,dyn_cast<User>(I),thisBlock,nodepCFG));
   DataFlow.push_back(I);
 
-  uint32_t NUMOFCONST1 = 5;
+  uint32_t NUMOFCONST1 = 0;
   uint32_t &NUMOFCONST = NUMOFCONST1;
+  if(TrackType==JumpTableMode)
+    NUMOFCONST = 5;
   if(TrackType==InterprocessMode)
     NUMOFCONST = 8;
   if(TrackType==TestMode)
@@ -2882,7 +2908,10 @@ void JumpTargetManager::getIllegalValueDFG(llvm::Value *v,
     }///?for(;nodeBB != begin;)?
 NextValue:
     errs()<<"Explore next Value of illegal Value of DFG!\n";
-    NUMOFCONST = 3;
+    if(TrackType==JumpTableMode)
+      NUMOFCONST = 5;
+    if(TrackType==InterprocessMode)
+      NUMOFCONST = 3;
     continue;
   }///?while(!vs.empty())?
 }
@@ -2945,10 +2974,19 @@ llvm::Constant *JumpTargetManager::foldSet(std::vector<legalValue> &legalSet, ui
   Constant *base = nullptr;
   //TODO:Fold Set instruction
   for(auto set : make_range(legalSet.rbegin(),legalSet.rend())){
-    if(set.I.size()>1)
-      return nullptr;
-
     auto op = set.I[0]->getOpcode();
+    if(op==Instruction::Add){
+      auto RegConst = dyn_cast<ConstantInt>(set.value[0]);
+      if(RegConst == nullptr){
+        auto registerOP = StrToInt(set.value[0]->getName().data());
+        auto first =  ConstantInt::get(Type::getInt64Ty(Context),
+      		                 ptc.regs[REGLABLE(registerOP)]);
+        set.value[0] = dyn_cast<Value>(first); 
+      }
+    }
+    if(set.I.size()>1 and op!=Instruction::Add)
+      return nullptr;
+    
     switch(op){
         case Instruction::Load:
 	case Instruction::Store:

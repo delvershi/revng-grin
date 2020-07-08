@@ -204,6 +204,8 @@ public:
                    * 'rax rbx rcx rdx rsi rdi' */
     InterprocessMode, /* Stopping trackbacking analysis until encountering
                        * 'rsp' N times*/
+    RangeMode, /* As long as encountering assignment of register and constant, 
+                * stop backtracking*/
     TestMode
   }; 
    
