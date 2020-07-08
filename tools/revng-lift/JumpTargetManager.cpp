@@ -2979,6 +2979,8 @@ llvm::Constant *JumpTargetManager::foldSet(std::vector<legalValue> &legalSet, ui
       auto RegConst = dyn_cast<ConstantInt>(set.value[0]);
       if(RegConst == nullptr){
         auto registerOP = StrToInt(set.value[0]->getName().data());
+	if(registerOP==RSP)
+	  return nullptr;
         auto first =  ConstantInt::get(Type::getInt64Ty(Context),
       		                 ptc.regs[REGLABLE(registerOP)]);
         set.value[0] = dyn_cast<Value>(first); 
