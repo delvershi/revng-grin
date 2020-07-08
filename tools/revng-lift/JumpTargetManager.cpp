@@ -2231,8 +2231,7 @@ uint32_t JumpTargetManager::REGLABLE(uint32_t RegOP){
             return R_15;
           break;
       default:
-          revng_abort("Unknow register operate.\n");
-	  break;
+          return UndefineOP;
   }
 }
 
@@ -2423,8 +2422,12 @@ BasicBlock * JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *this
     }
   }
 
-  if(I!=endInst)
-    ptc.regs[REGLABLE(registerOP)] = ptc.regs[R_ESP];
+  if(I!=endInst){
+    auto lable = REGLABLE(registerOP);
+    if(lable == UndefineOP)
+      revng_abort("Unkown register OP!\n");
+    ptc.regs[lable] = ptc.regs[R_ESP];
+  }
 
   llvm::BasicBlock *Block = nullptr;
   auto PC = getInstructionPC(dyn_cast<Instruction>(I));
@@ -2982,8 +2985,10 @@ llvm::Constant *JumpTargetManager::foldSet(std::vector<legalValue> &legalSet, ui
         auto registerOP = StrToInt(set.value[0]->getName().data());
 	if(registerOP==RSP)
 	  return nullptr;
-        auto first =  ConstantInt::get(Type::getInt64Ty(Context),
-      		                 ptc.regs[REGLABLE(registerOP)]);
+	auto lable  = REGLABLE(registerOP);
+	if(lable==UndefineOP)
+	  return nullptr;
+        auto first =  ConstantInt::get(Type::getInt64Ty(Context),ptc.regs[lable]);
         set.value[0] = dyn_cast<Value>(first); 
       }
     }
