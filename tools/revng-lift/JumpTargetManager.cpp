@@ -2911,7 +2911,7 @@ NextValue:
     if(TrackType==JumpTableMode)
       NUMOFCONST = 5;
     if(TrackType==InterprocessMode)
-      NUMOFCONST = 3;
+      NUMOFCONST = 1;
     continue;
   }///?while(!vs.empty())?
 }
