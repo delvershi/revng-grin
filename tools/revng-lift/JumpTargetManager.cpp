@@ -1702,8 +1702,10 @@ std::pair<bool, uint32_t> JumpTargetManager::islegalAddr(llvm::Value *v){
       va = ptc.regs[R_ESP];
       registerName = RSP;
       //errs()<<ptc.regs[R_ESP]<<" ++\n";
-      if(!isDataSegmAddr(va))
-        revng_abort("RSP shouldn't be illegal address!\n");
+      if(!isDataSegmAddr(va)){
+        errs()<<"RSP shouldn't be illegal address!\n";
+	return std::make_pair(0,RSP);
+      }
     break;
     case RBP:
       va = ptc.regs[R_EBP];
@@ -2302,6 +2304,10 @@ BasicBlock * JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *this
         Value *V = load->getPointerOperand();
 	if(dyn_cast<Constant>(V)){
             std::tie(islegal,registerOP) = islegalAddr(V);
+	    if(!islegal and registerOP==RSP){
+	      haveBB = 1;
+	      return nullptr;
+	    }
             if(registerOP != 0 &&
                isAccessMemInst(dyn_cast<llvm::Instruction>(I)))
                 accessNUM = accessNUM+10;
@@ -2356,6 +2362,10 @@ BasicBlock * JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *this
         Value *v = linst->getPointerOperand();
         std::tie(islegal,registerOP) = islegalAddr(v);
         if(!islegal and isAccessMemInst(dyn_cast<llvm::Instruction>(I))){
+          if(registerOP == RSP){
+	    haveBB = 1;
+	    return nullptr;
+	  }
           getIllegalValueDFG(v,dyn_cast<llvm::Instruction>(I),
 			  thisBlock,DataFlow,FullMode,userCodeFlag1);
           errs()<<"Finished analysis illegal access Data Flow!\n";
@@ -3013,6 +3023,8 @@ llvm::Constant *JumpTargetManager::foldSet(std::vector<legalValue> &legalSet, ui
 	case Instruction::And:
 	case Instruction::Sub:
 	case Instruction::Add:
+	case Instruction::LShr:
+	case Instruction::Or:
 	case Instruction::Shl:
 	{
 	  Constant *op2 = dyn_cast<Constant>(set.value[0]);
@@ -3022,8 +3034,6 @@ llvm::Constant *JumpTargetManager::foldSet(std::vector<legalValue> &legalSet, ui
 	  break;
 	}
 	//case Instruction::AShr:
-	//case Instruction::LShr:
-	//case Instruction::Or:
         case llvm::Instruction::IntToPtr:
 	{
 	  //auto inttoptr = dyn_cast<IntToPtrInst>(set.I[0]);
