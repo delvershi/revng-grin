@@ -1967,6 +1967,9 @@ JumpTargetManager:: getLastAssignment(llvm::Value *v,
 }
 
 void JumpTargetManager::harvestStaticAddr(llvm::BasicBlock *thisBlock){
+  if(!isDataSegmAddr(ptc.regs[R_ESP]))
+    return;
+
   BasicBlock::reverse_iterator I(thisBlock->rbegin());
   BasicBlock::reverse_iterator rend(thisBlock->rend());
   bool staticFlag = 1;
@@ -2596,6 +2599,8 @@ void JumpTargetManager::handleIllegalJumpAddress(llvm::BasicBlock *thisBlock,
   auto br = dyn_cast<BranchInst>(--thisBlock->end());
   while(br){
     thisBlock = dyn_cast<BasicBlock>(br->getOperand(0));
+    if(thisBlock==nullptr)
+      return;
     br = dyn_cast<BranchInst>(--thisBlock->end());
   }
   // Emerge illegal next jump address, current Block must contain a indirect instruction!  
