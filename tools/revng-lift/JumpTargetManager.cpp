@@ -3241,7 +3241,12 @@ void JumpTargetManager::harvestCallBasicBlock(llvm::BasicBlock *thisBlock,uint64
   if(!haveTranslatedPC(*ptc.CallNext, 0)){
       /* Construct a state that have executed a call to next instruction of CPU state */
       ptc.regs[R_ESP] = ptc.regs[R_ESP] + 8;
-      ptc.storeCPUState();
+      auto success  = ptc.storeCPUState();
+      if(!success){
+        haveBB = 1;
+        *ptc.exception_syscall = -1;
+	return;
+      }
       // Recover stack state
       ptc.regs[R_ESP] = ptc.regs[R_ESP] - 8;
 
@@ -3305,7 +3310,11 @@ void JumpTargetManager::harvestbranchBasicBlock(uint64_t nextAddr,
 	}
 	if(!isRecord){
           /* Recording current CPU state */
-          ptc.storeCPUState();
+          auto success = ptc.storeCPUState();
+	  if(!success){
+	    haveBB = 1;
+	    return;
+	  }
           /* Recording not execute branch destination relationship 
 	   * with current BasicBlock and address */ 
           BranchTargets.push_back(std::make_tuple(
