@@ -1123,7 +1123,6 @@ void JumpTargetManager::purgeTranslation(BasicBlock *Start) {
 
   // Remove Start, since we want to keep it (even if empty)
   Visited.erase(Start);
-  errs()<<Start->getName()<<" ------------------------\n";//
 
   for (BasicBlock *BB : Visited) {
     // We might have some predecessorless basic blocks jumping to us, purge them
@@ -1131,12 +1130,10 @@ void JumpTargetManager::purgeTranslation(BasicBlock *Start) {
     while (pred_begin(BB) != pred_end(BB)) {
       BasicBlock *Predecessor = *pred_begin(BB);
       revng_assert(pred_empty(Predecessor));
-      errs()<<Predecessor->getName()<<" ------------------------\n";//
       Predecessor->eraseFromParent();
     }
 
     revng_assert(BB->use_empty());
-    errs()<<BB->getName()<<" ------------------------\n";//
     BB->eraseFromParent();
   }
 }

@@ -999,7 +999,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
         errs()<<"syscall--------------------\n";        
       }
     }
-    if(*ptc.exception_syscall == 11){
+    if(!JumpTargets.haveBB and *ptc.exception_syscall == 11){
       crashBB = JumpTargets.handleIllegalMemoryAccess(BlockBRs,tmpVA);
       *ptc.exception_syscall = -1;
       //if(crashBB)
