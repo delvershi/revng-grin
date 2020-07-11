@@ -2280,6 +2280,10 @@ BasicBlock * JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *this
   BasicBlock::iterator endInst = thisBlock->end();
   BasicBlock::iterator I = beginInst; 
 
+  if(!isDataSegmAddr(ptc.regs[R_ESP])){
+    haveBB = 1;
+    return nullptr;
+  }
   if(*ptc.isIndirect || *ptc.isIndirectJmp || *ptc.isRet) 
     return nullptr;
 
