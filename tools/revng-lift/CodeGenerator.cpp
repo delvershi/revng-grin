@@ -1002,6 +1002,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     if(!JumpTargets.haveBB and *ptc.exception_syscall == 11){
       crashBB = JumpTargets.handleIllegalMemoryAccess(BlockBRs,tmpVA);
       *ptc.exception_syscall = -1;
+      DynamicVirtualAddress = tmpVA;
       //if(crashBB)
 	//  BlockBRs = nullptr;
     }

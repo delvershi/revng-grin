@@ -1124,16 +1124,20 @@ void JumpTargetManager::purgeTranslation(BasicBlock *Start) {
   // Remove Start, since we want to keep it (even if empty)
   Visited.erase(Start);
 
+  errs()<<Start->getName()<<" ---------------------------\n";
+
   for (BasicBlock *BB : Visited) {
     // We might have some predecessorless basic blocks jumping to us, purge them
     // TODO: why this?
     while (pred_begin(BB) != pred_end(BB)) {
       BasicBlock *Predecessor = *pred_begin(BB);
       revng_assert(pred_empty(Predecessor));
+      errs()<<Predecessor->getName()<<" ---------------------------\n";
       Predecessor->eraseFromParent();
     }
 
     revng_assert(BB->use_empty());
+    errs()<<BB->getName()<<" ---------------------------\n";
     BB->eraseFromParent();
   }
 }
@@ -3330,10 +3334,8 @@ void JumpTargetManager::harvestbranchBasicBlock(uint64_t nextAddr,
 	if(!isRecord){
           /* Recording current CPU state */
           auto success = ptc.storeCPUState();
-	  if(!success){
-	    haveBB = 1;
+	  if(!success)
 	    return;
-	  }
           /* Recording not execute branch destination relationship 
 	   * with current BasicBlock and address */ 
           BranchTargets.push_back(std::make_tuple(
