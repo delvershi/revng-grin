@@ -2585,6 +2585,10 @@ void JumpTargetManager::handleIndirectJmp(llvm::BasicBlock *thisBlock,
 void JumpTargetManager::harvestBTBasicBlock(llvm::BasicBlock *thisBlock,
 		                            uint64_t thisAddr,
 					    uint64_t destAddr){
+  for(auto item : BranchTargets){
+    if(std::get<0>(item) == destAddr)
+        return;
+  }
   if(!haveTranslatedPC(destAddr, 0)){
       ptc.storeCPUState();
       /* Recording not execute branch destination relationship with current BasicBlock */
