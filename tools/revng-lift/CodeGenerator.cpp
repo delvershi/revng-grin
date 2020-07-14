@@ -981,7 +981,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
 
 
     if(*ptc.isCall and BlockBRs){
-      if(!isDataSegmAddr(ptc.regs[R_ESP]) and StaticAddrFlag){
+      if(!JumpTargets.isDataSegmAddr(ptc.regs[R_ESP]) and StaticAddrFlag){
         ptc.regs[R_ESP] = *ptc.ElfStartStack - 512; 
       }
       errs()<<*((unsigned long *)ptc.regs[4])<<"<--store callnext\n";
