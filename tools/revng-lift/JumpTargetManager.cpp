@@ -2801,7 +2801,7 @@ void JumpTargetManager::getIllegalValueDFG(llvm::Value *v,
   if(TrackType==JumpTableMode)
     NUMOFCONST = 5;
   if(TrackType==InterprocessMode)
-    NUMOFCONST = 8;
+    NUMOFCONST = 5;
   if(TrackType==TestMode)
     NUMOFCONST = 30;
 
