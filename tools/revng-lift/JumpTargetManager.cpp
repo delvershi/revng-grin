@@ -2304,7 +2304,8 @@ BasicBlock * JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *this
   lastInst--;
   if(!dyn_cast<BranchInst>(lastInst)){
     auto PC = getInstructionPC(dyn_cast<Instruction>(lastInst));
-    revng_assert(PC != thisAddr);
+    if(PC == thisAddr)
+      return nullptr;
     return registerJT(PC,JTReason::GlobalData);
   }
 
