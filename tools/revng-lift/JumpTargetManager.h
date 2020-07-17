@@ -218,6 +218,9 @@ public:
   void harvestStaticAddr(llvm::BasicBlock *thisBlock);
   void handleStaticAddr(void);
 
+  std::vector<uint64_t> IllegalStaticAddrs;
+  bool isIllegalStaticAddr(uint64_t pc);
+
   void handleIndirectCall(llvm::BasicBlock *thisBlock, uint64_t thisAddr);
   llvm::BasicBlock *handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock, uint64_t thisAddr);
   llvm::BasicBlock *getSplitedBlock(llvm::BranchInst *branch);

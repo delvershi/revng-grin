@@ -2005,12 +2005,25 @@ void JumpTargetManager::harvestStaticAddr(llvm::BasicBlock *thisBlock){
         auto v = store->getValueOperand();
         if(dyn_cast<ConstantInt>(v)){
           auto pc = getLimitedValue(v);
-	  if(isExecutableAddress(pc))
+	  if(isExecutableAddress(pc) && !isIllegalStaticAddr(pc))
 	    StaticAddrs.push_back(pc);
         }
       }
     }
   }
+}
+
+bool JumpTargetManager::isIllegalStaticAddr(uint64_t pc){
+  if(IllegalStaticAddrs.empty()){
+    return false;
+  }
+
+  for(auto addr : IllegalStaticAddrs){
+    if(pc >= addr)
+      return true;
+  }
+
+  return false;
 }
 
 void JumpTargetManager::handleStaticAddr(void){
@@ -2019,7 +2032,8 @@ void JumpTargetManager::handleStaticAddr(void){
       BlockMap::iterator TargetIt = JumpTargets.find(PC);
       BlockMap::iterator upper;
       upper = JumpTargets.upper_bound(PC);
-      if(TargetIt == JumpTargets.end() && upper != JumpTargets.end()){
+      if(TargetIt == JumpTargets.end() && upper != JumpTargets.end()
+		     && !isIllegalStaticAddr(PC)){
 	errs()<<format_hex(upper->first,0)<<"  :first\n";
         errs()<<format_hex(PC,0)<<" <- static address\n";  
 	UnexploreStaticAddr.push_back(PC);
@@ -2286,6 +2300,7 @@ BasicBlock * JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *this
 
   if(!isDataSegmAddr(ptc.regs[R_ESP])){
     haveBB = 1;
+    IllegalStaticAddrs.push_back(thisAddr);
     return nullptr;
   }
   if(*ptc.isIndirect || *ptc.isIndirectJmp || *ptc.isRet) 
@@ -3273,6 +3288,7 @@ void JumpTargetManager::harvestCallBasicBlock(llvm::BasicBlock *thisBlock,uint64
       if(!success){
         haveBB = 1;
         *ptc.exception_syscall = -1;
+	IllegalStaticAddrs.push_back(thisAddr);
 	return;
       }
       // Recover stack state
@@ -3328,7 +3344,8 @@ void JumpTargetManager::harvestbranchBasicBlock(uint64_t nextAddr,
       return;
     
     for (auto destAddrSrcBB : branchJT){
-      if(!haveTranslatedPC(destAddrSrcBB.first, nextAddr)){
+      if(!haveTranslatedPC(destAddrSrcBB.first, nextAddr) && 
+		      !isIllegalStaticAddr(destAddrSrcBB.first)){
 	bool isRecord = false;
 	for(auto item : BranchTargets){
 	  if(std::get<0>(item) == destAddrSrcBB.first){
@@ -3339,8 +3356,10 @@ void JumpTargetManager::harvestbranchBasicBlock(uint64_t nextAddr,
 	if(!isRecord){
           /* Recording current CPU state */
           auto success = ptc.storeCPUState();
-	  if(!success)
+	  if(!success){
+	    IllegalStaticAddrs.push_back(thisAddr);
 	    return;
+	  }
           /* Recording not execute branch destination relationship 
 	   * with current BasicBlock and address */ 
           BranchTargets.push_back(std::make_tuple(
