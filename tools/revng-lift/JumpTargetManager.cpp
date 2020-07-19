@@ -643,6 +643,7 @@ BasicBlock *JumpTargetManager::newPC(uint64_t PC, bool &ShouldContinue) {
     InstructionMap::iterator InstrIt = OriginalInstructionAddresses.find(PC);
     Instruction *I = InstrIt->second;
     haveBB = 1;
+    errs()<<PC<<"  llllllllllllllllllllllllll\n";
     return I->getParent();
     //revng_abort("Why this?\n");
     //return registerJT(PC, JTReason::AmbigousInstruction);
@@ -1796,7 +1797,8 @@ JumpTargetManager:: getLastAssignment(llvm::Value *v,
     return std::make_pair(ConstantValueAssign,nullptr);
   }
   switch(TrackType){
-    case FullMode:{
+    case FullMode:
+    case CrashMode:{
         if(v->getName().equals("rsp"))
           return std::make_pair(ConstantValueAssign,nullptr);       
     }break;
@@ -2394,7 +2396,7 @@ BasicBlock * JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *this
 	    return nullptr;
 	  }
           getIllegalValueDFG(v,dyn_cast<llvm::Instruction>(I),
-			  thisBlock,DataFlow,FullMode,userCodeFlag1);
+			  thisBlock,DataFlow,CrashMode,userCodeFlag1);
           errs()<<"Finished analysis illegal access Data Flow!\n";
           break;
         }
@@ -2959,6 +2961,8 @@ NextValue:
       NUMOFCONST = 5;
     if(TrackType==InterprocessMode)
       NUMOFCONST = 1;
+    if(TrackType==CrashMode)
+      TrackType = RangeMode;
     continue;
   }///?while(!vs.empty())?
 }

@@ -198,8 +198,9 @@ public:
   };
 
   enum TrackbackMode{
-    FullMode,  /* Stopping trackbacking analysis until encountering 
-                * 'rsp' */
+    FullMode,  /* Stopping trackbacking analysis until encountering 'rsp' */ 
+    CrashMode,        
+
     JumpTableMode, /* Stopping trackbacking analysis until encountering 
                    * 'rax rbx rcx rdx rsi rdi' */
     InterprocessMode, /* Stopping trackbacking analysis until encountering
