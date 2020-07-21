@@ -2394,6 +2394,7 @@ BasicBlock * JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *this
         if(!islegal and isAccessMemInst(dyn_cast<llvm::Instruction>(I))){
           if(registerOP == RSP){
 	    haveBB = 1;
+	    IllegalStaticAddrs.push_back(thisAddr);
 	    return nullptr;
 	  }
           getIllegalValueDFG(v,dyn_cast<llvm::Instruction>(I),
@@ -2405,6 +2406,7 @@ BasicBlock * JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *this
   }
   nodepCFG = nodetmp;
 
+  // If crash point is not found, choosing one of branches to execute.  
   if(I==endInst){
       BasicBlock::iterator brI = endInst;
       brI--;
@@ -2422,8 +2424,12 @@ BasicBlock * JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *this
 	  auto PC = getDestBRPCWrite(bb);
 	  revng_assert(PC != 0);
 	  auto block =  registerJT(PC,JTReason::GlobalData);
-	  if(haveBB)
+	  if(haveBB){
+            //If chosen branch have been executed, setting havveBB=0, 
+	    // to harvest this Block next.
+	    /haveBB = 0; 
 	    return nullptr;
+	  }
 	  else
 	    return block;
 	} 
