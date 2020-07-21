@@ -644,6 +644,7 @@ BasicBlock *JumpTargetManager::newPC(uint64_t PC, bool &ShouldContinue) {
     Instruction *I = InstrIt->second;
     haveBB = 1;
     errs()<<PC<<"  llllllllllllllllllllllllll\n";
+    IllegalStaticAddrs.push_back(PC);
     return I->getParent();
     //revng_abort("Why this?\n");
     //return registerJT(PC, JTReason::AmbigousInstruction);
@@ -2050,7 +2051,7 @@ again:
   PC = UnexploreStaticAddr.back();
   UnexploreStaticAddr.pop_back();
   registerJT(PC,JTReason::GlobalData);
-  if(haveBB)
+  if(haveBB || isIllegalStaticAddr(PC))
     goto again;  
 }
 
