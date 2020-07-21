@@ -2427,7 +2427,7 @@ BasicBlock * JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *this
 	  if(haveBB){
             //If chosen branch have been executed, setting havveBB=0, 
 	    // to harvest this Block next.
-	    /haveBB = 0; 
+	    haveBB = 0; 
 	    return nullptr;
 	  }
 	  else
