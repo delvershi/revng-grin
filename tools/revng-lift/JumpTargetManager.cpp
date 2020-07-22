@@ -2050,8 +2050,10 @@ void JumpTargetManager::handleStaticAddr(void){
 again:  
   PC = UnexploreStaticAddr.back();
   UnexploreStaticAddr.pop_back();
+  if(isIllegalStaticAddr(PC))
+    goto again;
   registerJT(PC,JTReason::GlobalData);
-  if(haveBB || isIllegalStaticAddr(PC))
+  if(haveBB)
     goto again;  
 }
 

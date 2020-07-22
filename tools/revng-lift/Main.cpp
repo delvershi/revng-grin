@@ -76,6 +76,8 @@ alias A2("B", DESCRIPTION, aliasopt(BaseAddress), cat(MainCategory));
 opt<string> InputPath(Positional, Required, desc("<input path>"));
 opt<string> OutputPath(Positional, Required, desc("<output path>"));
 
+opt<string> ExecutableArgs("exe-args", value_desc("arguments"), cat(MainCategory));
+
 } // namespace
 
 static std::string LibTinycodePath;
@@ -174,8 +176,9 @@ static int loadPTCLibrary(LibraryPointer &PTCLibrary) {
     return EXIT_FAILURE;
   }
 
+  llvm::errs()<<ExecutableArgs<<"\n";
   // Initialize the ptc interface
-  if (ptc_load(LibraryHandle, &ptc, InputPath.c_str()) != 0) {
+  if (ptc_load(LibraryHandle, &ptc, InputPath.c_str(), ExecutableArgs.c_str()) != 0) {
     fprintf(stderr, "Couldn't find PTC functions.\n");
     return EXIT_FAILURE;
   }
