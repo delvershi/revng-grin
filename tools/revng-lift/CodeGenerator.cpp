@@ -70,6 +70,10 @@ cl::opt<bool> ExeInit("exe-init",
                        cl::desc("Initial the running binary "
                                 "and start traverse"),
                        cl::cat(MainCategory));
+cl::opt<int> ExeNums("exe-nums",
+                       cl::desc("Initial numbers of the running binary "),
+                       cl::cat(MainCategory));
+
 
 
 // TODO: can we drop this and the associated functionality?
@@ -1000,8 +1004,12 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
 
     if(*ptc.exception_syscall == 0x100){
       if(ExeInit){
-        if(ptc.regs[R_EAX]==20)
-	    traverseFLAG = 1;	
+        if(ptc.regs[R_EAX]==20){
+            if(ExeNums==0)
+	      traverseFLAG = 1;	
+	    if(ExeNums!=0)
+	      ExeNums = ExeNums-1;
+	}
       }	    
       DynamicVirtualAddress = ptc.do_syscall2();
       if(DynamicVirtualAddress == 0 && traverseFLAG && !JumpTargets.BranchTargets.empty()){
