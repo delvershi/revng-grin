@@ -66,6 +66,12 @@ using std::string;
 
 // Register all the arguments
 
+cl::opt<bool> ExeInit("exe-init",
+                       cl::desc("Initial the running binary "
+                                "and start traverse"),
+                       cl::cat(MainCategory));
+
+
 // TODO: can we drop this and the associated functionality?
 static cl::opt<string> CoveragePath("coverage-path",
                                     cl::desc("destination path for the CSV "
@@ -993,6 +999,10 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     }
 
     if(*ptc.exception_syscall == 0x100){
+      if(ExeInit){
+        if(ptc.regs[R_EAX]==20)
+	    traverseFLAG = 1;	
+      }	    
       DynamicVirtualAddress = ptc.do_syscall2();
       if(DynamicVirtualAddress == 0 && traverseFLAG && !JumpTargets.BranchTargets.empty()){
         JumpTargets.haveBB = 0;
