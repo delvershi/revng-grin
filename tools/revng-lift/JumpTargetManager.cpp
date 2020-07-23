@@ -1976,6 +1976,8 @@ JumpTargetManager:: getLastAssignment(llvm::Value *v,
 void JumpTargetManager::harvestStaticAddr(llvm::BasicBlock *thisBlock){
   if(!isDataSegmAddr(ptc.regs[R_ESP]))
     return;
+  if(thisBlock==nullptr)
+    return;
 
   BasicBlock::reverse_iterator I(thisBlock->rbegin());
   BasicBlock::reverse_iterator rend(thisBlock->rend());
