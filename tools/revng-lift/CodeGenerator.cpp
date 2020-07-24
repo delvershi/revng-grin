@@ -1032,7 +1032,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     if(StaticAddrFlag and *ptc.isRet)
       DynamicVirtualAddress = 0;
 
-    if(!JumpTargets.haveBB && crashBB==nullptr && traverseFLAG)
+    if(!JumpTargets.haveBB && crashBB==nullptr)
       JumpTargets.harvestStaticAddr(BlockBRs);
 
     if(!JumpTargets.haveBB and *ptc.isIndirect)
