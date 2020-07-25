@@ -1032,6 +1032,9 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     if(StaticAddrFlag and *ptc.isRet)
       DynamicVirtualAddress = 0;
 
+    if(!JumpTargets.haveBB and *ptc.isRet)
+      JumpTargets.harvestRetBlocks(tmpVA);
+
     if(!JumpTargets.haveBB && crashBB==nullptr)
       JumpTargets.harvestStaticAddr(BlockBRs);
 
@@ -1157,6 +1160,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
   } // End translations loop
  
   outs()<<"\nRewrite Successful\n";
+  JumpTargets.StatisticsLog();
 
   importHelperFunctionDeclaration("cpu_loop");
 

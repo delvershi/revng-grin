@@ -52,6 +52,11 @@ namespace {
 
 Logger<> JTCountLog("jtcount");
 
+cl::opt<bool> Statistics("Statistics",
+                       cl::desc("Count rewriting information"),
+                       cl::cat(MainCategory));
+
+
 cl::opt<bool> NoOSRA("no-osra", cl::desc(" OSRA"), cl::cat(MainCategory));
 cl::alias A1("O",
              cl::desc("Alias for -no-osra"),
@@ -2031,6 +2036,31 @@ bool JumpTargetManager::isIllegalStaticAddr(uint64_t pc){
   return false;
 }
 
+void JumpTargetManager::harvestRetBlocks(uint64_t thisAddr){
+  if(!Statistics)
+    return;
+  if(*ptc.isRet){
+    IndirectBlocksMap::iterator it = RetBlocks.find(thisAddr);
+    if(it == RetBlocks.end())
+        RetBlocks[thisAddr] = 1;
+  }
+}
+
+void JumpTargetManager::StatisticsLog(void){
+  if(!Statistics)
+      return;
+  outs()<<"---------------------------------------\n";
+  outs()<<"Indirect Calls:"<<"                "<<IndirectCallBlocks.size()<<"\n";
+  outs()<<"Indirect Jumps:"<<"                "<<IndirectJmpBlocks.size()<<"\n";
+  outs()<<"Returns:"<<"                       "<<RetBlocks.size()<<"\n";
+  outs()<<"\n";
+  outs()<<"Jump Tables of Call:"<<"           "<<CallTable.size()<<"\n";
+  outs()<<"Jump Tables of Jmp:"<<"            "<<JmpTable.size()<<"\n";
+  outs()<<"\n";
+  outs()<<"Call Branches:"<<"                 "<<CallBranches.size()<<"\n";
+  outs()<<"Cond. Branches:"<<"                "<<CondBranches.size()<<"\n";
+}
+
 void JumpTargetManager::handleStaticAddr(void){
   if(UnexploreStaticAddr.empty()){
     for(auto PC : StaticAddrs){
@@ -2061,11 +2091,11 @@ again:
 
 
 void JumpTargetManager::handleIndirectCall(llvm::BasicBlock *thisBlock, uint64_t thisAddr){
-  IndirectBlocksMap::iterator it = IndirectBlocks.find(thisAddr);
-  if(it != IndirectBlocks.end()){
+  IndirectBlocksMap::iterator it = IndirectCallBlocks.find(thisAddr);
+  if(it != IndirectCallBlocks.end()){
     return;
   }
-  IndirectBlocks.insert(std::pair<uint64_t,bool>(thisAddr,1));
+  IndirectCallBlocks[thisAddr] = 1;
   
 
   uint32_t userCodeFlag = 0;
@@ -2145,6 +2175,11 @@ void JumpTargetManager::handleIndirectCall(llvm::BasicBlock *thisBlock, uint64_t
             harvestBTBasicBlock(thisBlock,thisAddr,newaddr);
         else
           break;
+      }
+      if(Statistics){
+        IndirectBlocksMap::iterator it = CallTable.find(thisAddr);
+        if(it == CallTable.end())
+          CallTable[thisAddr] = 1;
       }
     }
 
@@ -2515,7 +2550,7 @@ void JumpTargetManager::handleIndirectJmp(llvm::BasicBlock *thisBlock,
 		                                 uint64_t thisAddr){
   uint32_t userCodeFlag = 0;
   uint32_t &userCodeFlag1 = userCodeFlag;
-  IndirectBlocks[thisAddr] = 1;
+  IndirectJmpBlocks[thisAddr] = 1;
 
   // Contains indirect instruction's Block, it must have a store instruction.
   BasicBlock::iterator I = --thisBlock->end(); 
@@ -2578,6 +2613,12 @@ void JumpTargetManager::handleIndirectJmp(llvm::BasicBlock *thisBlock,
     if(!isJmpTable){
       errs()<<"This indirect jmp is not jmp table type.\n";
       return;
+    }
+    
+    if(Statistics){
+      IndirectBlocksMap::iterator it = JmpTable.find(thisAddr);
+      if(it == JmpTable.end())
+	  JmpTable[thisAddr] = 1;
     }
 
     range = getLegalValueRange(thisBlock);
@@ -3296,6 +3337,11 @@ uint32_t JumpTargetManager::StrToInt(const char *str){
 }
 
 void JumpTargetManager::harvestCallBasicBlock(llvm::BasicBlock *thisBlock,uint64_t thisAddr){
+  for(auto item : BranchTargets){
+    if(std::get<0>(item) == *ptc.CallNext)
+        return;
+  }
+
   if(!haveTranslatedPC(*ptc.CallNext, 0)){
       /* Construct a state that have executed a call to next instruction of CPU state */
       ptc.regs[R_ESP] = ptc.regs[R_ESP] + 8;
@@ -3315,7 +3361,13 @@ void JumpTargetManager::harvestCallBasicBlock(llvm::BasicBlock *thisBlock,uint64
        * So,this Block will not contain a call instruction, that has been splited
        * but we still record this relationship, because when we backtracking,
        * we will check splited Block. */ 
-      BranchTargets.push_back(std::make_tuple(*ptc.CallNext,thisBlock,thisAddr)); 
+      BranchTargets.push_back(std::make_tuple(*ptc.CallNext,thisBlock,thisAddr));
+      if(Statistics){
+        IndirectBlocksMap::iterator it = CallBranches.find(*ptc.CallNext);
+        if(it == CallBranches.end())
+	  CallBranches[*ptc.CallNext] = 1;
+      }
+
       errs()<<format_hex(*ptc.CallNext,0)<<" <- Call next target add\n";
     }
   errs()<<"Branch targets total numbers: "<<BranchTargets.size()<<"\n";  
@@ -3327,6 +3379,7 @@ void JumpTargetManager::harvestbranchBasicBlock(uint64_t nextAddr,
        uint32_t size, 
        std::map<std::string, llvm::BasicBlock *> &branchlabeledBasicBlock){
   std::map<uint64_t, llvm::BasicBlock *> branchJT;
+
   // case 1: New block is belong to part of original block, so to split
   //         original block and occure a unconditional branch.
   //     eg:   size  >= 2
@@ -3357,7 +3410,7 @@ void JumpTargetManager::harvestbranchBasicBlock(uint64_t nextAddr,
     //If there have one jump target, return it. 
     if(branchJT.size() < 2)
       return;
-    
+    bool haveCondBranch = false;
     for (auto destAddrSrcBB : branchJT){
       if(!haveTranslatedPC(destAddrSrcBB.first, nextAddr) && 
 		      !isIllegalStaticAddr(destAddrSrcBB.first)){
@@ -3384,9 +3437,16 @@ void JumpTargetManager::harvestbranchBasicBlock(uint64_t nextAddr,
 				thisAddr
 				)); 
           errs()<<format_hex(destAddrSrcBB.first,0)<<" <- Jmp target add\n";
+	  haveCondBranch = true;
         }  
       }
     }
+    if(Statistics and haveCondBranch){
+      IndirectBlocksMap::iterator it = CondBranches.find(thisAddr);
+      if(it == CondBranches.end())
+	  CondBranches[thisAddr] = 1;
+    }
+
     errs()<<"Branch targets total numbers: "<<BranchTargets.size()<<" \n"; 
   }
 

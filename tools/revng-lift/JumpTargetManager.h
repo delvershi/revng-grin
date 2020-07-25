@@ -211,7 +211,17 @@ public:
   }; 
    
   using IndirectBlocksMap = std::map<uint64_t, bool>; 
-  IndirectBlocksMap IndirectBlocks;
+  IndirectBlocksMap IndirectCallBlocks;
+  IndirectBlocksMap CallTable;
+  IndirectBlocksMap IndirectJmpBlocks;
+  IndirectBlocksMap JmpTable;
+  IndirectBlocksMap RetBlocks;
+  IndirectBlocksMap CallBranches;
+  IndirectBlocksMap CondBranches;
+  void harvestRetBlocks(uint64_t thisAddr);
+  void StatisticsLog(void);
+
+
   void isContainIndirectInst(uint64_t nextAddr, uint64_t thisAddr, llvm::BasicBlock *nextBlock);
   
   std::vector<uint64_t> StaticAddrs;
