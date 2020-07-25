@@ -3113,6 +3113,7 @@ llvm::Constant *JumpTargetManager::foldSet(std::vector<legalValue> &legalSet, ui
 	case Instruction::Sub:
 	case Instruction::Add:
 	case Instruction::LShr:
+	case Instruction::AShr:
 	case Instruction::Or:
 	case Instruction::Shl:
 	{
