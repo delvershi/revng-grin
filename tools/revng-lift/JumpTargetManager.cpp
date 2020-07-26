@@ -433,6 +433,14 @@ JumpTargetManager::JumpTargetManager(Function *TheFunction,
       DataSegmEndAddr = Segment.EndVirtualAddress;
     }
   }
+  ro_StartAddr = 0;
+  ro_EndAddr =0;
+  if(Binary.rodataStartAddr){
+    ro_StartAddr = Binary.rodataStartAddr; 
+    ro_EndAddr = Binary.ehframeEndAddr;
+    revng_assert(ro_StartAddr<=ro_EndAddr);
+  }
+    
 
   // Configure GlobalValueNumbering
   StringMap<cl::Option *> &Options(cl::getRegisteredOptions());
@@ -2027,6 +2035,9 @@ bool JumpTargetManager::isIllegalStaticAddr(uint64_t pc){
   if(IllegalStaticAddrs.empty()){
     return false;
   }
+  outs()<<ro_StartAddr<<"  "<<ro_EndAddr;revng_abort();
+  if(ro_StartAddr<=pc and pc<ro_EndAddr)
+    return true;
 
   for(auto addr : IllegalStaticAddrs){
     if(pc >= addr)
@@ -3008,13 +3019,15 @@ void JumpTargetManager::getIllegalValueDFG(llvm::Value *v,
       nodeBB--;
     }///?for(;nodeBB != begin;)?
 NextValue:
-    errs()<<"Explore next Value of illegal Value of DFG!\n";
+    errs()<<"Explore next Value of Value of DFG!\n";
     if(TrackType==JumpTableMode)
       NUMOFCONST = 5;
     if(TrackType==InterprocessMode)
       NUMOFCONST = 1;
-    if(TrackType==CrashMode)
-      TrackType = RangeMode;
+    if(TrackType==CrashMode){
+      //TrackType = RangeMode;
+      return;
+    }
     continue;
   }///?while(!vs.empty())?
 }

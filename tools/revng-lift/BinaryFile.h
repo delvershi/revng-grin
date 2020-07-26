@@ -472,6 +472,9 @@ public:
   // Accessor methods
   //
 
+  uint64_t rodataStartAddr;
+  uint64_t ehframeEndAddr;
+
   const Architecture &architecture() const { return TheArchitecture; }
   std::vector<SegmentInfo> &segments() { return Segments; }
   const std::vector<SegmentInfo> &segments() const { return Segments; }

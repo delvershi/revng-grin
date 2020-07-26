@@ -1011,7 +1011,8 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
 	      ExeNums = ExeNums-1;
 	}
       }	   
-      DynamicVirtualAddress = StaticAddrFlag ? *ptc.syscall_next_eip:ptc.do_syscall2(); 
+      DynamicVirtualAddress = StaticAddrFlag ? *ptc.syscall_next_eip:ptc.do_syscall2();
+      *ptc.exception_syscall = -1; 
       if(DynamicVirtualAddress == 0 && traverseFLAG && !JumpTargets.BranchTargets.empty()){
         JumpTargets.haveBB = 0;
         BlockBRs = nullptr;

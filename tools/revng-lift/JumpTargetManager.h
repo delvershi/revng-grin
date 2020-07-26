@@ -262,6 +262,8 @@ public:
 
   uint64_t DataSegmStartAddr;
   uint64_t DataSegmEndAddr;
+  uint64_t ro_StartAddr;
+  uint64_t ro_EndAddr;
 
   /* Judging whether the Block is User define Block area*/
   uint32_t belongToUBlock(llvm::BasicBlock *block);
