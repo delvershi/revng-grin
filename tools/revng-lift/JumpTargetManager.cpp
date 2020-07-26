@@ -2035,7 +2035,6 @@ bool JumpTargetManager::isIllegalStaticAddr(uint64_t pc){
   if(IllegalStaticAddrs.empty()){
     return false;
   }
-  outs()<<ro_StartAddr<<"  "<<ro_EndAddr;revng_abort();
   if(ro_StartAddr<=pc and pc<ro_EndAddr)
     return true;
 
