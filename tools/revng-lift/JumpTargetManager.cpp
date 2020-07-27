@@ -3357,9 +3357,9 @@ uint32_t JumpTargetManager::StrToInt(const char *str){
 
 void JumpTargetManager::harvestCallBasicBlock(llvm::BasicBlock *thisBlock,uint64_t thisAddr){
   if(Statistics){
-    IndirectBlocksMap::iterator it = CallBranches.find(thisAddr);
+    IndirectBlocksMap::iterator it = CallBranches.find(*ptc.CallNext);
     if(it == CallBranches.end())
-      CallBranches[thisAddr] = 1;
+      CallBranches[*ptc.CallNext] = 1;
   }
   for(auto item : BranchTargets){
     if(std::get<0>(item) == *ptc.CallNext)
