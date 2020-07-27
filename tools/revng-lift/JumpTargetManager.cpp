@@ -3028,7 +3028,7 @@ NextValue:
     if(TrackType==InterprocessMode)
       NUMOFCONST = 1;
     if(TrackType==CrashMode){
-      TrackType = RangeMode;
+      //TrackType = RangeMode;
       NextValueNums--;
       if(NextValueNums==0)
         return;
@@ -3356,6 +3356,11 @@ uint32_t JumpTargetManager::StrToInt(const char *str){
 }
 
 void JumpTargetManager::harvestCallBasicBlock(llvm::BasicBlock *thisBlock,uint64_t thisAddr){
+  if(Statistics){
+    IndirectBlocksMap::iterator it = CallBranches.find(thisAddr);
+    if(it == CallBranches.end())
+      CallBranches[thisAddr] = 1;
+  }
   for(auto item : BranchTargets){
     if(std::get<0>(item) == *ptc.CallNext)
         return;
@@ -3381,12 +3386,6 @@ void JumpTargetManager::harvestCallBasicBlock(llvm::BasicBlock *thisBlock,uint64
        * but we still record this relationship, because when we backtracking,
        * we will check splited Block. */ 
       BranchTargets.push_back(std::make_tuple(*ptc.CallNext,thisBlock,thisAddr));
-      if(Statistics){
-        IndirectBlocksMap::iterator it = CallBranches.find(*ptc.CallNext);
-        if(it == CallBranches.end())
-	  CallBranches[*ptc.CallNext] = 1;
-      }
-
       errs()<<format_hex(*ptc.CallNext,0)<<" <- Call next target add\n";
     }
   errs()<<"Branch targets total numbers: "<<BranchTargets.size()<<"\n";  
@@ -3429,7 +3428,11 @@ void JumpTargetManager::harvestbranchBasicBlock(uint64_t nextAddr,
     //If there have one jump target, return it. 
     if(branchJT.size() < 2)
       return;
-    bool haveCondBranch = false;
+    if(Statistics){
+      IndirectBlocksMap::iterator it = CondBranches.find(thisAddr);
+      if(it == CondBranches.end())
+	  CondBranches[thisAddr] = 1;
+    }
     for (auto destAddrSrcBB : branchJT){
       if(!haveTranslatedPC(destAddrSrcBB.first, nextAddr) && 
 		      !isIllegalStaticAddr(destAddrSrcBB.first)){
@@ -3456,16 +3459,9 @@ void JumpTargetManager::harvestbranchBasicBlock(uint64_t nextAddr,
 				thisAddr
 				)); 
           errs()<<format_hex(destAddrSrcBB.first,0)<<" <- Jmp target add\n";
-	  haveCondBranch = true;
         }  
       }
     }
-    if(Statistics and haveCondBranch){
-      IndirectBlocksMap::iterator it = CondBranches.find(thisAddr);
-      if(it == CondBranches.end())
-	  CondBranches[thisAddr] = 1;
-    }
-
     errs()<<"Branch targets total numbers: "<<BranchTargets.size()<<" \n"; 
   }
 
