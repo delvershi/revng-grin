@@ -2878,6 +2878,10 @@ void JumpTargetManager::getIllegalValueDFG(llvm::Value *v,
 
   uint32_t NUMOFCONST1 = 0;
   uint32_t &NUMOFCONST = NUMOFCONST1;
+  uint32_t NextValueNums = 0;
+  if(TrackType==CrashMode){
+    NextValueNums = 20;
+  }
   if(TrackType==JumpTableMode)
     NUMOFCONST = 5;
   if(TrackType==InterprocessMode)
@@ -3024,8 +3028,10 @@ NextValue:
     if(TrackType==InterprocessMode)
       NUMOFCONST = 1;
     if(TrackType==CrashMode){
-      //TrackType = RangeMode;
-      return;
+      TrackType = RangeMode;
+      NextValueNums--;
+      if(NextValueNums==0)
+        return;
     }
     continue;
   }///?while(!vs.empty())?
