@@ -797,9 +797,13 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
   uint64_t srcAddr = 0;
   llvm::BasicBlock *crashBB = nullptr;
   bool StaticAddrFlag = false;
+  std::vector<uint64_t> BlockPCs1;
+  std::vector<uint64_t> &BlockPCs = BlockPCs1;
+  bool BlockPCFlag = false;
   while (Entry != nullptr) {
     jjj++;
     BlockBRs = nullptr;
+    BlockPCs.clear();
     if(!JumpTargets.haveBB){
       Builder.SetInsertPoint(Entry);
       BlockBRs = Builder.GetInsertBlock();
@@ -879,6 +883,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
                                                    true,
                                                    false);
       j++;
+      BlockPCs.push_back(PC);
     }
 
     // TODO: shall we move this whole loop in InstructionTranslator?
@@ -917,6 +922,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
                                                      false,
                                                      ForceNewBlock);
         ForceNewBlock = false;
+	BlockPCs.push_back(PC);
       } break;
       case PTC_INSTRUCTION_op_call: {
         Result = Translator.translateCall(&Instruction);
@@ -984,6 +990,9 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       // Something went wrong, probably a mistranslation
       Builder.CreateUnreachable();
     }
+    if(*ptc.isRet)
+      JumpTargets.harvestRetBlocks(tmpVA,NextPC);
+      
     }////?end if(!JumpTargets.haveBB)
 
     // Obtain a new program counter to translate
@@ -1032,9 +1041,10 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     }
     if(StaticAddrFlag and *ptc.isRet)
       DynamicVirtualAddress = 0;
-
-    if(!JumpTargets.haveBB and *ptc.isRet)
-      JumpTargets.harvestRetBlocks(tmpVA);
+    if(!JumpTargets.haveBB and BlockPCFlag){
+      JumpTargets.harvestBlockPCs(BlockPCs);
+      BlockPCFlag = false;
+    }
 
     if(!JumpTargets.haveBB && crashBB==nullptr)
       JumpTargets.harvestStaticAddr(BlockBRs);
@@ -1152,7 +1162,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     }////?end if(traverseFLAG)
     
     if(Entry==nullptr){
-      JumpTargets.handleStaticAddr();
+      BlockPCFlag = JumpTargets.handleStaticAddr();
       StaticAddrFlag = true;
       std::tie(VirtualAddress, Entry) = JumpTargets.peek();
       std::cerr<<std::hex<<VirtualAddress<<" \n";

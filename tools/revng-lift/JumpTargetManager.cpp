@@ -1986,6 +1986,19 @@ JumpTargetManager:: getLastAssignment(llvm::Value *v,
   return std::make_pair(UnknowResult,nullptr);   
 }
 
+void JumpTargetManager::harvestBlockPCs(std::vector<uint64_t> &BlockPCs){
+  if(BlockPCs.empty())
+    return;
+  int i = 0;
+  for(auto pc : BlockPCs){
+    if(!haveTranslatedPC(pc, 0) && !isIllegalStaticAddr(pc))    
+      StaticAddrs[pc] = false;
+    i++;
+    if(i>=3)
+      break;
+  }
+}
+
 void JumpTargetManager::harvestStaticAddr(llvm::BasicBlock *thisBlock){
   if(!isDataSegmAddr(ptc.regs[R_ESP]))
     return;
@@ -2023,8 +2036,8 @@ void JumpTargetManager::harvestStaticAddr(llvm::BasicBlock *thisBlock){
         auto v = store->getValueOperand();
         if(dyn_cast<ConstantInt>(v)){
           auto pc = getLimitedValue(v);
-	  if(isExecutableAddress(pc) && !isIllegalStaticAddr(pc))
-	    StaticAddrs.push_back(pc);
+	  if(!haveTranslatedPC(pc, 0) && !isIllegalStaticAddr(pc))
+	    StaticAddrs[pc] = false;
         }
       }
     }
@@ -2046,10 +2059,10 @@ bool JumpTargetManager::isIllegalStaticAddr(uint64_t pc){
   return false;
 }
 
-void JumpTargetManager::harvestRetBlocks(uint64_t thisAddr){
-  if(!Statistics)
-    return;
-  if(*ptc.isRet){
+void JumpTargetManager::harvestRetBlocks(uint64_t thisAddr, uint64_t blockNext){
+  if(!haveTranslatedPC(blockNext, 0))
+    StaticAddrs[blockNext] = true;
+  if(Statistics){
     IndirectBlocksMap::iterator it = RetBlocks.find(thisAddr);
     if(it == RetBlocks.end())
         RetBlocks[thisAddr] = 1;
@@ -2071,32 +2084,38 @@ void JumpTargetManager::StatisticsLog(void){
   outs()<<"Cond. Branches:"<<"                "<<CondBranches.size()<<"\n";
 }
 
-void JumpTargetManager::handleStaticAddr(void){
+bool JumpTargetManager::handleStaticAddr(void){
   if(UnexploreStaticAddr.empty()){
-    for(auto PC : StaticAddrs){
-      BlockMap::iterator TargetIt = JumpTargets.find(PC);
+    for(auto& PC : StaticAddrs){
+      BlockMap::iterator TargetIt = JumpTargets.find(PC.first);
       BlockMap::iterator upper;
-      upper = JumpTargets.upper_bound(PC);
+      upper = JumpTargets.upper_bound(PC.first);
       if(TargetIt == JumpTargets.end() && upper != JumpTargets.end()
-		     && !isIllegalStaticAddr(PC)){
+		     && !isIllegalStaticAddr(PC.first)){
 	errs()<<format_hex(upper->first,0)<<"  :first\n";
-        errs()<<format_hex(PC,0)<<" <- static address\n";  
-	UnexploreStaticAddr.push_back(PC);
+        errs()<<format_hex(PC.first,0)<<" <- static address\n";  
+	UnexploreStaticAddr[PC.first] = PC.second;
       }
     }
     StaticAddrs.clear();
     if(UnexploreStaticAddr.empty())
-      return;
+      return false;
   }
-  uint64_t PC = 0;
-again:  
-  PC = UnexploreStaticAddr.back();
-  UnexploreStaticAddr.pop_back();
-  if(isIllegalStaticAddr(PC))
-    goto again;
-  registerJT(PC,JTReason::GlobalData);
-  if(haveBB)
-    goto again;  
+  uint64_t addr = 0;
+  bool flag =false;
+  for(auto it=UnexploreStaticAddr.begin(); it!=UnexploreStaticAddr.end(); ){
+    addr = it->first;
+    flag = it->second;
+   if(haveTranslatedPC(addr, 0) or isIllegalStaticAddr(addr)){
+     it = UnexploreStaticAddr.erase(it);
+   }
+   else{
+     registerJT(addr,JTReason::GlobalData);
+     break;
+   } 
+  }
+
+  return flag;
 }
 
 
