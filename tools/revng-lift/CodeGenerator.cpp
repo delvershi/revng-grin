@@ -992,6 +992,8 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     }
     if(*ptc.isRet)
       JumpTargets.harvestRetBlocks(tmpVA,NextPC);
+    if(*ptc.isDirectJmp)
+      JumpTargets.harvestDirectJmpBlocks(NextPC);
       
     }////?end if(!JumpTargets.haveBB)
 
@@ -1050,7 +1052,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       JumpTargets.harvestStaticAddr(BlockBRs);
 
     if(!JumpTargets.haveBB and *ptc.isIndirect)
-      JumpTargets.handleIndirectCall(BlockBRs,tmpVA);
+      JumpTargets.handleIndirectCall(BlockBRs,tmpVA, StaticAddrFlag);
 
     if(!JumpTargets.haveBB and *ptc.isIndirectJmp)
       JumpTargets.handleIndirectJmp(BlockBRs,tmpVA);

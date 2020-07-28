@@ -2059,6 +2059,11 @@ bool JumpTargetManager::isIllegalStaticAddr(uint64_t pc){
   return false;
 }
 
+void JumpTargetManager::harvestDirectJmpBlocks(uint64_t blockNext){
+  if(!haveTranslatedPC(blockNext, 0))
+      StaticAddrs[blockNext] = true;
+}
+
 void JumpTargetManager::harvestRetBlocks(uint64_t thisAddr, uint64_t blockNext){
   if(!haveTranslatedPC(blockNext, 0))
     StaticAddrs[blockNext] = true;
@@ -2119,12 +2124,16 @@ bool JumpTargetManager::handleStaticAddr(void){
 }
 
 
-void JumpTargetManager::handleIndirectCall(llvm::BasicBlock *thisBlock, uint64_t thisAddr){
+void JumpTargetManager::handleIndirectCall(llvm::BasicBlock *thisBlock, 
+		uint64_t thisAddr, bool StaticFlag){
   IndirectBlocksMap::iterator it = IndirectCallBlocks.find(thisAddr);
   if(it != IndirectCallBlocks.end()){
     return;
   }
   IndirectCallBlocks[thisAddr] = 1;
+
+  if(StaticFlag)
+    return;
   
 
   uint32_t userCodeFlag = 0;

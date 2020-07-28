@@ -219,6 +219,7 @@ public:
   IndirectBlocksMap CallBranches;
   IndirectBlocksMap CondBranches;
   void harvestRetBlocks(uint64_t thisAddr, uint64_t blockNext);
+  void harvestDirectJmpBlocks(uint64_t blockNext);
   void StatisticsLog(void);
 
 
@@ -234,7 +235,7 @@ public:
   std::vector<uint64_t> IllegalStaticAddrs;
   bool isIllegalStaticAddr(uint64_t pc);
 
-  void handleIndirectCall(llvm::BasicBlock *thisBlock, uint64_t thisAddr);
+  void handleIndirectCall(llvm::BasicBlock *thisBlock, uint64_t thisAddr, bool StaticFlag);
   llvm::BasicBlock *handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock, uint64_t thisAddr);
   llvm::BasicBlock *getSplitedBlock(llvm::BranchInst *branch);
   uint32_t REGLABLE(uint32_t RegOP);
