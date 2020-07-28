@@ -2045,12 +2045,12 @@ void JumpTargetManager::harvestStaticAddr(llvm::BasicBlock *thisBlock){
 }
 
 bool JumpTargetManager::isIllegalStaticAddr(uint64_t pc){
-  if(IllegalStaticAddrs.empty()){
-    return false;
-  }
   if(ro_StartAddr<=pc and pc<ro_EndAddr)
     return true;
 
+  if(IllegalStaticAddrs.empty()){
+    return false;
+  }
   for(auto addr : IllegalStaticAddrs){
     if(pc >= addr)
       return true;
