@@ -3160,6 +3160,7 @@ llvm::Constant *JumpTargetManager::foldSet(std::vector<legalValue> &legalSet, ui
 	case Instruction::AShr:
 	case Instruction::Or:
 	case Instruction::Shl:
+	case Instruction::Mul:
 	{
 	  Constant *op2 = dyn_cast<Constant>(set.value[0]);
           op2 = ConstantExpr::getTruncOrBitCast(op2,set.I[0]->getOperand(1)->getType());
