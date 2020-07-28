@@ -3387,6 +3387,8 @@ void JumpTargetManager::harvestCallBasicBlock(llvm::BasicBlock *thisBlock,uint64
     if(it == CallBranches.end())
       CallBranches[*ptc.CallNext] = 1;
   }
+  if(!haveTranslatedPC(*ptc.CallNext, 0))
+      StaticAddrs[*ptc.CallNext] = true;
   for(auto item : BranchTargets){
     if(std::get<0>(item) == *ptc.CallNext)
         return;
