@@ -55,6 +55,10 @@ Logger<> JTCountLog("jtcount");
 cl::opt<bool> Statistics("Statistics",
                        cl::desc("Count rewriting information"),
                        cl::cat(MainCategory));
+cl::opt<bool> FAST("fast",
+                       cl::desc("fast rewritinn"),
+                       cl::cat(MainCategory));
+
 
 
 cl::opt<bool> NoOSRA("no-osra", cl::desc(" OSRA"), cl::cat(MainCategory));
@@ -2402,6 +2406,9 @@ BasicBlock * JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *this
       return nullptr;
     return registerJT(PC,JTReason::GlobalData);
   }
+  if(FAST){
+    return nullptr;
+  }
 
   I = ++beginInst;
   for(; I!=endInst; I++){
@@ -2736,15 +2743,15 @@ void JumpTargetManager::handleIllegalJumpAddress(llvm::BasicBlock *thisBlock,
     getIllegalValueDFG(store->getValueOperand(),
 		       dyn_cast<llvm::Instruction>(store),
 		       thisBlock,DataFlow,FullMode,userCodeFlag1);
-    errs()<<"Finished analysis illegal access Data Flow!\n";
+    errs()<<"Finished analysis illegal jump Data Flow!\n";
     nodepCFG = nodetmp;
 
     std::vector<legalValue> legalSet1;
     std::vector<legalValue> &legalSet = legalSet1;
     analysisLegalValue(DataFlow,legalSet);
 
-    if(*ptc.isIndirectJmp)
-      range = getLegalValueRange(thisBlock);
+   // if(*ptc.isIndirectJmp)
+   //   range = getLegalValueRange(thisBlock);
 
     for(auto set : legalSet){
       for(auto ii : set.I)
@@ -2911,8 +2918,10 @@ void JumpTargetManager::getIllegalValueDFG(llvm::Value *v,
   }
   if(TrackType==JumpTableMode)
     NUMOFCONST = 5;
-  if(TrackType==InterprocessMode)
+  if(TrackType==InterprocessMode){
+    NextValueNums = 50; // TODO: optimization parameters
     NUMOFCONST = 5;
+  }
   if(TrackType==TestMode)
     NUMOFCONST = 30;
 
@@ -3052,8 +3061,12 @@ NextValue:
     errs()<<"Explore next Value of Value of DFG!\n";
     if(TrackType==JumpTableMode)
       NUMOFCONST = 5;
-    if(TrackType==InterprocessMode)
+    if(TrackType==InterprocessMode){
       NUMOFCONST = 1;
+      NextValueNums--;
+      if(NextValueNums==0)
+        return;
+    }
     if(TrackType==CrashMode){
       //TrackType = RangeMode;
       NextValueNums--;
@@ -3163,13 +3176,14 @@ llvm::Constant *JumpTargetManager::foldSet(std::vector<legalValue> &legalSet, ui
 	case Instruction::Shl:
 	case Instruction::Mul:
 	{
+	  if(dyn_cast<ConstantInt>(set.value[0]) == nullptr)
+	    return nullptr;
 	  Constant *op2 = dyn_cast<Constant>(set.value[0]);
           op2 = ConstantExpr::getTruncOrBitCast(op2,set.I[0]->getOperand(1)->getType());
           base = ConstantExpr::getTruncOrBitCast(base,set.I[0]->getOperand(0)->getType());
           base = ConstantFoldBinaryOpOperands(op,base,op2,DL);
 	  break;
 	}
-	//case Instruction::AShr:
         case llvm::Instruction::IntToPtr:
 	{
 	  //auto inttoptr = dyn_cast<IntToPtrInst>(set.I[0]);
