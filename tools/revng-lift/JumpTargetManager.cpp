@@ -2114,6 +2114,7 @@ bool JumpTargetManager::handleStaticAddr(void){
    }
    else{
      registerJT(addr,JTReason::GlobalData);
+     UnexploreStaticAddr.erase(it);
      break;
    } 
   }
