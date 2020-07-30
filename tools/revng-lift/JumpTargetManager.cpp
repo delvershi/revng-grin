@@ -3176,6 +3176,20 @@ llvm::Constant *JumpTargetManager::foldSet(std::vector<legalValue> &legalSet, ui
 	case Instruction::Select:
 	//TODO:later
 	break;
+	case Instruction::Mul:
+	{
+	  //TODO modifying later. x = a*b
+	  auto integer1 = dyn_cast<ConstantInt>(set.value[0]);
+	  if(integer1 == nullptr)
+	    return nullptr;
+	  uint64_t a = integer1->getZExtValue();
+
+          auto integer2 = dyn_cast<ConstantInt>(base);
+	  uint64_t b = integer2->getZExtValue();
+	  uint64_t x = a*b;
+	  base = ConstantInt::get(Type::getInt64Ty(Context),x);
+	  break;
+	}
 	case Instruction::And:
 	case Instruction::Sub:
 	case Instruction::Add:
@@ -3183,14 +3197,12 @@ llvm::Constant *JumpTargetManager::foldSet(std::vector<legalValue> &legalSet, ui
 	case Instruction::AShr:
 	case Instruction::Or:
 	case Instruction::Shl:
-	case Instruction::Mul:
 	{
           auto integer = dyn_cast<ConstantInt>(set.value[0]);
 	  if(integer == nullptr)
 	    return nullptr;
-          uint64_t address = integer->getZExtValue();
-	  Constant *op2 = ConstantInt::get(Type::getInt64Ty(Context),address);
-	  //Constant *op2 = dyn_cast<Constant>(set.value[0]);
+         
+	  Constant *op2 = dyn_cast<Constant>(set.value[0]);
           op2 = ConstantExpr::getTruncOrBitCast(op2,set.I[0]->getOperand(1)->getType());
           base = ConstantExpr::getTruncOrBitCast(base,set.I[0]->getOperand(0)->getType());
           base = ConstantFoldBinaryOpOperands(op,base,op2,DL);
