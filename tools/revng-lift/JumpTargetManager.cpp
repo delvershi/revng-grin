@@ -3173,7 +3173,9 @@ llvm::Constant *JumpTargetManager::foldSet(std::vector<legalValue> &legalSet, ui
             base = ConstantInt::get(Type::getInt64Ty(Context),n);
 	  break;
 	}
-	//case Instruction::Select:
+	case Instruction::Select:
+	//TODO:later
+	break;
 	case Instruction::And:
 	case Instruction::Sub:
 	case Instruction::Add:
@@ -3183,9 +3185,12 @@ llvm::Constant *JumpTargetManager::foldSet(std::vector<legalValue> &legalSet, ui
 	case Instruction::Shl:
 	case Instruction::Mul:
 	{
-	  if(dyn_cast<ConstantInt>(set.value[0]) == nullptr)
+          auto integer = dyn_cast<ConstantInt>(set.value[0]);
+	  if(integer == nullptr)
 	    return nullptr;
-	  Constant *op2 = dyn_cast<Constant>(set.value[0]);
+          uint64_t address = integer->getZExtValue();
+	  Constant *op2 = ConstantInt::get(Type::getInt64Ty(Context),address);
+	  //Constant *op2 = dyn_cast<Constant>(set.value[0]);
           op2 = ConstantExpr::getTruncOrBitCast(op2,set.I[0]->getOperand(1)->getType());
           base = ConstantExpr::getTruncOrBitCast(base,set.I[0]->getOperand(0)->getType());
           base = ConstantFoldBinaryOpOperands(op,base,op2,DL);
@@ -3496,6 +3501,8 @@ void JumpTargetManager::harvestbranchBasicBlock(uint64_t nextAddr,
 	}
 	if(!isRecord){
           /* Recording current CPU state */
+          if(!isDataSegmAddr(ptc.regs[R_ESP]))
+              ptc.regs[R_ESP] = ptc.regs[R_EBP];
           auto success = ptc.storeCPUState();
 	  if(!success){
 	    IllegalStaticAddrs.push_back(thisAddr);
