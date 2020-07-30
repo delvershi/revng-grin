@@ -2093,28 +2093,21 @@ void JumpTargetManager::StatisticsLog(void){
 
 bool JumpTargetManager::handleStaticAddr(void){
   if(UnexploreStaticAddr.empty()){
-    for(auto& PC : StaticAddrs){
-      BlockMap::iterator TargetIt = JumpTargets.find(PC.first);
-      BlockMap::iterator upper;
-      upper = JumpTargets.upper_bound(PC.first);
-      if(TargetIt == JumpTargets.end() && upper != JumpTargets.end()
-		     && !isIllegalStaticAddr(PC.first)){
-	errs()<<format_hex(upper->first,0)<<"  :first\n";
-        errs()<<format_hex(PC.first,0)<<" <- static address\n";  
-	UnexploreStaticAddr[PC.first] = PC.second;
-      }
-    }
-    StaticAddrs.clear();
+    StaticToUnexplore();
     if(UnexploreStaticAddr.empty())
       return false;
   }
   uint64_t addr = 0;
   bool flag =false;
-  for(auto it=UnexploreStaticAddr.begin(); it!=UnexploreStaticAddr.end(); ){
+  while(!UnexploreStaticAddr.empty()){
+    auto it = UnexploreStaticAddr.begin();
     addr = it->first;
     flag = it->second;
    if(haveTranslatedPC(addr, 0) or isIllegalStaticAddr(addr)){
-     it = UnexploreStaticAddr.erase(it);
+     UnexploreStaticAddr.erase(it);
+     if(UnexploreStaticAddr.empty()){
+       StaticToUnexplore();
+     }
    }
    else{
      registerJT(addr,JTReason::GlobalData);
@@ -2126,6 +2119,20 @@ bool JumpTargetManager::handleStaticAddr(void){
   return flag;
 }
 
+void JumpTargetManager::StaticToUnexplore(void){
+   for(auto& PC : StaticAddrs){
+    BlockMap::iterator TargetIt = JumpTargets.find(PC.first);
+    BlockMap::iterator upper;
+    upper = JumpTargets.upper_bound(PC.first);
+    if(TargetIt == JumpTargets.end() && upper != JumpTargets.end()
+      	     && !isIllegalStaticAddr(PC.first)){
+      errs()<<format_hex(upper->first,0)<<"  :first\n";
+      errs()<<format_hex(PC.first,0)<<" <- static address\n";  
+      UnexploreStaticAddr[PC.first] = PC.second;
+    }
+  } 
+  StaticAddrs.clear();
+}
 
 void JumpTargetManager::handleIndirectCall(llvm::BasicBlock *thisBlock, 
 		uint64_t thisAddr, bool StaticFlag){

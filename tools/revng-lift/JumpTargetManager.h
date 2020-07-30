@@ -231,6 +231,7 @@ public:
   void harvestStaticAddr(llvm::BasicBlock *thisBlock);
   bool handleStaticAddr(void);
   void harvestBlockPCs(std::vector<uint64_t> &BlockPCs);
+  void StaticToUnexplore(void);
 
   std::vector<uint64_t> IllegalStaticAddrs;
   bool isIllegalStaticAddr(uint64_t pc);
