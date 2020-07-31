@@ -2724,7 +2724,7 @@ void JumpTargetManager::handleIllegalJumpAddress(llvm::BasicBlock *thisBlock,
 		                                 uint64_t thisAddr){
   if(*ptc.isRet || *ptc.isIndirectJmp)
     return;
-  if(fast)
+  if(FAST)
     return;  
 
   uint32_t userCodeFlag = 0;
