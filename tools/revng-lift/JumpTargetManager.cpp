@@ -2050,9 +2050,9 @@ bool JumpTargetManager::isIllegalStaticAddr(uint64_t pc){
   if(ro_StartAddr<=pc and pc<ro_EndAddr)
     return true;
 
-  if(IllegalStaticAddrs.empty()){
-    return false;
-  }
+  //if(IllegalStaticAddrs.empty()){
+  //  return false;
+  //}
   for(auto addr : IllegalStaticAddrs){
     if(pc >= addr)
       return true;
@@ -2388,11 +2388,6 @@ BasicBlock * JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *this
   BasicBlock::iterator endInst = thisBlock->end();
   BasicBlock::iterator I = beginInst; 
 
-  if(!isDataSegmAddr(ptc.regs[R_ESP])){
-    haveBB = 1;
-    IllegalStaticAddrs.push_back(thisAddr);
-    return nullptr;
-  }
   if(*ptc.isIndirect || *ptc.isIndirectJmp || *ptc.isRet) 
     return nullptr;
 
