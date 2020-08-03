@@ -2053,10 +2053,10 @@ bool JumpTargetManager::isIllegalStaticAddr(uint64_t pc){
   //if(IllegalStaticAddrs.empty()){
   //  return false;
   //}
-  for(auto addr : IllegalStaticAddrs){
-    if(pc >= addr)
-      return true;
-  }
+  //for(auto addr : IllegalStaticAddrs){
+  //  if(pc >= addr)
+  //    return true;
+  //}
 
   return false;
 }
