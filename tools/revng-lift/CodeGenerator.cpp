@@ -992,8 +992,8 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     }
     if(*ptc.isRet)
       JumpTargets.harvestRetBlocks(tmpVA,NextPC);
-    if(*ptc.isDirectJmp)
-      JumpTargets.harvestDirectJmpBlocks(NextPC);
+    if(*ptc.isDirectJmp or *ptc.isIndirectJmp or *ptc.isCall)
+      JumpTargets.harvestNextAddrofBr(NextPC);
       
     }////?end if(!JumpTargets.haveBB)
 

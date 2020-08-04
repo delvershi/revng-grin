@@ -2061,7 +2061,7 @@ bool JumpTargetManager::isIllegalStaticAddr(uint64_t pc){
   return false;
 }
 
-void JumpTargetManager::harvestDirectJmpBlocks(uint64_t blockNext){
+void JumpTargetManager::harvestNextAddrofBr(uint64_t blockNext){
   if(!haveTranslatedPC(blockNext, 0))
       StaticAddrs[blockNext] = true;
 }
