@@ -992,7 +992,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     }
     if(*ptc.isRet)
       JumpTargets.harvestRetBlocks(tmpVA,NextPC);
-    if(*ptc.isDirectJmp or *ptc.isIndirectJmp or *ptc.isCall)
+    if(*ptc.isDirectJmp)// or *ptc.isIndirectJmp or *ptc.isCall)
       JumpTargets.harvestNextAddrofBr(NextPC);
       
     }////?end if(!JumpTargets.haveBB)
@@ -1041,7 +1041,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       //if(crashBB)
 	//  BlockBRs = nullptr;
     }
-    if(StaticAddrFlag and *ptc.isRet)
+    if(StaticAddrFlag and (*ptc.isRet or *ptc.isIndirect))
       DynamicVirtualAddress = 0;
     if(!JumpTargets.haveBB and BlockPCFlag){
       JumpTargets.harvestBlockPCs(BlockPCs);
