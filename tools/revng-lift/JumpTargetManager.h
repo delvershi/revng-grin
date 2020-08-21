@@ -214,6 +214,7 @@ public:
   IndirectBlocksMap IndirectCallBlocks;
   IndirectBlocksMap CallTable;
   IndirectBlocksMap IndirectJmpBlocks;
+  IndirectBlocksMap DirectJmpBlocks;
   IndirectBlocksMap JmpTable;
   IndirectBlocksMap RetBlocks;
   IndirectBlocksMap CallBranches;

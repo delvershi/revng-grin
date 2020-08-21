@@ -2064,6 +2064,11 @@ bool JumpTargetManager::isIllegalStaticAddr(uint64_t pc){
 void JumpTargetManager::harvestNextAddrofBr(uint64_t blockNext){
   if(!haveTranslatedPC(blockNext, 0))
       StaticAddrs[blockNext] = true;
+  if(Statistics and *ptc.isDirectJmp){
+      IndirectBlocksMap::iterator it = DirectJmpBlocks.find(*ptc.isDirectJmp);
+      if(it == DirectJmpBlocks.end())
+          DirectJmpBlocks[*ptc.isDirectJmp] = 1;
+  }
 }
 
 void JumpTargetManager::harvestRetBlocks(uint64_t thisAddr, uint64_t blockNext){
@@ -2082,6 +2087,7 @@ void JumpTargetManager::StatisticsLog(void){
   outs()<<"---------------------------------------\n";
   outs()<<"Indirect Calls:"<<"                "<<IndirectCallBlocks.size()<<"\n";
   outs()<<"Indirect Jumps:"<<"                "<<IndirectJmpBlocks.size()<<"\n";
+  outs()<<"Direct Jumps:"<<"                "<<DirectJmpBlocks.size() +1<<"\n";
   outs()<<"Returns:"<<"                       "<<RetBlocks.size()<<"\n";
   outs()<<"\n";
   outs()<<"Jump Tables of Call:"<<"           "<<CallTable.size()<<"\n";
