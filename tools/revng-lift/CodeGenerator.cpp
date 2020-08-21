@@ -991,7 +991,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       Builder.CreateUnreachable();
     }
     if(*ptc.isRet)
-      JumpTargets.harvestRetBlocks(PC,NextPC);
+      JumpTargets.harvestRetBlocks(NextPC,NextPC);
     if(*ptc.isDirectJmp or *ptc.isIndirectJmp or *ptc.isCall)
       JumpTargets.harvestNextAddrofBr(NextPC);
       
