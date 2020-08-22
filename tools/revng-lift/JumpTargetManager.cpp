@@ -203,16 +203,18 @@ bool TranslateDirectBranchesPass::pinConstantStore(Function &F) {
 
         // Is destination a constant?
         if (PCWrite == nullptr) {
-          forceFallthroughAfterHelper(Call);
+          //forceFallthroughAfterHelper(Call);
         } else {
-          uint64_t NextPC = JTM->getNextPC(PCWrite);
-          if (NextPC != 0 && not NoOSRA && isSumJump(PCWrite))
-            JTM->registerJT(NextPC, JTReason::SumJump);
+          //uint64_t NextPC = JTM->getNextPC(PCWrite);
+          //if (NextPC != 0 && not NoOSRA && isSumJump(PCWrite))
+          //  JTM->registerJT(NextPC, JTReason::SumJump);
 
           auto *Address = dyn_cast<ConstantInt>(PCWrite->getValueOperand());
           if (Address != nullptr) {
             // Compute the actual PC and get the associated BasicBlock
             uint64_t TargetPC = Address->getSExtValue();
+	    if(JTM->isIllegalStaticAddr(TargetPC))
+                continue;
             auto *TargetBlock = JTM->registerJT(TargetPC, JTReason::DirectJump);
 
             // Remove unreachable right after the exit_tb

@@ -644,9 +644,7 @@ public:
       TerminatorInst *T = JT.head()->getTerminator();
      // errs()<<(JT.head()->getName())<<"\n";
      // errs()<<JT.head()->empty()<<"      terminator\n";
-      //revng_assert(T != nullptr);
-      if(T == nullptr)
-          continue;
+      revng_assert(T != nullptr);
 
       std::vector<Metadata *> Reasons;
       for (const char *ReasonName : JT.getReasonNames())
