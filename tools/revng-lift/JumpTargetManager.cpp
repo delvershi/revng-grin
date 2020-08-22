@@ -326,7 +326,7 @@ bool TranslateDirectBranchesPass::forceFallthroughAfterHelper(CallInst *Call) {
 bool TranslateDirectBranchesPass::runOnModule(Module &M) {
   Function &F = *M.getFunction("root");
   pinConstantStore(F);
-  pinJTs(F);
+  //pinJTs(F);
   return true;
 }
 
@@ -1028,6 +1028,11 @@ private:
 void JumpTargetManager::translateIndirectJumps() {
   if (ExitTB->use_empty())
     return;
+
+  legacy::PassManager AnalysisPM;
+  AnalysisPM.add(new TranslateDirectBranchesPass(this));
+  AnalysisPM.run(TheModule);
+
   auto I = ExitTB->use_begin();
 
   while (I != ExitTB->use_end()) {
