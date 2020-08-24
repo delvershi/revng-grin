@@ -56,7 +56,10 @@ cl::opt<bool> Statistics("Statistics",
                        cl::desc("Count rewriting information"),
                        cl::cat(MainCategory));
 cl::opt<bool> FAST("fast",
-                       cl::desc("fast rewritinn"),
+                       cl::desc("fast rewriting"),
+                       cl::cat(MainCategory));
+cl::opt<bool> SUPERFAST("super-fast",
+                       cl::desc("fast rewriting"),
                        cl::cat(MainCategory));
 
 
@@ -215,7 +218,9 @@ bool TranslateDirectBranchesPass::pinConstantStore(Function &F) {
             uint64_t TargetPC = Address->getSExtValue();
 	    if(JTM->isIllegalStaticAddr(TargetPC))
                 continue;
-            auto *TargetBlock = JTM->registerJT(TargetPC, JTReason::DirectJump);
+            auto *TargetBlock = JTM->obtainJTBB(TargetPC, JTReason::DirectJump);
+	    if(TargetBlock==nullptr)
+		continue;
 
             // Remove unreachable right after the exit_tb
             BasicBlock::iterator CallIt(Call);
@@ -1166,39 +1171,18 @@ void JumpTargetManager::purgeTranslation(BasicBlock *Start) {
   }
 }
 
-bool flag,flag2 = false;
-void JumpTargetManager::isContainIndirectInst(uint64_t nextAddr, 
-		                              uint64_t thisAddr,
-		                              llvm::BasicBlock *nextBlock){
+BasicBlock * JumpTargetManager::obtainJTBB(uint64_t PC, JTReason::Values Reason){
  
-  if(thisAddr ==0x41e4aa)
-	flag = true;
-
-  if(flag){
-    if(haveBB){
-      haveBB = 0;
-      ToPurge.insert(nextBlock);
-      Unexplored.push_back(BlockWithAddress(nextAddr, nextBlock));
-      flag2 = true;
-      return;
-    }
-    if(flag2){
-      if(*ptc.isIndirect)
-        flag = false;
-    }  
+  BlockMap::iterator TargetIt = JumpTargets.find(PC);
+  if (TargetIt != JumpTargets.end()) {
+    // Case 1: there's already a BasicBlock for that address, return it
+    BasicBlock *BB = TargetIt->second.head();
+    TargetIt->second.setReason(Reason);
+    
+    unvisit(BB);
+    return BB;
   }
-
-//  if(!haveBB)
-//    return;
-//  if(nextAddr==thisAddr)
-//    return;
-//
-//  IndirectBlocksMap::iterator it = IndirectBlocks.find(nextAddr);
-//  if(it != IndirectBlocks.end()){
-//    haveBB = 0;
-//    ToPurge.insert(nextBlock);
-//    Unexplored.push_back(BlockWithAddress(nextAddr, nextBlock));   
-//  }
+  return nullptr;
 }
 
 // TODO: register Reason
@@ -2606,10 +2590,14 @@ BasicBlock * JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *this
 }
 
 void JumpTargetManager::handleIndirectJmp(llvm::BasicBlock *thisBlock, 
-		                                 uint64_t thisAddr){
+		                                 uint64_t thisAddr,
+						 bool StaticFlag){
   uint32_t userCodeFlag = 0;
   uint32_t &userCodeFlag1 = userCodeFlag;
   IndirectJmpBlocks[thisAddr] = 1;
+
+  if(SUPERFAST and StaticFlag)
+    return;
 
   // Contains indirect instruction's Block, it must have a store instruction.
   BasicBlock::iterator I = --thisBlock->end(); 

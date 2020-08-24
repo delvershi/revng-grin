@@ -1055,7 +1055,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       JumpTargets.handleIndirectCall(BlockBRs,tmpVA, StaticAddrFlag);
 
     if(!JumpTargets.haveBB and *ptc.isIndirectJmp)
-      JumpTargets.handleIndirectJmp(BlockBRs,tmpVA);
+      JumpTargets.handleIndirectJmp(BlockBRs,tmpVA, StaticAddrFlag);
   
     if(!traverseFLAG){
     if(DynamicVirtualAddress){

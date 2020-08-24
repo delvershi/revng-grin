@@ -224,7 +224,7 @@ public:
   void StatisticsLog(void);
 
 
-  void isContainIndirectInst(uint64_t nextAddr, uint64_t thisAddr, llvm::BasicBlock *nextBlock);
+  llvm::BasicBlock * obtainJTBB(uint64_t PC,JTReason::Values Reason);
  
   using StaticAddrsMap = std::map<uint64_t, bool>;  
   StaticAddrsMap StaticAddrs;
@@ -242,7 +242,7 @@ public:
   llvm::BasicBlock *getSplitedBlock(llvm::BranchInst *branch);
   uint32_t REGLABLE(uint32_t RegOP);
   void handleIllegalJumpAddress(llvm::BasicBlock *thisBlock, uint64_t thisAddr);
-  void handleIndirectJmp(llvm::BasicBlock *thisBlock, uint64_t thisAddr);
+  void handleIndirectJmp(llvm::BasicBlock *thisBlock, uint64_t thisAddr, bool StaticFlag);
   void getIllegalValueDFG(llvm::Value *v,llvm::Instruction *I,
 		          llvm::BasicBlock *thisBlock,
 			  std::vector<llvm::Instruction *> &DataFlow,
