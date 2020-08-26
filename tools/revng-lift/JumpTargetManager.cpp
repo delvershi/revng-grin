@@ -2053,8 +2053,13 @@ bool JumpTargetManager::isIllegalStaticAddr(uint64_t pc){
 }
 
 void JumpTargetManager::harvestNextAddrofBr(uint64_t blockNext){
-  if(!haveTranslatedPC(blockNext, 0))
-      StaticAddrs[blockNext] = true;
+  if(!haveTranslatedPC(blockNext, 0)){
+      if(*ptc.isCall){
+        StaticAddrs[blockNext] = 2;
+      }else{
+        StaticAddrs[blockNext] = true;
+      }
+  }
   if(Statistics and *ptc.isDirectJmp){
       IndirectBlocksMap::iterator it = DirectJmpBlocks.find(*ptc.isDirectJmp);
       if(it == DirectJmpBlocks.end())
@@ -2095,12 +2100,14 @@ bool JumpTargetManager::handleStaticAddr(void){
       return false;
   }
   uint64_t addr = 0;
-  bool flag =false;
+  uint32_t flag =false;
   while(!UnexploreStaticAddr.empty()){
     auto it = UnexploreStaticAddr.begin();
     addr = it->first;
     flag = it->second;
    if(haveTranslatedPC(addr, 0) or isIllegalStaticAddr(addr)){
+     if(flag==2)
+       CallNextToStaticAddr(it->first);
      UnexploreStaticAddr.erase(it);
      if(UnexploreStaticAddr.empty()){
        StaticToUnexplore();
@@ -2127,8 +2134,33 @@ void JumpTargetManager::StaticToUnexplore(void){
       errs()<<format_hex(PC.first,0)<<" <- static address\n";  
       UnexploreStaticAddr[PC.first] = PC.second;
     }
+    if(TargetIt != JumpTargets.end() and PC.second == 2)
+      CallNextToStaticAddr(PC.first); 
   } 
   StaticAddrs.clear();
+}
+
+void JumpTargetManager::CallNextToStaticAddr(uint32_t PC){
+  BasicBlock * Block = obtainJTBB(PC,JTReason::DirectJump);
+  BasicBlock::iterator it = Block->begin();
+  BasicBlock::iterator end = Block->end();
+  uint32_t count = 0;
+  if(Block != nullptr){
+    for(;it!=end;it++){
+      if(it->getOpcode()==llvm::Instruction::Call){
+	auto callI = dyn_cast<CallInst>(&*it);
+	auto *Callee = callI->getCalledFunction();
+	if(Callee != nullptr && Callee->getName() == "newpc"){
+	    auto addr = getLimitedValue(callI->getArgOperand(0));
+	    count++;
+	    if(count>3)
+	      return;
+	    StaticAddrs[addr] = false;
+            //errs()<<format_hex(pc,0)<<" <- No Crash point, to explore next addr.\n";
+	}
+      }
+    }
+  }
 }
 
 void JumpTargetManager::handleIndirectCall(llvm::BasicBlock *thisBlock, 
@@ -3426,7 +3458,7 @@ void JumpTargetManager::harvestCallBasicBlock(llvm::BasicBlock *thisBlock,uint64
       CallBranches[*ptc.CallNext] = 1;
   }
   if(!haveTranslatedPC(*ptc.CallNext, 0))
-      StaticAddrs[*ptc.CallNext] = true;
+      StaticAddrs[*ptc.CallNext] = 2;
   for(auto item : BranchTargets){
     if(std::get<0>(item) == *ptc.CallNext)
         return;

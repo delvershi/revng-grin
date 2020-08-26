@@ -226,13 +226,14 @@ public:
 
   llvm::BasicBlock * obtainJTBB(uint64_t PC,JTReason::Values Reason);
  
-  using StaticAddrsMap = std::map<uint64_t, bool>;  
+  using StaticAddrsMap = std::map<uint64_t, uint32_t>;  
   StaticAddrsMap StaticAddrs;
   StaticAddrsMap UnexploreStaticAddr;
   void harvestStaticAddr(llvm::BasicBlock *thisBlock);
   bool handleStaticAddr(void);
   void harvestBlockPCs(std::vector<uint64_t> &BlockPCs);
   void StaticToUnexplore(void);
+  void CallNextToStaticAddr(uint32_t PC);
 
   std::vector<uint64_t> IllegalStaticAddrs;
   bool isIllegalStaticAddr(uint64_t pc);
