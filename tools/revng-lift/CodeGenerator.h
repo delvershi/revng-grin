@@ -65,6 +65,9 @@ public:
   /// \param VirtualAddress the address from where the translation should start.
   void translate(uint64_t VirtualAddress);
 
+  uint64_t CodeStartAddress;
+  void embeddedData();
+
   /// Serialize the generated LLVM IR to the specified output path.
   void serialize();
 

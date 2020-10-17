@@ -242,7 +242,7 @@ CodeGenerator::CodeGenerator(BinaryFile &Binary,
   createConstGlobal("e_phnum", Binary.programHeadersCount());
   createConstGlobal("phdr_address", Binary.programHeadersAddress());
 
-  for (SegmentInfo &Segment : Binary.segments()) {
+ for (SegmentInfo &Segment : Binary.segments()) {
     // If it's executable register it as a valid code area
     if (Segment.IsExecutable) {
       // We ignore possible p_filesz-p_memsz mismatches, zeros wouldn't be
@@ -250,44 +250,47 @@ CodeGenerator::CodeGenerator(BinaryFile &Binary,
       ptc.mmap(Segment.StartVirtualAddress,
                static_cast<const void *>(Segment.Data.data()),
                static_cast<size_t>(Segment.Data.size()));
+      CodeStartAddress = Segment.StartVirtualAddress;
     }
-
-    std::string Name = Segment.generateName();
-
-    // Get data and size
-    auto *DataType = ArrayType::get(Uint8Ty, Segment.size());
-
-    Constant *TheData = nullptr;
-    if (Segment.size() == Segment.Data.size()) {
-      // Create the array directly from the mmap'd ELF
-      TheData = ConstantDataArray::get(Context, Segment.Data);
-    } else {
-      // If we have extra data at the end we need to create a copy of the
-      // segment and append the NULL bytes
-      auto FullData = make_unique<uint8_t[]>(Segment.size());
-      ::memcpy(FullData.get(), Segment.Data.data(), Segment.Data.size());
-      ::bzero(FullData.get() + Segment.Data.size(),
-              Segment.size() - Segment.Data.size());
-      auto DataRef = ArrayRef<uint8_t>(FullData.get(), Segment.size());
-      TheData = ConstantDataArray::get(Context, DataRef);
+    
+    if(!Segment.IsExecutable){
+      std::string Name = Segment.generateName();
+  
+      // Get data and size
+      auto *DataType = ArrayType::get(Uint8Ty, Segment.size());
+  
+      Constant *TheData = nullptr;
+      if (Segment.size() == Segment.Data.size()) {
+        // Create the array directly from the mmap'd ELF
+        TheData = ConstantDataArray::get(Context, Segment.Data);
+      } else {
+        // If we have extra data at the end we need to create a copy of the
+        // segment and append the NULL bytes
+        auto FullData = make_unique<uint8_t[]>(Segment.size());
+        ::memcpy(FullData.get(), Segment.Data.data(), Segment.Data.size());
+        ::bzero(FullData.get() + Segment.Data.size(),
+                Segment.size() - Segment.Data.size());
+        auto DataRef = ArrayRef<uint8_t>(FullData.get(), Segment.size());
+        TheData = ConstantDataArray::get(Context, DataRef);
+      }
+  
+      // Create a new global variable
+      Segment.Variable = new GlobalVariable(*TheModule,
+                                            DataType,
+                                            !Segment.IsWriteable,
+                                            GlobalValue::ExternalLinkage,
+                                            TheData,
+                                            Name);
+  
+      // Force alignment to 1 and assign the variable to a specific section
+      Segment.Variable->setAlignment(1);
+      Segment.Variable->setSection("." + Name);
+  
+      // Write the linking info CSV
+      LinkingInfoStream << "." << Name << ",0x" << std::hex
+                        << Segment.StartVirtualAddress << ",0x" << std::hex
+                        << Segment.EndVirtualAddress << "\n";
     }
-
-    // Create a new global variable
-    Segment.Variable = new GlobalVariable(*TheModule,
-                                          DataType,
-                                          !Segment.IsWriteable,
-                                          GlobalValue::ExternalLinkage,
-                                          TheData,
-                                          Name);
-
-    // Force alignment to 1 and assign the variable to a specific section
-    Segment.Variable->setAlignment(1);
-    Segment.Variable->setSection("." + Name);
-
-    // Write the linking info CSV
-    LinkingInfoStream << "." << Name << ",0x" << std::hex
-                      << Segment.StartVirtualAddress << ",0x" << std::hex
-                      << Segment.EndVirtualAddress << "\n";
   }
 
   // Write needed libraries CSV
@@ -1171,7 +1174,9 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     }
 
   } // End translations loop
- 
+
+  embeddedData();
+
   outs()<<"\nRewrite Successful\n";
   JumpTargets.StatisticsLog();
 
@@ -1329,6 +1334,49 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
   Variables.finalize();
 
   Debug->generateDebugInfo();
+}
+
+void CodeGenerator::embeddedData(){
+  std::map<uint64_t, size_t> embeddedData;
+
+  embeddedData[Binary.rodataStartAddr] = Binary.ehframeEndAddr - Binary.rodataStartAddr;
+  embeddedData[CodeStartAddress] = Binary.entryPoint() - CodeStartAddress;
+
+  //Prepare the linking info CSV
+  if (LinkingInfoPath.size() == 0)
+    LinkingInfoPath = OutputPath + ".li.csv";
+  std::ofstream LinkingInfoStream;
+  LinkingInfoStream.open(LinkingInfoPath,std::ofstream::out | std::ofstream::app);
+
+  auto *Uint8Ty = Type::getInt8Ty(Context);
+  
+  for(const auto &embedded : embeddedData){
+    std::stringstream NameStream;
+    NameStream <<"o_"<<"r_"<<std::hex<<embedded.first;
+    // Get data and size
+    auto *DataType = ArrayType::get(Uint8Ty, embedded.second);
+    Constant *TheData = nullptr;
+    const uint8_t* addr = (uint8_t *)embedded.first;
+    llvm::ArrayRef<uint8_t> Data = ArrayRef<uint8_t>(addr,embedded.second);
+    TheData = ConstantDataArray::get(Context, Data);
+    // Create a new global variable
+    auto Variable = new GlobalVariable(*TheModule,
+		                          DataType,
+					  false,
+					  GlobalValue::ExternalLinkage,
+					  TheData,
+					  NameStream.str());
+    // Force alignment to 1 and assign the variable to a specific section
+    Variable->setAlignment(1);
+    Variable->setSection("." + NameStream.str());
+     
+    // Write the linking info CSV
+    LinkingInfoStream << "." << NameStream.str() << ",0x" << std::hex
+                      << embedded.first << ",0x" << std::hex
+                      << embedded.first+embedded.second << "\n";
+  }
+  LinkingInfoStream.close();
+ 
 }
 
 void CodeGenerator::serialize() {
