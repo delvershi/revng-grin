@@ -443,6 +443,8 @@ JumpTargetManager::JumpTargetManager(Function *TheFunction,
       DataSegmStartAddr = Segment.StartVirtualAddress; 
       DataSegmEndAddr = Segment.EndVirtualAddress;
     }
+    if(Segment.IsExecutable)
+      CodeSegmStartAddr = Segment.StartVirtualAddress;
   }
   ro_StartAddr = 0;
   ro_EndAddr =0;
@@ -1185,6 +1187,13 @@ BasicBlock * JumpTargetManager::obtainJTBB(uint64_t PC, JTReason::Values Reason)
   return nullptr;
 }
 
+void JumpTargetManager::SetBlockSize(uint64_t start, uint64_t end){
+  BlockMap::iterator TargetIt = JumpTargets.find(start);
+  if (TargetIt != JumpTargets.end()) {
+    TargetIt->second.setSize(end-start);
+  }
+}
+
 // TODO: register Reason
 BasicBlock *
 JumpTargetManager::registerJT(uint64_t PC, JTReason::Values Reason) {
@@ -1794,6 +1803,122 @@ std::pair<bool, uint32_t> JumpTargetManager::islegalAddr(llvm::Value *v){
   return std::make_pair(1,registerName);
 }
 
+bool JumpTargetManager::isCodeSection(uint64_t PC){
+  if(PC>=CodeSegmStartAddr and PC<=ro_StartAddr)
+    return true;
+
+  return false;
+} 
+
+std::pair<bool, uint32_t> JumpTargetManager::isAccessCodeAddr(llvm::Value *v, uint64_t illaddr){
+  uint64_t va = 0;
+  StringRef Iargs = v->getName();
+  //uint32_t registerName = 0;
+ 
+  auto op = StrToInt(Iargs.data());
+  //errs()<<op<<"+++\n"; 
+  switch(op){
+    case RAX:
+      va = ptc.regs[R_EAX];
+      if(va == illaddr)
+        return std::make_pair(1,R_EAX);
+    break;
+    case RCX:
+      va = ptc.regs[R_ECX];
+      //registerName = RCX;
+      if(va == illaddr)
+        return std::make_pair(1,R_ECX);
+    break;
+    case RDX:
+      va = ptc.regs[R_EDX];
+      //registerName = RDX;
+      if(va == illaddr)
+        return std::make_pair(1,R_EDX);
+    break;
+    case RBX:
+      va = ptc.regs[R_EBX];
+      //registerName = RBX;
+      if(va == illaddr)
+        return std::make_pair(1,R_EBX);
+    break;
+    case RSP:
+      va = ptc.regs[R_ESP];
+      //registerName = RSP;
+      if(va == illaddr)
+	return std::make_pair(1,R_ESP);
+    break;
+    case RBP:
+      va = ptc.regs[R_EBP];
+      //registerName = RBP;
+      if(va == illaddr)
+        return std::make_pair(1,R_EBP);
+    break;
+    case RSI:
+      va = ptc.regs[R_ESI];
+      //registerName = RSI;
+      if(va == illaddr)
+        return std::make_pair(1,R_ESI);
+    break;
+    case RDI:
+      va = ptc.regs[R_EDI];
+      //registerName = RDI;
+      if(va == illaddr)
+        return std::make_pair(1,R_EDI);
+    break;
+    case R8:
+      va = ptc.regs[R_8];
+      //registerName = R8;
+      if(va == illaddr)
+	return std::make_pair(1,R_8);
+    break;
+    case R9:
+      va = ptc.regs[R_9];
+      //registerName = R9;
+      if(va == illaddr)
+        return std::make_pair(1,R_9);
+    break;
+    case R10:
+      va = ptc.regs[R_10];
+      //registerName = R10;
+      if(va == illaddr)
+	return std::make_pair(1,R_10);
+    break;
+    case R11:
+      va = ptc.regs[R_11];
+      //registerName = R11;
+      if(va == illaddr)
+	return std::make_pair(1,R_11);
+    break;
+    case R12:
+      va = ptc.regs[R_12];
+      //registerName = R12;
+      if(va == illaddr)
+        return std::make_pair(1,R_12);
+    break;
+    case R13:
+      va = ptc.regs[R_13];
+      //registerName = R13;
+      if(va == illaddr)
+        return std::make_pair(1,R_13);
+    break;
+    case R14:
+      va = ptc.regs[R_14];
+      //registerName = R14;
+      if(va == illaddr)
+        return std::make_pair(1,R_14);
+    break;
+    case R15:
+      va = ptc.regs[R_15];
+      //registerName = R15;
+      if(va == illaddr)
+        return std::make_pair(1,R_15);
+    break;
+    default:
+      errs()<<"No match register arguments! \n";
+  }
+  return std::make_pair(0,20);
+}
+
 JumpTargetManager::LastAssignmentResultWithInst 
 JumpTargetManager:: getLastAssignment(llvm::Value *v, 
                                       llvm::User *userInst, 
@@ -2134,10 +2259,40 @@ void JumpTargetManager::StaticToUnexplore(void){
       errs()<<format_hex(PC.first,0)<<" <- static address\n";  
       UnexploreStaticAddr[PC.first] = PC.second;
     }
+    // This Call-Next-Block has explored in recording branch exploration phase, 
+    // thus the first three instructions of this Block cannot be splited. 
     if(TargetIt != JumpTargets.end() and PC.second == 2)
       CallNextToStaticAddr(PC.first); 
   } 
   StaticAddrs.clear();
+}
+
+void JumpTargetManager::handleEmbeddedDataAddr(void){
+  for(auto& data : IllAccessAddr){
+      BlockMap::iterator TargetIt = JumpTargets.find(data.first);
+      if(TargetIt == JumpTargets.end()){
+        BlockMap::iterator upper = JumpTargets.upper_bound(data.first);
+        if(upper != JumpTargets.end()){
+          auto prev = upper;
+          BlockMap::iterator lower;
+          for(lower = --prev; ;prev--){
+            revng_assert(prev != JumpTargets.begin());
+            if(lower->first < data.first){
+              lower = prev; 
+              break; 
+            }
+          }
+          if((data.first - lower->first) >= lower->second.getSize()){
+            size_t length = upper->first - lower->first - lower->second.getSize();
+            EmbeddedData[data.first] = length;
+            errs()<<format_hex(data.first,0)<<"   length: "<<length<<" 55555555555\n";
+          }        
+        }
+        else
+          revng_abort("Special example!\n");
+      }
+  }
+  IllAccessAddr.clear();
 }
 
 void JumpTargetManager::CallNextToStaticAddr(uint32_t PC){
@@ -2175,92 +2330,92 @@ void JumpTargetManager::handleIndirectCall(llvm::BasicBlock *thisBlock,
     return;
   
 
-  uint32_t userCodeFlag = 0;
-  uint32_t &userCodeFlag1 = userCodeFlag;
-
-  // Contains indirect instruction's Block, it must have a store instruction.
-  BasicBlock::iterator I = --thisBlock->end();
-  if(dyn_cast<BranchInst>(I))
-    return;
-  errs()<<"indirect call&&&&&\n";
-  I--; 
-  auto store = dyn_cast<llvm::StoreInst>(--I);
-  if(store){
-    range = 0;
-    // Seeking Value of assign to pc. 
-    // eg:store i64 value, i64* @pc 
-    NODETYPE nodetmp = nodepCFG;
-    std::vector<llvm::Instruction *> DataFlow1;
-    std::vector<llvm::Instruction *> &DataFlow = DataFlow1;
-    getIllegalValueDFG(store->getValueOperand(),
-		       dyn_cast<llvm::Instruction>(store),
-		       thisBlock,
-		       DataFlow,
-		       InterprocessMode,
-		       userCodeFlag1);
-    errs()<<"Finished analysis indirect Inst access Data Flow!\n";
-    nodepCFG = nodetmp;
-
-    std::vector<legalValue> legalSet1;
-    std::vector<legalValue> &legalSet = legalSet1;
-    analysisLegalValue(DataFlow,legalSet);
-
-    //Log information.
-    for(auto set : legalSet){
-      for(auto ii : set.I)
-        errs()<<*ii<<" -------------";
-      errs()<<"\n";
-      for(auto vvv : set.value) 
-        errs() <<*vvv<<" +++++++++++\n";
-      
-      errs()<<"\n";
-    }
-    //To match base+offset mode.
-    bool isJmpTable = false;
-    for(unsigned i=0; i<legalSet.size(); i++){
-      if(legalSet[i].I[0]->getOpcode() == Instruction::Add){
-        if(((i+1) < legalSet.size()) and 
-	   (legalSet[i+1].I[0]->getOpcode() == Instruction::Shl)){
-	    legalSet.back().value[0] = dyn_cast<Value>(legalSet.back().I[0]);
-            legalSet.erase(legalSet.begin()+i+2,legalSet.end()-1);
-	    isJmpTable = true;
-	    break;
-	}
-      }
-      for(unsigned j=0; j<legalSet[i].I.size(); j++){
-        if(legalSet[i].I[j]->getOpcode() == Instruction::Add){
-          if(((j+1) < legalSet[i].I.size()) and 
-	     (legalSet[i].I[j+1]->getOpcode() == Instruction::Shl)){
-            isJmpTable = true;
-	    //revng_abort("Not implement!\n");
-	    return;
-	  }
-        }       
-      }
-    }
-    if(isJmpTable){ 
-      //To assign a legal value
-      for(uint64_t n = 0;;n++){
-        auto addrConst = foldSet(legalSet,n);
-	if(addrConst==nullptr)
-	  break;
-        auto integer = dyn_cast<ConstantInt>(addrConst);
-	auto newaddr = integer->getZExtValue();
-	if(newaddr==0)
-            continue;
-	if(isExecutableAddress(newaddr))
-            harvestBTBasicBlock(thisBlock,thisAddr,newaddr);
-        else
-          break;
-      }
-      if(Statistics){
-        IndirectBlocksMap::iterator it = CallTable.find(thisAddr);
-        if(it == CallTable.end())
-          CallTable[thisAddr] = 1;
-      }
-    }
-
-  }
+//  uint32_t userCodeFlag = 0;
+//  uint32_t &userCodeFlag1 = userCodeFlag;
+//
+//  // Contains indirect instruction's Block, it must have a store instruction.
+//  BasicBlock::iterator I = --thisBlock->end();
+//  if(dyn_cast<BranchInst>(I))
+//    return;
+//  errs()<<"indirect call&&&&&\n";
+//  I--; 
+//  auto store = dyn_cast<llvm::StoreInst>(--I);
+//  if(store){
+//    range = 0;
+//    // Seeking Value of assign to pc. 
+//    // eg:store i64 value, i64* @pc 
+//    NODETYPE nodetmp = nodepCFG;
+//    std::vector<llvm::Instruction *> DataFlow1;
+//    std::vector<llvm::Instruction *> &DataFlow = DataFlow1;
+//    getIllegalValueDFG(store->getValueOperand(),
+//		       dyn_cast<llvm::Instruction>(store),
+//		       thisBlock,
+//		       DataFlow,
+//		       InterprocessMode,
+//		       userCodeFlag1);
+//    errs()<<"Finished analysis indirect Inst access Data Flow!\n";
+//    nodepCFG = nodetmp;
+//
+//    std::vector<legalValue> legalSet1;
+//    std::vector<legalValue> &legalSet = legalSet1;
+//    analysisLegalValue(DataFlow,legalSet);
+//
+//    //Log information.
+//    for(auto set : legalSet){
+//      for(auto ii : set.I)
+//        errs()<<*ii<<" -------------";
+//      errs()<<"\n";
+//      for(auto vvv : set.value) 
+//        errs() <<*vvv<<" +++++++++++\n";
+//      
+//      errs()<<"\n";
+//    }
+//    //To match base+offset mode.
+//    bool isJmpTable = false;
+//    for(unsigned i=0; i<legalSet.size(); i++){
+//      if(legalSet[i].I[0]->getOpcode() == Instruction::Add){
+//        if(((i+1) < legalSet.size()) and 
+//	   (legalSet[i+1].I[0]->getOpcode() == Instruction::Shl)){
+//	    legalSet.back().value[0] = dyn_cast<Value>(legalSet.back().I[0]);
+//            legalSet.erase(legalSet.begin()+i+2,legalSet.end()-1);
+//	    isJmpTable = true;
+//	    break;
+//	}
+//      }
+//      for(unsigned j=0; j<legalSet[i].I.size(); j++){
+//        if(legalSet[i].I[j]->getOpcode() == Instruction::Add){
+//          if(((j+1) < legalSet[i].I.size()) and 
+//	     (legalSet[i].I[j+1]->getOpcode() == Instruction::Shl)){
+//            isJmpTable = true;
+//	    //revng_abort("Not implement!\n");
+//	    return;
+//	  }
+//        }       
+//      }
+//    }
+//    if(isJmpTable){ 
+//      //To assign a legal value
+//      for(uint64_t n = 0;;n++){
+//        auto addrConst = foldSet(legalSet,n);
+//	if(addrConst==nullptr)
+//	  break;
+//        auto integer = dyn_cast<ConstantInt>(addrConst);
+//	auto newaddr = integer->getZExtValue();
+//	if(newaddr==0)
+//            continue;
+//	if(isExecutableAddress(newaddr))
+//            harvestBTBasicBlock(thisBlock,thisAddr,newaddr);
+//        else
+//          break;
+//      }
+//      if(Statistics){
+//        IndirectBlocksMap::iterator it = CallTable.find(thisAddr);
+//        if(it == CallTable.end())
+//          CallTable[thisAddr] = 1;
+//      }
+//    }
+//
+//  }
 }
 
 bool JumpTargetManager::isAccessMemInst(llvm::Instruction *I){
@@ -2290,12 +2445,12 @@ bool JumpTargetManager::isAccessMemInst(llvm::Instruction *I){
 	    auto pc = getLimitedValue(callI->getArgOperand(0));
             errs()<<format_hex(pc,0)<<" <- No Crash point, to explore next addr.\n";
 	}
-	if(Callee != nullptr && (
-			Callee->getName() == "helper_fldt_ST0"||
-			Callee->getName() == "helper_fstt_ST0"||
-			Callee->getName() == "helper_divq_EAX"||
-			Callee->getName() == "helper_idivl_EAX"))
-	    return true;
+	//if(Callee != nullptr && (
+	//		Callee->getName() == "helper_fldt_ST0"||
+	//		Callee->getName() == "helper_fstt_ST0"||
+	//		Callee->getName() == "helper_divq_EAX"||
+	//		Callee->getName() == "helper_idivl_EAX"))
+	//    return true;
 	break;
     }
     case llvm::Instruction::Load:{
@@ -2409,216 +2564,216 @@ BasicBlock * JumpTargetManager::getSplitedBlock(llvm::BranchInst *branch){
   return nullptr;
 }
 
-BasicBlock * JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock,
-		                                  uint64_t thisAddr){
-  uint32_t userCodeFlag = 0;
-  uint32_t &userCodeFlag1 = userCodeFlag;
-  BasicBlock::iterator beginInst = thisBlock->begin();
+uint64_t JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock,
+		                                  uint64_t thisAddr, size_t ConsumedSize){
+//  BasicBlock::iterator beginInst = thisBlock->begin();
   BasicBlock::iterator endInst = thisBlock->end();
-  BasicBlock::iterator I = beginInst; 
+//  BasicBlock::iterator I = beginInst; 
 
-  if(*ptc.isIndirect || *ptc.isIndirectJmp || *ptc.isRet) 
-    return nullptr;
+//  if(*ptc.isIndirect || *ptc.isIndirectJmp || *ptc.isRet) 
+//    return thisAddr;
 
-  bool islegal = false;
-  uint32_t registerOP = 0; 
 
-  /* Instruction access memory type:
-   * case 1:  [reg + imm + imm] 10+1+1;
-   * case 2:  [reg + imm]       10+1
-   * case 3:  [reg + reg + imm] 10+10+1;
-   * case 4:  [reg + reg]       10+10 */
-  uint32_t accessNUM = 0;
+  auto illaddr = *ptc.illegalAccessAddr;
+  if(illaddr>=Binary.entryPoint() and illaddr<ro_StartAddr){
+      IllAccessAddr[illaddr] = 1;
+      errs()<<"\n"<<*ptc.illegalAccessAddr<<" 8888888888888888888888\n";
+  }
+
+
   BasicBlock::iterator lastInst = endInst;
   lastInst--;
-  if(!dyn_cast<BranchInst>(lastInst)){
+//  if(!dyn_cast<BranchInst>(lastInst)){
     auto PC = getInstructionPC(dyn_cast<Instruction>(lastInst));
     if(PC == thisAddr)
-      return nullptr;
-    return registerJT(PC,JTReason::GlobalData);
-  }
+      return thisAddr+ConsumedSize;
+    return PC;
+//  }
+
   if(FAST){
-    return nullptr;
+    return thisAddr;
   }
 
-  I = ++beginInst;
-  for(; I!=endInst; I++){
-    if(I->getOpcode() == Instruction::Load){
-        auto load = dyn_cast<llvm::LoadInst>(I);
-        Value *V = load->getPointerOperand();
-	if(dyn_cast<Constant>(V)){
-            std::tie(islegal,registerOP) = islegalAddr(V);
-	    if(!islegal and registerOP==RSP){
-	      haveBB = 1;
-	      return nullptr;
-	    }
-            if(registerOP != 0 &&
-               isAccessMemInst(dyn_cast<llvm::Instruction>(I)))
-                accessNUM = accessNUM+10;
-	}         
-    }
-    if(I->getOpcode() == Instruction::Store){
-        auto store = dyn_cast<llvm::StoreInst>(I);
-	Value *constV = store->getValueOperand();
-	auto imm = dyn_cast<ConstantInt>(constV); 
-	if(imm){
-	    if(isAccessMemInst(dyn_cast<llvm::Instruction>(I))){
-	      if(isExecutableAddress(imm->getZExtValue()))
-	        accessNUM = accessNUM+10;
-	      else
-		accessNUM = accessNUM+1;
-	    }
-	}
-    }
-    if(I->getOpcode() == Instruction::Call){
-        auto callI = dyn_cast<CallInst>(&*I);
-        auto *Callee = callI->getCalledFunction();
-        if(Callee != nullptr && Callee->getName() == "newpc"){
-          if(accessNUM > 11){
-            auto PC = getLimitedValue(callI->getArgOperand(0));
-	    revng_assert(PC != thisAddr);
-	    return registerJT(PC,JTReason::GlobalData);
-	  }
-          else
-            accessNUM = 0;
-        }
-    }
-  }
-  if(accessNUM > 11){
-    BasicBlock::iterator brI = endInst;
-    brI--;
-    auto branch = dyn_cast<BranchInst>(brI);
-    if(branch){
-      return getSplitedBlock(branch);
-    }
-  }
 
-  revng_assert(accessNUM < 12);
-  I = beginInst;
-  std::vector<llvm::Instruction *> DataFlow1;
-  std::vector<llvm::Instruction *> &DataFlow = DataFlow1; 
-  NODETYPE nodetmp = nodepCFG; 
-  for(;I!=endInst;I++){
-    // case 1: load instruction
-    if(I->getOpcode() == Instruction::Load){
-        errs()<<*I<<"         <-Load \n";
-        auto linst = dyn_cast<llvm::LoadInst>(I);
-        Value *v = linst->getPointerOperand();
-        std::tie(islegal,registerOP) = islegalAddr(v);
-        if(!islegal and isAccessMemInst(dyn_cast<llvm::Instruction>(I))){
-          if(registerOP == RSP){
-	    haveBB = 1;
-	    IllegalStaticAddrs.push_back(thisAddr);
-	    return nullptr;
-	  }
-          getIllegalValueDFG(v,dyn_cast<llvm::Instruction>(I),
-			  thisBlock,DataFlow,CrashMode,userCodeFlag1);
-          errs()<<"Finished analysis illegal access Data Flow!\n";
-          break;
-        }
-    }
-  }
-  nodepCFG = nodetmp;
-
-  // If crash point is not found, choosing one of branches to execute.  
-  if(I==endInst){
-      BasicBlock::iterator brI = endInst;
-      brI--;
-      auto branch = dyn_cast<BranchInst>(brI);
-      if(branch){ 
-	if(!branch->isConditional())
-          return getSplitedBlock(branch);
-	else{
-          auto bb = dyn_cast<BasicBlock>(brI->getOperand(1));
-          auto br = dyn_cast<BranchInst>(--bb->end());
-          while(br){
-            bb = dyn_cast<BasicBlock>(br->getOperand(0));
-            br = dyn_cast<BranchInst>(--bb->end());
-          }
-	  auto PC = getDestBRPCWrite(bb);
-	  revng_assert(PC != 0);
-	  auto block =  registerJT(PC,JTReason::GlobalData);
-	  if(haveBB){
-            //If chosen branch have been executed, setting havveBB=0, 
-	    // to harvest this Block next.
-	    haveBB = 0; 
-	    return nullptr;
-	  }
-	  else
-	    return block;
-	} 
-
-      } 
-  }
-
-  if(I==endInst){////////////////////////////////////////////
-	  errs()<<format_hex(ptc.regs[R_14],0)<<" r14\n";
-	  errs()<<format_hex(ptc.regs[R_15],0)<<" r15\n";
-	  errs()<<*thisBlock<<"\n";}//////////////////////////
-  //revng_assert(I!=endInst);
-
-  std::vector<legalValue> legalSet1;
-  std::vector<legalValue> &legalSet = legalSet1;
-  analysisLegalValue(DataFlow,legalSet);
-  //Log information.
-  for(auto set : legalSet){
-    for(auto ii : set.I)
-      errs()<<*ii<<" -------------";
-    errs()<<"\n";
-    for(auto vvv : set.value) 
-      errs() <<*vvv<<" +++++++++++\n";
-    
-    errs()<<"\n";
-  }
-
-  if(!legalSet.empty()){
-    auto lastSet = legalSet.back();
-    auto v = lastSet.value.front();  
-    auto constv = dyn_cast<ConstantInt>(v);
-    if(constv){
-      auto global = constv->getZExtValue();
-      if(isDataSegmAddr(global))
-          *((uint64_t *) global) = ptc.regs[R_ESP];
-    }
-  }
-
-  if(I!=endInst){
-    auto lable = REGLABLE(registerOP);
-    if(lable == UndefineOP)
-      revng_abort("Unkown register OP!\n");
-    ptc.regs[lable] = ptc.regs[R_ESP];
-  }
-
-  llvm::BasicBlock *Block = nullptr;
-  auto PC = getInstructionPC(dyn_cast<Instruction>(I));
-  revng_assert(isExecutableAddress(PC));
-  if(PC == thisAddr){
-      for(; I!=endInst; I++){
-        if(I->getOpcode() == Instruction::Call){
-          auto callI = dyn_cast<CallInst>(&*I);
-          auto *Callee = callI->getCalledFunction();
-          if(Callee != nullptr && Callee->getName() == "newpc"){
-            auto nextPC = getLimitedValue(callI->getArgOperand(0));
-	    return registerJT(nextPC,JTReason::GlobalData);
-	  }
-        } 
-      }
-      BasicBlock::iterator brI = endInst;
-      brI--;
-      auto branch = dyn_cast<BranchInst>(brI);
-      if(branch){
-        return getSplitedBlock(branch);
-      }
-      revng_assert(I != endInst);
-      // This Crash instruction PC is the start address of this block.
-      //ToPurge.insert(thisBlock);
-      //Unexplored.push_back(BlockWithAddress(thisAddr, thisBlock));
-      //Block = thisBlock;
-  }
-  else
-      Block = registerJT(PC,JTReason::GlobalData);
-
-  return Block;
+//////////////////////////////////
+//  I = ++beginInst;
+//  for(; I!=endInst; I++){
+//    if(I->getOpcode() == Instruction::Load){
+//        auto load = dyn_cast<llvm::LoadInst>(I);
+//        Value *V = load->getPointerOperand();
+//	if(dyn_cast<Constant>(V)){
+//            std::tie(islegal,registerOP) = islegalAddr(V);
+//	    if(!islegal and registerOP==RSP){
+//	      haveBB = 1;
+//	      return nullptr;
+//	    }
+//            if(registerOP != 0 &&
+//               isAccessMemInst(dyn_cast<llvm::Instruction>(I)))
+//                accessNUM = accessNUM+10;
+//	}         
+//    }
+//    if(I->getOpcode() == Instruction::Store){
+//        auto store = dyn_cast<llvm::StoreInst>(I);
+//	Value *constV = store->getValueOperand();
+//	auto imm = dyn_cast<ConstantInt>(constV); 
+//	if(imm){
+//	    if(isAccessMemInst(dyn_cast<llvm::Instruction>(I))){
+//	      if(isExecutableAddress(imm->getZExtValue()))
+//	        accessNUM = accessNUM+10;
+//	      else
+//		accessNUM = accessNUM+1;
+//	    }
+//	}
+//    }
+//    if(I->getOpcode() == Instruction::Call){
+//        auto callI = dyn_cast<CallInst>(&*I);
+//        auto *Callee = callI->getCalledFunction();
+//        if(Callee != nullptr && Callee->getName() == "newpc"){
+//          if(accessNUM > 11){
+//            auto PC = getLimitedValue(callI->getArgOperand(0));
+//	    revng_assert(PC != thisAddr);
+//	    return registerJT(PC,JTReason::GlobalData);
+//	  }
+//          else
+//            accessNUM = 0;
+//        }
+//    }
+//  }
+//  if(accessNUM > 11){
+//    BasicBlock::iterator brI = endInst;
+//    brI--;
+//    auto branch = dyn_cast<BranchInst>(brI);
+//    if(branch){
+//      return getSplitedBlock(branch);
+//    }
+//  }
+//
+//  revng_assert(accessNUM < 12);
+//  I = beginInst;
+//  std::vector<llvm::Instruction *> DataFlow1;
+//  std::vector<llvm::Instruction *> &DataFlow = DataFlow1; 
+//  NODETYPE nodetmp = nodepCFG; 
+//  for(;I!=endInst;I++){
+//    // case 1: load instruction
+//    if(I->getOpcode() == Instruction::Load){
+//        errs()<<*I<<"         <-Load \n";
+//        auto linst = dyn_cast<llvm::LoadInst>(I);
+//        Value *v = linst->getPointerOperand();
+//        std::tie(islegal,registerOP) = islegalAddr(v);
+//        if(!islegal and isAccessMemInst(dyn_cast<llvm::Instruction>(I))){
+//          if(registerOP == RSP){
+//	    haveBB = 1;
+//	    IllegalStaticAddrs.push_back(thisAddr);
+//	    return nullptr;
+//	  }
+//          getIllegalValueDFG(v,dyn_cast<llvm::Instruction>(I),
+//			  thisBlock,DataFlow,CrashMode,userCodeFlag1);
+//          errs()<<"Finished analysis illegal access Data Flow!\n";
+//          break;
+//        }
+//    }
+//  }
+//  nodepCFG = nodetmp;
+//
+//  // If crash point is not found, choosing one of branches to execute.  
+//  if(I==endInst){
+//      BasicBlock::iterator brI = endInst;
+//      brI--;
+//      auto branch = dyn_cast<BranchInst>(brI);
+//      if(branch){ 
+//	if(!branch->isConditional())
+//          return getSplitedBlock(branch);
+//	else{
+//          auto bb = dyn_cast<BasicBlock>(brI->getOperand(1));
+//          auto br = dyn_cast<BranchInst>(--bb->end());
+//          while(br){
+//            bb = dyn_cast<BasicBlock>(br->getOperand(0));
+//            br = dyn_cast<BranchInst>(--bb->end());
+//          }
+//	  auto PC = getDestBRPCWrite(bb);
+//	  revng_assert(PC != 0);
+//	  auto block =  registerJT(PC,JTReason::GlobalData);
+//	  if(haveBB){
+//            //If chosen branch have been executed, setting havveBB=0, 
+//	    // to harvest this Block next.
+//	    haveBB = 0; 
+//	    return nullptr;
+//	  }
+//	  else
+//	    return block;
+//	} 
+//
+//      } 
+//  }
+//
+//  if(I==endInst){////////////////////////////////////////////
+//	  errs()<<format_hex(ptc.regs[R_14],0)<<" r14\n";
+//	  errs()<<format_hex(ptc.regs[R_15],0)<<" r15\n";
+//	  errs()<<*thisBlock<<"\n";}//////////////////////////
+//  //revng_assert(I!=endInst);
+//
+//  std::vector<legalValue> legalSet1;
+//  std::vector<legalValue> &legalSet = legalSet1;
+//  analysisLegalValue(DataFlow,legalSet);
+//  //Log information.
+//  for(auto set : legalSet){
+//    for(auto ii : set.I)
+//      errs()<<*ii<<" -------------";
+//    errs()<<"\n";
+//    for(auto vvv : set.value) 
+//      errs() <<*vvv<<" +++++++++++\n";
+//    
+//    errs()<<"\n";
+//  }
+//
+//  if(!legalSet.empty()){
+//    auto lastSet = legalSet.back();
+//    auto v = lastSet.value.front();  
+//    auto constv = dyn_cast<ConstantInt>(v);
+//    if(constv){
+//      auto global = constv->getZExtValue();
+//      if(isDataSegmAddr(global))
+//          *((uint64_t *) global) = ptc.regs[R_ESP];
+//    }
+//  }
+//
+//  if(I!=endInst){
+//    auto lable = REGLABLE(registerOP);
+//    if(lable == UndefineOP)
+//      revng_abort("Unkown register OP!\n");
+//    ptc.regs[lable] = ptc.regs[R_ESP];
+//  }
+//
+//  llvm::BasicBlock *Block = nullptr;
+//  auto PC = getInstructionPC(dyn_cast<Instruction>(I));
+//  revng_assert(isExecutableAddress(PC));
+//  if(PC == thisAddr){
+//      for(; I!=endInst; I++){
+//        if(I->getOpcode() == Instruction::Call){
+//          auto callI = dyn_cast<CallInst>(&*I);
+//          auto *Callee = callI->getCalledFunction();
+//          if(Callee != nullptr && Callee->getName() == "newpc"){
+//            auto nextPC = getLimitedValue(callI->getArgOperand(0));
+//	    return registerJT(nextPC,JTReason::GlobalData);
+//	  }
+//        } 
+//      }
+//      BasicBlock::iterator brI = endInst;
+//      brI--;
+//      auto branch = dyn_cast<BranchInst>(brI);
+//      if(branch){
+//        return getSplitedBlock(branch);
+//      }
+//      revng_assert(I != endInst);
+//      // This Crash instruction PC is the start address of this block.
+//      //ToPurge.insert(thisBlock);
+//      //Unexplored.push_back(BlockWithAddress(thisAddr, thisBlock));
+//      //Block = thisBlock;
+//  }
+//  else
+//      Block = registerJT(PC,JTReason::GlobalData);
+//
+ 
 }
 
 void JumpTargetManager::handleIndirectJmp(llvm::BasicBlock *thisBlock, 

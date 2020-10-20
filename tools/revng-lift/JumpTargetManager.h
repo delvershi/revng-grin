@@ -239,7 +239,7 @@ public:
   bool isIllegalStaticAddr(uint64_t pc);
 
   void handleIndirectCall(llvm::BasicBlock *thisBlock, uint64_t thisAddr, bool StaticFlag);
-  llvm::BasicBlock *handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock, uint64_t thisAddr);
+  uint64_t handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock, uint64_t thisAddr, size_t ConsumedSize);
   llvm::BasicBlock *getSplitedBlock(llvm::BranchInst *branch);
   uint32_t REGLABLE(uint32_t RegOP);
   void handleIllegalJumpAddress(llvm::BasicBlock *thisBlock, uint64_t thisAddr);
@@ -266,8 +266,16 @@ public:
   bool isDataSegmAddr(uint64_t PC);
   uint32_t StrToInt(const char *str);
 
+  bool isCodeSection(uint64_t PC);
+  std::pair<bool, uint32_t> isAccessCodeAddr(llvm::Value *v, uint64_t illaddr);
+  std::map<uint64_t, bool> IllAccessAddr;
+  std::map<uint64_t, size_t> EmbeddedData;  
+  void handleEmbeddedDataAddr(void);
+
+
   uint64_t DataSegmStartAddr;
   uint64_t DataSegmEndAddr;
+  uint64_t CodeSegmStartAddr;
   uint64_t ro_StartAddr;
   uint64_t ro_EndAddr;
 
@@ -285,6 +293,8 @@ public:
 		        llvm::BasicBlock *src,
 			uint64_t SAddr);
   void searchpartCFG(std::map<llvm::BasicBlock *, llvm::BasicBlock *> &DONE);
+  
+  void SetBlockSize(uint64_t start, uint64_t end);
 
 private:
   void foldStack(legalValue *&relatedInstPtr);
@@ -321,7 +331,7 @@ private:
     std::vector<llvm::Instruction *> temp;
     temp.push_back(I);
     return temp;
-  }
+  }  
 
 public:
   using BlockWithAddress = std::pair<uint64_t, llvm::BasicBlock *>;
@@ -371,8 +381,13 @@ public:
 
       return SS.str();
     }
-
+    void setSize(size_t size){
+      blocksize = size;
+    }
+    size_t getSize(void){return blocksize;}
+    
   private:
+    size_t blocksize;
     llvm::BasicBlock *BB;
     uint32_t Reasons;
   };
