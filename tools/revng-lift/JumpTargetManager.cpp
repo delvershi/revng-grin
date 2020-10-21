@@ -61,6 +61,11 @@ cl::opt<bool> FAST("fast",
 cl::opt<bool> SUPERFAST("super-fast",
                        cl::desc("fast rewriting"),
                        cl::cat(MainCategory));
+cl::opt<bool> INFO("info",
+                       cl::desc("print statistics information"),
+                       cl::cat(MainCategory));
+
+
 
 
 
@@ -2216,6 +2221,13 @@ void JumpTargetManager::StatisticsLog(void){
   outs()<<"\n";
   outs()<<"Call Branches:"<<"                 "<<CallBranches.size()<<"\n";
   outs()<<"Cond. Branches:"<<"                "<<CondBranches.size()<<"\n";
+  if(INFO){
+    auto Path = "ret.log";
+    std::ofstream InfoRet(Path);
+    for(auto &p : RetBlocks){
+      InfoRet << std::hex << p.first << "\n";
+    }
+  }
 }
 
 bool JumpTargetManager::handleStaticAddr(void){
@@ -2326,8 +2338,8 @@ void JumpTargetManager::handleIndirectCall(llvm::BasicBlock *thisBlock,
   }
   IndirectCallBlocks[thisAddr] = 1;
 
-  if(StaticFlag)
-    return;
+//  if(StaticFlag)
+//    return;
   
 
 //  uint32_t userCodeFlag = 0;
@@ -2586,7 +2598,7 @@ uint64_t JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *thisBloc
 //  if(!dyn_cast<BranchInst>(lastInst)){
     auto PC = getInstructionPC(dyn_cast<Instruction>(lastInst));
     if(PC == thisAddr)
-      return thisAddr+ConsumedSize;
+      return thisAddr;
     return PC;
 //  }
 
@@ -2783,7 +2795,7 @@ void JumpTargetManager::handleIndirectJmp(llvm::BasicBlock *thisBlock,
   uint32_t &userCodeFlag1 = userCodeFlag;
   IndirectJmpBlocks[thisAddr] = 1;
 
-  if(SUPERFAST and StaticFlag)
+  if(SUPERFAST)
     return;
 
   // Contains indirect instruction's Block, it must have a store instruction.
