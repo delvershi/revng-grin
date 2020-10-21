@@ -2852,6 +2852,7 @@ void JumpTargetManager::handleIndirectJmp(llvm::BasicBlock *thisBlock,
             isJmpTable = true;
 	    //return;
 	    revng_abort("Not implement!\n");
+            //TODO: To read legalSet[i].value, and to match base and offset(shl) 
 	  }
         }       
       }
@@ -3353,8 +3354,8 @@ llvm::Constant *JumpTargetManager::foldSet(std::vector<legalValue> &legalSet, ui
         set.value[0] = dyn_cast<Value>(first); 
       }
     }
-    if(set.I.size()>1 and op!=Instruction::Add)
-      return nullptr;
+    //if(set.I.size()>1 and op!=Instruction::Add)
+    //  return nullptr;
     
     switch(op){
         case Instruction::Load:
