@@ -982,11 +982,13 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     JumpTargets.SetBlockSize(tmpVA, NextPC);   
 
     if(*ptc.isRet)
-      JumpTargets.harvestRetBlocks(*ptc.isRet,NextPC);
-    if(*ptc.isDirectJmp or *ptc.isIndirectJmp or *ptc.isCall)
-      JumpTargets.harvestNextAddrofBr(NextPC);
+      JumpTargets.harvestRetBlocks(*ptc.isRet);
+    if(*ptc.isDirectJmp or *ptc.isIndirectJmp or *ptc.isCall){
+      auto nextAddr = *ptc.isDirectJmp | *ptc.isIndirectJmp | *ptc.isCall; 
+      JumpTargets.harvestNextAddrofBr(nextAddr);
+    }
 
-    if(EntryFlag){
+    if(EntryFlag and BlockPCFlag){
       JumpTargets.handleEntryBlock(BlockBRs, tmpVA);
       EntryFlag = false;
     }
@@ -1125,8 +1127,8 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       /*BlockPCFlag:
        *    true/1 means: need to record first three addrs of Block 
        *    false means:  don't need the first three addrs of a Block 
-       *    2 means:      callnext addr has been explord 
-       *                  but need to record the first three addrs. */
+       *    2 means:      callnext addr has been explord need 
+       *                  to record the first three addrs. */
       BlockPCFlag = JumpTargets.handleStaticAddr();
       JumpTargets.handleEmbeddedDataAddr();
       //StaticAddrFlag: means that entering check point mode 

@@ -468,6 +468,10 @@ JumpTargetManager::JumpTargetManager(Function *TheFunction,
   // getOption<uint32_t>(Options, "max-recurse-depth")->setInitialValue(10);
   haveBB = 0;
   range = 0;
+ 
+  auto Path = "illegalEntry.log";
+  std::ofstream EntryAddrInfoStream(Path);
+  EntryAddrInfoStream << "illegal entry addresses:\n";
 }
 
 static bool isBetterThan(const Label *NewCandidate, const Label *OldCandidate) {
@@ -2013,6 +2017,7 @@ JumpTargetManager:: getLastAssignment(llvm::Value *v,
 	  case RBP:
 	  case R8:
 	  case R9:
+          case 0:
           //case zmm0-7:
 	  {
 	    return std::make_pair(ConstantValueAssign,nullptr);
@@ -2188,12 +2193,12 @@ void JumpTargetManager::handleEntryBlock(llvm::BasicBlock *thisBlock, uint64_t t
   BasicBlock::iterator beginInst = thisBlock->begin();
   BasicBlock::iterator endInst = thisBlock->end();
   
-//  BasicBlock::iterator lastInst = endInst;
-//  auto br = dyn_cast<BranchInst>(--lastInst);
-//  if(br){
-//    if(!br->isConditional())
-//        return;
-//  }
+  BasicBlock::iterator lastInst = endInst;
+  auto br = dyn_cast<BranchInst>(--lastInst);
+  if(br){
+    if(!br->isConditional())
+        return;
+  }
 
   auto I = beginInst; 
   for(;I!=endInst;I++){
@@ -2275,13 +2280,13 @@ void JumpTargetManager::harvestNextAddrofBr(uint64_t blockNext){
   }
 }
 
-void JumpTargetManager::harvestRetBlocks(uint64_t thisAddr, uint64_t blockNext){
+void JumpTargetManager::harvestRetBlocks(uint64_t blockNext){
   if(!haveTranslatedPC(blockNext, 0))
     StaticAddrs[blockNext] = true;
   if(Statistics){
-    IndirectBlocksMap::iterator it = RetBlocks.find(thisAddr);
+    IndirectBlocksMap::iterator it = RetBlocks.find(blockNext);
     if(it == RetBlocks.end())
-        RetBlocks[thisAddr] = 1;
+        RetBlocks[blockNext] = 1;
   }
 }
 
