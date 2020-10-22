@@ -800,6 +800,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
   uint64_t srcAddr = 0;
   llvm::BasicBlock *crashBB = nullptr;
   bool StaticAddrFlag = false;
+  bool EntryFlag = false;
   std::vector<uint64_t> BlockPCs1;
   std::vector<uint64_t> &BlockPCs = BlockPCs1;
   bool BlockPCFlag = false;
@@ -984,6 +985,11 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       JumpTargets.harvestRetBlocks(*ptc.isRet,NextPC);
     if(*ptc.isDirectJmp or *ptc.isIndirectJmp or *ptc.isCall)
       JumpTargets.harvestNextAddrofBr(NextPC);
+
+    if(EntryFlag){
+      JumpTargets.handleEntryBlock(BlockBRs, tmpVA);
+      EntryFlag = false;
+    }
       
     }////?end if(!JumpTargets.haveBB)
 
@@ -1116,9 +1122,17 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     }////?end if(traverseFLAG)
     
     if(Entry==nullptr){
+      /*BlockPCFlag:
+       *    true/1 means: need to record first three addrs of Block 
+       *    false means:  don't need the first three addrs of a Block 
+       *    2 means:      callnext addr has been explord 
+       *                  but need to record the first three addrs. */
       BlockPCFlag = JumpTargets.handleStaticAddr();
       JumpTargets.handleEmbeddedDataAddr();
+      //StaticAddrFlag: means that entering check point mode 
       StaticAddrFlag = true;
+      //To judge whether the correctly identified entry block
+      EntryFlag = true;  
       std::tie(VirtualAddress, Entry) = JumpTargets.peek();
       std::cerr<<std::hex<<VirtualAddress<<" \n";
     }

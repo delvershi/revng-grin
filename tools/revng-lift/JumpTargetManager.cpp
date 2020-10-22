@@ -2002,6 +2002,23 @@ JumpTargetManager:: getLastAssignment(llvm::Value *v,
 	  }break;
 	}
     }break;
+    case CheckMode:{
+        auto op = StrToInt(v->getName().data());
+        switch(op){ 
+	  case RCX:
+	  case RDX:
+	  case RSI:
+	  case RDI:
+          case RSP:
+	  case RBP:
+	  case R8:
+	  case R9:
+          //case zmm0-7:
+	  {
+	    return std::make_pair(ConstantValueAssign,nullptr);
+	  }break;
+	}
+    }break;	 
   } 
 
 
@@ -2165,6 +2182,67 @@ void JumpTargetManager::harvestStaticAddr(llvm::BasicBlock *thisBlock){
       }
     }
   }
+}
+
+void JumpTargetManager::handleEntryBlock(llvm::BasicBlock *thisBlock, uint64_t thisAddr){
+  BasicBlock::iterator beginInst = thisBlock->begin();
+  BasicBlock::iterator endInst = thisBlock->end();
+  
+//  BasicBlock::iterator lastInst = endInst;
+//  auto br = dyn_cast<BranchInst>(--lastInst);
+//  if(br){
+//    if(!br->isConditional())
+//        return;
+//  }
+
+  auto I = beginInst; 
+  for(;I!=endInst;I++){
+    if(I->getOpcode() == Instruction::Load){
+        auto linst = dyn_cast<llvm::LoadInst>(I);
+        Value *v = linst->getPointerOperand();
+        if(dyn_cast<Constant>(v)){
+          llvm::Instruction *current = dyn_cast<llvm::Instruction>(I);
+          if(isAccessMemInst(current)){
+            if(!haveDef(current, v)){
+	      auto Path = "illegalEntry.log";
+              std::ofstream EntryAddr;  
+	      EntryAddr.open(Path,std::ofstream::out | std::ofstream::app);
+              EntryAddr << std::hex << thisAddr << "\n";
+	      break;
+	    } 
+          }
+        }
+    }
+  }
+  
+}
+
+bool JumpTargetManager::haveDef(llvm::Instruction *I, llvm::Value *v){
+   auto v1 = v;
+   auto operateUser = dyn_cast<User>(I);
+   auto bb = I->getParent();
+   uint32_t NUMOFCONST = 0;
+   LastAssignmentResult result;
+   llvm::Instruction *lastInst = nullptr;
+
+   std::tie(result,lastInst) = getLastAssignment(v1,operateUser,bb,CheckMode,NUMOFCONST);
+   switch(result)
+   {
+     case CurrentBlockValueDef:
+     case CurrentBlockLastAssign:
+       return true;
+     break;
+     case NextBlockOperating:
+       return false;
+     break;
+     case ConstantValueAssign:
+       return true;  
+     break;
+     case UnknowResult:
+         revng_abort("Unknow of result!");
+     break;
+   }
+   return false;
 }
 
 bool JumpTargetManager::isIllegalStaticAddr(uint64_t pc){

@@ -207,6 +207,7 @@ public:
                        * 'rsp' N times*/
     RangeMode, /* As long as encountering assignment of register and constant, 
                 * stop backtracking*/
+    CheckMode, /* If v is 'rsp', 'rbp' or calling convention, skipping them*/
     TestMode
   }; 
    
@@ -271,7 +272,8 @@ public:
   std::map<uint64_t, bool> IllAccessAddr;
   std::map<uint64_t, size_t> EmbeddedData;  
   void handleEmbeddedDataAddr(void);
-
+  void handleEntryBlock(llvm::BasicBlock *thisBlock, uint64_t thisAddr);
+  bool haveDef(llvm::Instruction *I, llvm::Value *v);
 
   uint64_t DataSegmStartAddr;
   uint64_t DataSegmEndAddr;
