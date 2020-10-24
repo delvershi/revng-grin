@@ -2407,11 +2407,11 @@ void JumpTargetManager::CallNextToStaticAddr(uint32_t PC){
 
 void JumpTargetManager::handleIndirectCall(llvm::BasicBlock *thisBlock, 
 		uint64_t thisAddr, bool StaticFlag){
-  IndirectBlocksMap::iterator it = IndirectCallBlocks.find(thisAddr);
+  IndirectBlocksMap::iterator it = IndirectCallBlocks.find(*ptc.isIndirect);
   if(it != IndirectCallBlocks.end()){
     return;
   }
-  IndirectCallBlocks[thisAddr] = 1;
+  IndirectCallBlocks[*ptc.isIndirect] = 1;
 
 //  if(StaticFlag)
 //    return;
@@ -2868,7 +2868,7 @@ void JumpTargetManager::handleIndirectJmp(llvm::BasicBlock *thisBlock,
 						 bool StaticFlag){
   uint32_t userCodeFlag = 0;
   uint32_t &userCodeFlag1 = userCodeFlag;
-  IndirectJmpBlocks[thisAddr] = 1;
+  IndirectJmpBlocks[*ptc.isIndirectJmp] = 1;
 
   if(SUPERFAST)
     return;
