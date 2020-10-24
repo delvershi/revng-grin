@@ -217,7 +217,7 @@ CodeGenerator::CodeGenerator(BinaryFile &Binary,
     
   auto Path = OutputPath + ".illegalEntry.log";
   std::ofstream EntryAddrInfoStream(Path);
-  LinkingInfoStream << "illegal entry addresses:\n";
+  EntryAddrInfoStream << "illegal entry addresses:\n";
 
   auto *Uint8Ty = Type::getInt8Ty(Context);
   auto *ElfHeaderHelper = new GlobalVariable(*TheModule,
@@ -986,7 +986,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     JumpTargets.SetBlockSize(tmpVA, NextPC);   
 
     if(*ptc.isRet)
-      JumpTargets.harvestRetBlocks(*ptc.isRet);
+      JumpTargets.harvestRetBlocks(*ptc.isRet, *ptc.CFIAddr);
     if(*ptc.isDirectJmp or *ptc.isIndirectJmp or *ptc.isCall){
       auto nextAddr = *ptc.isDirectJmp | *ptc.isIndirectJmp | *ptc.isCall; 
       JumpTargets.harvestNextAddrofBr(nextAddr);
@@ -1134,7 +1134,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
        *    2 means:      callnext addr has been explord need 
        *                  to record the first three addrs. */
       BlockPCFlag = JumpTargets.handleStaticAddr();
-      JumpTargets.handleEmbeddedDataAddr();
+      JumpTargets.handleEmbeddedDataAddr(getEmbeddedData());
       //StaticAddrFlag: means that entering check point mode 
       StaticAddrFlag = true;
       //Means that entering judgement mode whether the correctly identified entry block
@@ -1307,10 +1307,9 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
 }
 
 void CodeGenerator::embeddedData(){
-  std::map<uint64_t, size_t> embeddedData;
 
-  embeddedData[Binary.rodataStartAddr] = Binary.ehframeEndAddr - Binary.rodataStartAddr;
-  embeddedData[CodeStartAddress] = Binary.entryPoint() - CodeStartAddress;
+  EmbeddedData[Binary.rodataStartAddr] = Binary.ehframeEndAddr - Binary.rodataStartAddr;
+  EmbeddedData[CodeStartAddress] = Binary.entryPoint() - CodeStartAddress;
 
   //Prepare the linking info CSV
   if (LinkingInfoPath.size() == 0)
@@ -1320,7 +1319,7 @@ void CodeGenerator::embeddedData(){
 
   auto *Uint8Ty = Type::getInt8Ty(Context);
   
-  for(const auto &embedded : embeddedData){
+  for(const auto &embedded : EmbeddedData){
     std::stringstream NameStream;
     NameStream <<"o_"<<"r_"<<std::hex<<embedded.first;
     // Get data and size

@@ -67,6 +67,11 @@ public:
 
   uint64_t CodeStartAddress;
   void embeddedData();
+  std::map<uint64_t, size_t> EmbeddedData;
+  std::map<uint64_t, size_t> &getEmbeddedData(void){
+  	std::map<uint64_t, size_t> &EmbeddedData1 = EmbeddedData;
+	return EmbeddedData1;
+  }
 
   /// Serialize the generated LLVM IR to the specified output path.
   void serialize();

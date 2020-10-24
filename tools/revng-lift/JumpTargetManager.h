@@ -220,7 +220,7 @@ public:
   IndirectBlocksMap RetBlocks;
   IndirectBlocksMap CallBranches;
   IndirectBlocksMap CondBranches;
-  void harvestRetBlocks(uint64_t blockNext);
+  void harvestRetBlocks(uint64_t blockNext, uint64_t ret);
   void harvestNextAddrofBr(uint64_t blockNext);
   void StatisticsLog(std::string path);
 
@@ -270,8 +270,7 @@ public:
   bool isCodeSection(uint64_t PC);
   std::pair<bool, uint32_t> isAccessCodeAddr(llvm::Value *v, uint64_t illaddr);
   std::map<uint64_t, bool> IllAccessAddr;
-  std::map<uint64_t, size_t> EmbeddedData;  
-  void handleEmbeddedDataAddr(void);
+  void handleEmbeddedDataAddr(std::map<uint64_t, size_t> &EmbeddedData);
   void handleEntryBlock(llvm::BasicBlock *thisBlock, uint64_t thisAddr, std::string path);
   bool haveDef(llvm::Instruction *I, llvm::Value *v);
 

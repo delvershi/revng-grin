@@ -1160,20 +1160,16 @@ void JumpTargetManager::purgeTranslation(BasicBlock *Start) {
   // Remove Start, since we want to keep it (even if empty)
   Visited.erase(Start);
 
-  errs()<<Start->getName()<<" ---------------------------\n";
-
   for (BasicBlock *BB : Visited) {
     // We might have some predecessorless basic blocks jumping to us, purge them
     // TODO: why this?
     while (pred_begin(BB) != pred_end(BB)) {
       BasicBlock *Predecessor = *pred_begin(BB);
       revng_assert(pred_empty(Predecessor));
-      errs()<<Predecessor->getName()<<" ---------------------------\n";
       Predecessor->eraseFromParent();
     }
 
     revng_assert(BB->use_empty());
-    errs()<<BB->getName()<<" ---------------------------\n";
     BB->eraseFromParent();
   }
 }
@@ -2276,13 +2272,13 @@ void JumpTargetManager::harvestNextAddrofBr(uint64_t blockNext){
   }
 }
 
-void JumpTargetManager::harvestRetBlocks(uint64_t blockNext){
+void JumpTargetManager::harvestRetBlocks(uint64_t blockNext, uint64_t ret){
   if(!haveTranslatedPC(blockNext, 0))
     StaticAddrs[blockNext] = true;
   if(Statistics){
-    IndirectBlocksMap::iterator it = RetBlocks.find(blockNext);
+    IndirectBlocksMap::iterator it = RetBlocks.find(ret);
     if(it == RetBlocks.end())
-        RetBlocks[blockNext] = 1;
+        RetBlocks[ret] = 1;
   }
 }
 
@@ -2358,7 +2354,7 @@ void JumpTargetManager::StaticToUnexplore(void){
   StaticAddrs.clear();
 }
 
-void JumpTargetManager::handleEmbeddedDataAddr(void){
+void JumpTargetManager::handleEmbeddedDataAddr(std::map<uint64_t,size_t> &EmbeddedData){
   for(auto& data : IllAccessAddr){
       BlockMap::iterator TargetIt = JumpTargets.find(data.first);
       if(TargetIt == JumpTargets.end()){
@@ -3174,7 +3170,8 @@ uint32_t JumpTargetManager::getLegalValueRange(llvm::BasicBlock *thisBlock){
       //return n;
     }
   }
-  revng_abort("TODO more implement!\n");
+  return 0;
+  //revng_abort("TODO more implement!\n");
   //firstConst ==  false;
   //foldSet(legalSet);
   //return n;
@@ -3790,13 +3787,15 @@ void JumpTargetManager::harvestbranchBasicBlock(uint64_t nextAddr,
 	}
 	if(!isRecord){
           /* Recording current CPU state */
-          if(!isDataSegmAddr(ptc.regs[R_ESP]))
+          if(!isDataSegmAddr(ptc.regs[R_ESP]) and isDataSegmAddr(ptc.regs[R_EBP]))
               ptc.regs[R_ESP] = ptc.regs[R_EBP];
+	  if(isDataSegmAddr(ptc.regs[R_ESP]) and !isDataSegmAddr(ptc.regs[R_EBP]))
+	      ptc.regs[R_EBP] = ptc.regs[R_ESP] + 256;
+	  ptc.regs[R_ESP] = *ptc.ElfStartStack - 512;
+	  ptc.regs[R_EBP] = ptc.regs[R_ESP] + 256;
           auto success = ptc.storeCPUState();
-	  if(!success){
-	    IllegalStaticAddrs.push_back(thisAddr);
-	    return;
-	  }
+	  if(!success)
+	    revng_abort("Store memory state failed!\n");
           /* Recording not execute branch destination relationship 
 	   * with current BasicBlock and address */ 
           BranchTargets.push_back(std::make_tuple(
