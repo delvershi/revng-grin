@@ -468,10 +468,6 @@ JumpTargetManager::JumpTargetManager(Function *TheFunction,
   // getOption<uint32_t>(Options, "max-recurse-depth")->setInitialValue(10);
   haveBB = 0;
   range = 0;
- 
-  auto Path = "illegalEntry.log";
-  std::ofstream EntryAddrInfoStream(Path);
-  EntryAddrInfoStream << "illegal entry addresses:\n";
 }
 
 static bool isBetterThan(const Label *NewCandidate, const Label *OldCandidate) {
@@ -2189,7 +2185,7 @@ void JumpTargetManager::harvestStaticAddr(llvm::BasicBlock *thisBlock){
   }
 }
 
-void JumpTargetManager::handleEntryBlock(llvm::BasicBlock *thisBlock, uint64_t thisAddr){
+void JumpTargetManager::handleEntryBlock(llvm::BasicBlock *thisBlock, uint64_t thisAddr, std::string path){
   BasicBlock::iterator beginInst = thisBlock->begin();
   BasicBlock::iterator endInst = thisBlock->end();
   
@@ -2209,9 +2205,9 @@ void JumpTargetManager::handleEntryBlock(llvm::BasicBlock *thisBlock, uint64_t t
           llvm::Instruction *current = dyn_cast<llvm::Instruction>(I);
           if(isAccessMemInst(current)){
             if(!haveDef(current, v)){
-	      auto Path = "illegalEntry.log";
+	      std::string illPath = path + ".illegalEntry.log";
               std::ofstream EntryAddr;  
-	      EntryAddr.open(Path,std::ofstream::out | std::ofstream::app);
+	      EntryAddr.open(illPath,std::ofstream::out | std::ofstream::app);
               EntryAddr << std::hex << thisAddr << "\n";
 	      break;
 	    } 
@@ -2290,7 +2286,7 @@ void JumpTargetManager::harvestRetBlocks(uint64_t blockNext){
   }
 }
 
-void JumpTargetManager::StatisticsLog(void){
+void JumpTargetManager::StatisticsLog(std::string path){
   if(!Statistics)
       return;
   outs()<<"---------------------------------------\n";
@@ -2305,10 +2301,10 @@ void JumpTargetManager::StatisticsLog(void){
   outs()<<"Call Branches:"<<"                 "<<CallBranches.size()<<"\n";
   outs()<<"Cond. Branches:"<<"                "<<CondBranches.size()<<"\n";
   if(INFO){
-    auto Path = "ret.log";
-    std::ofstream InfoRet(Path);
+    auto retpath = path + ".ret.log";
+    std::ofstream InfoRet(retpath);
     for(auto &p : RetBlocks){
-      InfoRet << std::hex << p.first-1 << "\n";
+      InfoRet << std::hex << p.first << "\n";
     }
   }
 }
@@ -2672,7 +2668,7 @@ uint64_t JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *thisBloc
   auto illaddr = *ptc.illegalAccessAddr;
   if(illaddr>=Binary.entryPoint() and illaddr<ro_StartAddr){
       IllAccessAddr[illaddr] = 1;
-      errs()<<"\n"<<*ptc.illegalAccessAddr<<" 8888888888888888888888\n";
+      errs()<<"\n"<<*ptc.illegalAccessAddr<<" \n";
   }
 
 

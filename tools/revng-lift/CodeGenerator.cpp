@@ -214,6 +214,10 @@ CodeGenerator::CodeGenerator(BinaryFile &Binary,
     LinkingInfoPath = OutputPath + ".li.csv";
   std::ofstream LinkingInfoStream(LinkingInfoPath);
   LinkingInfoStream << "name,start,end\n";
+    
+  auto Path = OutputPath + ".illegalEntry.log";
+  std::ofstream EntryAddrInfoStream(Path);
+  LinkingInfoStream << "illegal entry addresses:\n";
 
   auto *Uint8Ty = Type::getInt8Ty(Context);
   auto *ElfHeaderHelper = new GlobalVariable(*TheModule,
@@ -989,7 +993,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     }
 
     if(EntryFlag and BlockPCFlag){
-      JumpTargets.handleEntryBlock(BlockBRs, tmpVA);
+      JumpTargets.handleEntryBlock(BlockBRs, tmpVA, getPath());
       EntryFlag = false;
     }
       
@@ -1133,7 +1137,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       JumpTargets.handleEmbeddedDataAddr();
       //StaticAddrFlag: means that entering check point mode 
       StaticAddrFlag = true;
-      //To judge whether the correctly identified entry block
+      //Means that entering judgement mode whether the correctly identified entry block
       EntryFlag = true;  
       std::tie(VirtualAddress, Entry) = JumpTargets.peek();
       std::cerr<<std::hex<<VirtualAddress<<" \n";
@@ -1144,7 +1148,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
   embeddedData();
 
   outs()<<"\nRewrite Successful\n";
-  JumpTargets.StatisticsLog();
+  JumpTargets.StatisticsLog(getPath());
 
   importHelperFunctionDeclaration("cpu_loop");
 

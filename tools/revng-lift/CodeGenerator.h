@@ -70,6 +70,7 @@ public:
 
   /// Serialize the generated LLVM IR to the specified output path.
   void serialize();
+  std::string getPath(){return OutputPath;}
 
 private:
   /// \brief Parse the ELF headers.

@@ -222,7 +222,7 @@ public:
   IndirectBlocksMap CondBranches;
   void harvestRetBlocks(uint64_t blockNext);
   void harvestNextAddrofBr(uint64_t blockNext);
-  void StatisticsLog(void);
+  void StatisticsLog(std::string path);
 
 
   llvm::BasicBlock * obtainJTBB(uint64_t PC,JTReason::Values Reason);
@@ -272,7 +272,7 @@ public:
   std::map<uint64_t, bool> IllAccessAddr;
   std::map<uint64_t, size_t> EmbeddedData;  
   void handleEmbeddedDataAddr(void);
-  void handleEntryBlock(llvm::BasicBlock *thisBlock, uint64_t thisAddr);
+  void handleEntryBlock(llvm::BasicBlock *thisBlock, uint64_t thisAddr, std::string path);
   bool haveDef(llvm::Instruction *I, llvm::Value *v);
 
   uint64_t DataSegmStartAddr;
