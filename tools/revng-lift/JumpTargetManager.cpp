@@ -3341,7 +3341,7 @@ void JumpTargetManager::getIllegalValueDFG(llvm::Value *v,
 NextValue:
     errs()<<"Explore next Value of Value of DFG!\n";
     if(TrackType==JumpTableMode)
-      NUMOFCONST = 5;
+      NUMOFCONST = 1;
     if(TrackType==InterprocessMode){
       NUMOFCONST = 1;
       NextValueNums--;
