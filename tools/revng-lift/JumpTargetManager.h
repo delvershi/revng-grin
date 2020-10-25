@@ -495,8 +495,8 @@ public:
 
   /// \brief Return true if \p PC is in an executable segment
   bool isExecutableAddress(uint64_t PC) const {
-    for (std::pair<uint64_t, uint64_t> Range : ExecutableRanges)
-      if (Range.first <= PC && PC < Range.second)
+//    for (std::pair<uint64_t, uint64_t> Range : ExecutableRanges)
+      if (CodeSegmStartAddr <= PC && PC < ro_StartAddr)
         return true;
     return false;
   }
