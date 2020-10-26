@@ -1041,7 +1041,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       *ptc.exception_syscall = -1;
       crashBB = nullptr;
     }
-    if(StaticAddrFlag and (*ptc.isRet or *ptc.isIndirect))
+    if(StaticAddrFlag and (*ptc.isRet or *ptc.isIndirect or *ptc.isIndirectJmp))
       DynamicVirtualAddress = 0;
     if(!JumpTargets.haveBB and BlockPCFlag){
       JumpTargets.harvestBlockPCs(BlockPCs);

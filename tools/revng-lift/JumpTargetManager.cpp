@@ -2371,12 +2371,13 @@ void JumpTargetManager::handleEmbeddedDataAddr(std::map<uint64_t,size_t> &Embedd
           }
           if((data.first - lower->first) >= lower->second.getSize()){
             size_t length = upper->first - lower->first - lower->second.getSize();
-            EmbeddedData[data.first] = length;
-            errs()<<format_hex(data.first,0)<<"   length: "<<length<<" 55555555555\n";
+            EmbeddedData[lower->first+lower->second.getSize()] = length;
+            errs()<<format_hex(data.first,0)<<"   :embedded addr\n";
+            errs()<<format_hex(data.first,0)<<"   length: "<<length<<"\n";
           }        
         }
-        else
-          revng_abort("Special example!\n");
+        //else
+          //revng_abort("Special example!\n");
       }
   }
   IllAccessAddr.clear();
@@ -2664,7 +2665,6 @@ uint64_t JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *thisBloc
   auto illaddr = *ptc.illegalAccessAddr;
   if(illaddr>=Binary.entryPoint() and illaddr<ro_StartAddr){
       IllAccessAddr[illaddr] = 1;
-      errs()<<"\n"<<*ptc.illegalAccessAddr<<" \n";
   }
 
 
