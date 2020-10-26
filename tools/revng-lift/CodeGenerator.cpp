@@ -1307,6 +1307,26 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
 }
 
 void CodeGenerator::embeddedData(){
+  auto iter = EmbeddedData.begin();
+  std::pair<uint64_t, size_t> pre(iter->first,iter->second);
+  iter++;
+  while(iter != EmbeddedData.end()){      
+    if((pre.first+pre.second) > iter->first){
+        if(((pre.first+pre.second) - iter->first) < iter->second){
+          auto it = iter--;
+          it->second = iter->first + iter->second - pre.first;
+          pre.second = it->second;
+          EmbeddedData.erase(iter++);
+        }else{ 
+          EmbeddedData.erase(iter++);
+        }
+    }else{
+      pre = std::make_pair(iter->first, iter->second);
+      ++iter;
+    }
+    
+  }
+  
 
   EmbeddedData[Binary.rodataStartAddr] = Binary.ehframeEndAddr - Binary.rodataStartAddr;
   EmbeddedData[CodeStartAddress] = Binary.entryPoint() - CodeStartAddress;

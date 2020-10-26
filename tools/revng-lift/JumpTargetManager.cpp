@@ -2355,7 +2355,6 @@ void JumpTargetManager::StaticToUnexplore(void){
 }
 
 void JumpTargetManager::handleEmbeddedDataAddr(std::map<uint64_t,size_t> &EmbeddedData){
-  std::pair<uint64_t, size_t> pre(0,0);
   for(auto& data : IllAccessAddr){
       BlockMap::iterator TargetIt = JumpTargets.find(data.first);
       if(TargetIt == JumpTargets.end()){
@@ -2376,21 +2375,7 @@ void JumpTargetManager::handleEmbeddedDataAddr(std::map<uint64_t,size_t> &Embedd
              (upper->first - data.first) < TARGET_PAGE_SIZE ){
             size_t length = upper->first - lower->first - lower->second.getSize();
             uint64_t startaddr = lower->first + lower->second.getSize();  
-
-            if(pre.first!=0){
-              if((pre.first+pre.second) > startaddr){
-                if(((pre.first+pre.second) - startaddr) < length){
-                  EmbeddedData[pre.first] = startaddr + length - pre.first;
-                  pre.second = startaddr + length - pre.first;
-                }
-	      }
-              EmbeddedData[startaddr] = length;
-              pre = std::make_pair(startaddr, length);
-            }else{
-              EmbeddedData[startaddr] = length;
-              pre = std::make_pair(startaddr, length);
-            }
-
+            EmbeddedData[startaddr] = length;
             errs()<<format_hex(data.first,0)<<"   :embedded addr\n";
             errs()<<format_hex(data.first,0)<<"   length: "<<length<<"\n";
           }        
