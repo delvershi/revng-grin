@@ -2384,6 +2384,8 @@ void JumpTargetManager::handleEmbeddedDataAddr(std::map<uint64_t,size_t> &Embedd
                   pre.second = startaddr + length - pre.first;
                 }
 	      }
+              EmbeddedData[startaddr] = length;
+              pre = std::make_pair(startaddr, length);
             }else{
               EmbeddedData[startaddr] = length;
               pre = std::make_pair(startaddr, length);
