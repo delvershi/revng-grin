@@ -2369,7 +2369,10 @@ void JumpTargetManager::handleEmbeddedDataAddr(std::map<uint64_t,size_t> &Embedd
               break; 
             }
           }
-          if((data.first - lower->first) >= lower->second.getSize()){
+          uint32_t TARGET_PAGE_SIZE = 1<<12;
+          if((data.first - lower->first) >= lower->second.getSize() and 
+	     (data.first-lower->first - lower->second.getSize()) < TARGET_PAGE_SIZE and
+             (upper->first - data.first) < TARGET_PAGE_SIZE ){
             size_t length = upper->first - lower->first - lower->second.getSize();
             EmbeddedData[lower->first+lower->second.getSize()] = length;
             errs()<<format_hex(data.first,0)<<"   :embedded addr\n";
