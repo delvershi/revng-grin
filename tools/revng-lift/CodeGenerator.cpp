@@ -1307,6 +1307,9 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
 }
 
 void CodeGenerator::embeddedData(){
+  EmbeddedData[Binary.rodataStartAddr] = Binary.ehframeEndAddr - Binary.rodataStartAddr;
+  EmbeddedData[CodeStartAddress] = Binary.entryPoint() - CodeStartAddress;
+
   auto iter = EmbeddedData.begin();
   std::pair<uint64_t, size_t> pre(iter->first,iter->second);
   iter++;
@@ -1327,10 +1330,6 @@ void CodeGenerator::embeddedData(){
     
   }
   
-
-  EmbeddedData[Binary.rodataStartAddr] = Binary.ehframeEndAddr - Binary.rodataStartAddr;
-  EmbeddedData[CodeStartAddress] = Binary.entryPoint() - CodeStartAddress;
-
   //Prepare the linking info CSV
   if (LinkingInfoPath.size() == 0)
     LinkingInfoPath = OutputPath + ".li.csv";
