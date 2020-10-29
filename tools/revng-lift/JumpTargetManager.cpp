@@ -2677,7 +2677,7 @@ uint64_t JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *thisBloc
 //  if(!dyn_cast<BranchInst>(lastInst)){
     auto PC = getInstructionPC(dyn_cast<Instruction>(lastInst));
     if(PC == thisAddr)
-      return thisAddr;
+      return thisAddr+ConsumedSize;
     return PC;
 //  }
 
