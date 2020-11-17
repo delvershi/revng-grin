@@ -2632,10 +2632,13 @@ uint64_t JumpTargetManager::getInstructionPC(llvm::Instruction *I){
     auto callI = dyn_cast<CallInst>(&*it);
     if(callI){
         auto *Callee = callI->getCalledFunction();
-	if(Callee != nullptr && Callee->getName() == "newpc"){
+	if(Callee != nullptr and Callee->getName() == "newpc"){
 	    return getLimitedValue(callI->getArgOperand(0));
             //errs()<<format_hex(pc,0)<<" <- Crash Instruction Address.\n";
 	}
+        if(Callee != nullptr and Callee->getName() == "helper_raise_exception"){
+          return 0;
+        }
     }
   }
   return 0;
@@ -2676,7 +2679,7 @@ uint64_t JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *thisBloc
   lastInst--;
 //  if(!dyn_cast<BranchInst>(lastInst)){
     auto PC = getInstructionPC(dyn_cast<Instruction>(lastInst));
-    if(PC == thisAddr)
+    if(PC == thisAddr or PC == 0)
       return thisAddr+ConsumedSize;
     return PC;
 //  }
