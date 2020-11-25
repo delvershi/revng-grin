@@ -1992,6 +1992,11 @@ void JumpTargetManager::harvestBlockPCs(std::vector<uint64_t> &BlockPCs){
   }
 }
 
+void JumpTargetManager::harvestJumpTableAddr(llvm::BasicBlock *thisBlock){
+
+
+}
+
 void JumpTargetManager::harvestStaticAddr(llvm::BasicBlock *thisBlock){
   if(!isDataSegmAddr(ptc.regs[R_ESP]))
     return;
@@ -3549,7 +3554,7 @@ void JumpTargetManager::harvestbranchBasicBlock(uint64_t nextAddr,
           auto success = ptc.storeCPUState();
 	  if(!success){
 	    IllegalStaticAddrs.push_back(thisAddr);
-	    return;
+	    revng_abort("Store CPU stat failed!\n");
 	  }
           /* Recording not execute branch destination relationship 
 	   * with current BasicBlock and address */ 

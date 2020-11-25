@@ -1048,6 +1048,9 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       BlockPCFlag = false;
     }
 
+    if(BlockBRs)
+      JumpTargets.harvestJumpTableAddr(BlockBRs);
+
     if(!JumpTargets.haveBB && crashBB==nullptr)
       JumpTargets.harvestStaticAddr(BlockBRs);
 
