@@ -2411,6 +2411,7 @@ BasicBlock * JumpTargetManager::getSplitedBlock(llvm::BranchInst *branch){
 
 BasicBlock * JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock,
 		                                  uint64_t thisAddr){
+  //TODO: modify these
   uint32_t userCodeFlag = 0;
   uint32_t &userCodeFlag1 = userCodeFlag;
   BasicBlock::iterator beginInst = thisBlock->begin();
