@@ -2507,6 +2507,7 @@ harvestBTBasicBlock	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetMana
 harvestBlockPCs	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::harvestBlockPCs(std::vector<uint64_t> &BlockPCs){$/;"	f	class:JumpTargetManager
 harvestCallBasicBlock	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::harvestCallBasicBlock(llvm::BasicBlock *thisBlock,uint64_t thisAddr){$/;"	f	class:JumpTargetManager
 harvestGlobalData	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::harvestGlobalData() {$/;"	f	class:JumpTargetManager
+harvestJumpTableAddr	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::harvestJumpTableAddr(llvm::BasicBlock *thisBlock, uint64_t thisAddr){$/;"	f	class:JumpTargetManager
 harvestNextAddrofBr	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::harvestNextAddrofBr(uint64_t blockNext){$/;"	f	class:JumpTargetManager
 harvestRetBlocks	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::harvestRetBlocks(uint64_t thisAddr, uint64_t blockNext){$/;"	f	class:JumpTargetManager
 harvestStaticAddr	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::harvestStaticAddr(llvm::BasicBlock *thisBlock){$/;"	f	class:JumpTargetManager

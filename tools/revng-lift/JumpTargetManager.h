@@ -230,7 +230,7 @@ public:
   StaticAddrsMap StaticAddrs;
   StaticAddrsMap UnexploreStaticAddr;
   void harvestStaticAddr(llvm::BasicBlock *thisBlock);
-  void harvestJumpTableAddr(llvm::BasicBlock *thisBlock);
+  void harvestJumpTableAddr(llvm::BasicBlock *thisBlock, uint64_t thisAddr);
   bool handleStaticAddr(void);
   void harvestBlockPCs(std::vector<uint64_t> &BlockPCs);
   void StaticToUnexplore(void);

@@ -1049,7 +1049,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     }
 
     if(BlockBRs)
-      JumpTargets.harvestJumpTableAddr(BlockBRs);
+      JumpTargets.harvestJumpTableAddr(BlockBRs,tmpVA);
 
     if(!JumpTargets.haveBB && crashBB==nullptr)
       JumpTargets.harvestStaticAddr(BlockBRs);

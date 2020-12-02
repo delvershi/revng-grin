@@ -461,6 +461,10 @@ JumpTargetManager::JumpTargetManager(Function *TheFunction,
   // getOption<uint32_t>(Options, "max-recurse-depth")->setInitialValue(10);
   haveBB = 0;
   range = 0;
+ 
+  auto Path = "JumpTable.log";
+  std::ofstream JumpTableAddrInfoStream(Path);
+  JumpTableAddrInfoStream << "Jump Table Addr:\n";
 }
 
 static bool isBetterThan(const Label *NewCandidate, const Label *OldCandidate) {
@@ -1992,8 +1996,40 @@ void JumpTargetManager::harvestBlockPCs(std::vector<uint64_t> &BlockPCs){
   }
 }
 
-void JumpTargetManager::harvestJumpTableAddr(llvm::BasicBlock *thisBlock){
+void JumpTargetManager::harvestJumpTableAddr(llvm::BasicBlock *thisBlock, uint64_t thisAddr){
+  BasicBlock::iterator begin(thisBlock->begin());
+  BasicBlock::iterator end(thisBlock->end());
 
+  auto Path = "JumpTable.log";
+  std::ofstream JTAddr;
+  JTAddr.open(Path,std::ofstream::out | std::ofstream::app);
+
+  auto I = begin;
+  uint32_t isJumpTable = 0;
+  uint64_t PC = 0;
+
+  for(;I!=end;I++){
+    auto op = I->getOpcode();
+    if(op == Instruction::Call){
+      auto call = dyn_cast<CallInst>(&*I);
+      auto callee = call->getCalledFunction();
+      if(callee != nullptr and callee->getName() == "newpc"){
+        PC = getLimitedValue(call->getArgOperand(0));
+        isJumpTable  = 0; 
+      }
+    }
+    if(op==Instruction::Shl){
+      isJumpTable = 0;
+      isJumpTable++;
+    }
+   
+    if(op==Instruction::Add){
+      isJumpTable = isJumpTable + 2;
+      if(isJumpTable==5){
+        JTAddr << std::hex << PC <<"\n";
+      }
+    }
+  }
 
 }
 
