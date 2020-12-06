@@ -2000,13 +2000,10 @@ void JumpTargetManager::harvestJumpTableAddr(llvm::BasicBlock *thisBlock, uint64
   BasicBlock::iterator begin(thisBlock->begin());
   BasicBlock::iterator end(thisBlock->end());
 
-  auto Path = "JumpTable.log";
-  std::ofstream JTAddr;
-  JTAddr.open(Path,std::ofstream::out | std::ofstream::app);
-
   auto I = begin;
   uint32_t isJumpTable = 0;
   uint64_t PC = 0;
+  llvm::Instruction *shl,*add = nullptr;
 
   for(;I!=end;I++){
     auto op = I->getOpcode();
@@ -2016,20 +2013,107 @@ void JumpTargetManager::harvestJumpTableAddr(llvm::BasicBlock *thisBlock, uint64
       if(callee != nullptr and callee->getName() == "newpc"){
         PC = getLimitedValue(call->getArgOperand(0));
         isJumpTable  = 0; 
+        shl = nullptr;
       }
     }
     if(op==Instruction::Shl){
       isJumpTable = 0;
       isJumpTable++;
+      shl = dyn_cast<llvm::Instruction>(I);
     }
    
     if(op==Instruction::Add){
       isJumpTable = isJumpTable + 2;
-      if(isJumpTable==5){
+      if(isJumpTable==3 or isJumpTable==5){
+        if(shl){
+          GetConst(shl, shl->getOperand(1));
+          shl = nullptr;
+        }
+        add = dyn_cast<llvm::Instruction>(I);
+        GetConst(add, add->getOperand(1)); 
+       
+        auto Path = "JumpTable.log";
+        std::ofstream JTAddr;
+        JTAddr.open(Path,std::ofstream::out | std::ofstream::app);
         JTAddr << std::hex << PC <<"\n";
+        JTAddr.close();
+ 
       }
     }
   }
+
+}
+
+uint64_t JumpTargetManager::GetConst(llvm::Instruction *I, llvm::Value *v){
+  auto v1 = v;
+  auto operateUser = dyn_cast<User>(I);
+  auto bb = I->getParent();
+  uint32_t NUMOFCONST = 0;
+  LastAssignmentResult result;
+  llvm::Instruction *lastInst = nullptr;
+
+  auto Path = "JumpTable.log";
+  std::ofstream JTAddr;
+  JTAddr.open(Path,std::ofstream::out | std::ofstream::app);
+
+  bool nonConst = true;
+  while(nonConst){
+    std::tie(result,lastInst) = getLastAssignment(v1,operateUser,bb,JumpTableMode,NUMOFCONST);
+    switch(result)
+    {
+      case CurrentBlockValueDef:
+      {
+        auto load = dyn_cast<llvm::LoadInst>(lastInst);
+        revng_assert(load);
+        v1 = load->getPointerOperand();
+        if(dyn_cast<Constant>(v1)){
+          if(dyn_cast<ConstantInt>(v1)){
+            //return getLimitedValue(v1); 
+            auto integer = getLimitedValue(v1);
+            JTAddr << integer <<"\n";
+          }else{
+            //TODO:...
+            auto str = v1->getName();
+            JTAddr << str.str()<<"\n"; 
+          }
+          return 0;
+        }
+        else{
+          operateUser = dyn_cast<User>(lastInst);
+          break;
+        }
+      }
+      case CurrentBlockLastAssign:
+      {
+        // Only Store instruction can assign a value for Value rather than defined
+        auto store = dyn_cast<llvm::StoreInst>(lastInst);
+        v1 = store->getValueOperand();
+        if(dyn_cast<Constant>(v1)){
+          if(dyn_cast<ConstantInt>(v1)){
+            auto integer = getLimitedValue(v1); 
+            JTAddr << integer <<"\n";
+          }else{
+            //TODO:...
+            auto str = v1->getName();
+            JTAddr << str.str()<<"\n";
+          }
+          return 0;
+        }
+        else{
+          operateUser = dyn_cast<User>(lastInst);
+          break;
+        }
+      }
+      case NextBlockOperating:
+      case ConstantValueAssign:
+      case UnknowResult:
+          revng_abort("Unknow of result!");
+      break;
+    }
+  }
+
+  JTAddr.close();
+  return 0; 
 
 }
 
