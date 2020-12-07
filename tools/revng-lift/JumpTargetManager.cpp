@@ -1676,7 +1676,14 @@ uint32_t JumpTargetManager::belongToUBlock(llvm::BasicBlock *block){
 
 bool JumpTargetManager::isDataSegmAddr(uint64_t PC){
   return ptc.is_image_addr(PC);  
-} 
+}
+
+bool JumpTargetManager::isELFDataSegmAddr(uint64_t PC){
+  bool flag = false;
+  if(ro_StartAddr<=PC and PC<ro_EndAddr)
+    flag = true;
+  return (ptc.is_image_addr(PC) or flag);  
+}
 
 std::pair<bool, uint32_t> JumpTargetManager::islegalAddr(llvm::Value *v){
   uint64_t va = 0;
@@ -1996,6 +2003,34 @@ void JumpTargetManager::harvestBlockPCs(std::vector<uint64_t> &BlockPCs){
   }
 }
 
+
+void JumpTargetManager::registerJumpTable(llvm::BasicBlock *thisBlock, uint64_t thisAddr, int64_t base, int64_t offset){
+  if(isExecutableAddress((uint64_t)base))
+    revng_abort();
+  if(!isDataSegmAddr((uint64_t)base))
+    return;
+  for(uint64_t n = 0;;n++){
+    uint64_t addr = (uint64_t)(base + (n << offset));
+    while(isELFDataSegmAddr(addr))
+      addr = *((uint64_t *)addr);  
+
+    if(addr==0)
+        continue;
+    if(isExecutableAddress(addr)){
+        
+        auto Path = "JumpTable.log";
+        std::ofstream JTAddr;
+        JTAddr.open(Path,std::ofstream::out | std::ofstream::app);
+        JTAddr <<"---------> "<< std::hex << addr <<"\n";
+        JTAddr.close();
+
+        harvestBTBasicBlock(thisBlock,thisAddr,addr);
+    }
+    else
+      break;
+  }
+}
+
 void JumpTargetManager::harvestJumpTableAddr(llvm::BasicBlock *thisBlock, uint64_t thisAddr){
   BasicBlock::iterator begin(thisBlock->begin());
   BasicBlock::iterator end(thisBlock->end());
@@ -2004,6 +2039,7 @@ void JumpTargetManager::harvestJumpTableAddr(llvm::BasicBlock *thisBlock, uint64
   uint32_t isJumpTable = 0;
   uint64_t PC = 0;
   llvm::Instruction *shl,*add = nullptr;
+  int64_t base, offset = 0;
 
   for(;I!=end;I++){
     auto op = I->getOpcode();
@@ -2014,6 +2050,11 @@ void JumpTargetManager::harvestJumpTableAddr(llvm::BasicBlock *thisBlock, uint64
         PC = getLimitedValue(call->getArgOperand(0));
         isJumpTable  = 0; 
         shl = nullptr;
+        if(offset){
+          registerJumpTable(thisBlock,thisAddr,base,offset);
+          offset = 0;
+          base = 0;
+        }
       }
     }
     if(op==Instruction::Shl){
@@ -2026,25 +2067,24 @@ void JumpTargetManager::harvestJumpTableAddr(llvm::BasicBlock *thisBlock, uint64
       isJumpTable = isJumpTable + 2;
       if(isJumpTable==3 or isJumpTable==5){
         if(shl){
-          GetConst(shl, shl->getOperand(1));
+          offset = GetConst(shl, shl->getOperand(1));
           shl = nullptr;
         }
         add = dyn_cast<llvm::Instruction>(I);
-        GetConst(add, add->getOperand(1)); 
+        base = base + GetConst(add, add->getOperand(1)); 
        
         auto Path = "JumpTable.log";
         std::ofstream JTAddr;
         JTAddr.open(Path,std::ofstream::out | std::ofstream::app);
-        JTAddr << std::hex << PC <<"\n";
+        JTAddr <<"0x"<< std::hex << PC <<"\n";
         JTAddr.close();
- 
       }
     }
   }
 
 }
 
-uint64_t JumpTargetManager::GetConst(llvm::Instruction *I, llvm::Value *v){
+int64_t JumpTargetManager::GetConst(llvm::Instruction *I, llvm::Value *v){
   auto v1 = v;
   auto operateUser = dyn_cast<User>(I);
   auto bb = I->getParent();
@@ -2068,15 +2108,20 @@ uint64_t JumpTargetManager::GetConst(llvm::Instruction *I, llvm::Value *v){
         v1 = load->getPointerOperand();
         if(dyn_cast<Constant>(v1)){
           if(dyn_cast<ConstantInt>(v1)){
-            //return getLimitedValue(v1); 
-            auto integer = getLimitedValue(v1);
+            auto integer = llvm::cast<llvm::ConstantInt>(v1)->getSExtValue();
             JTAddr << integer <<"\n";
+            JTAddr.close();
+            return integer;
           }else{
-            //TODO:...
             auto str = v1->getName();
-            JTAddr << str.str()<<"\n"; 
+            JTAddr << str.str();
+            auto lable = REGLABLE(StrToInt(str.data()));
+            if(lable == UndefineOP)
+              revng_abort("Unkown register OP!\n");
+            JTAddr << " : "<< std::hex<< ptc.regs[lable]<<"\n";
+            JTAddr.close();
+            return ptc.regs[lable];
           }
-          return 0;
         }
         else{
           operateUser = dyn_cast<User>(lastInst);
@@ -2090,14 +2135,20 @@ uint64_t JumpTargetManager::GetConst(llvm::Instruction *I, llvm::Value *v){
         v1 = store->getValueOperand();
         if(dyn_cast<Constant>(v1)){
           if(dyn_cast<ConstantInt>(v1)){
-            auto integer = getLimitedValue(v1); 
+            auto integer = llvm::cast<llvm::ConstantInt>(v1)->getSExtValue();
             JTAddr << integer <<"\n";
+            JTAddr.close();
+            return integer;
           }else{
-            //TODO:...
             auto str = v1->getName();
-            JTAddr << str.str()<<"\n";
+            JTAddr << str.str();
+            auto lable = REGLABLE(StrToInt(str.data()));
+            if(lable == UndefineOP)
+              revng_abort("Unkown register OP!\n");
+            JTAddr << " : "<< std::hex<< ptc.regs[lable]<<"\n";
+            JTAddr.close();
+            return ptc.regs[lable];
           }
-          return 0;
         }
         else{
           operateUser = dyn_cast<User>(lastInst);
@@ -2112,9 +2163,7 @@ uint64_t JumpTargetManager::GetConst(llvm::Instruction *I, llvm::Value *v){
     }
   }
 
-  JTAddr.close();
-  return 0; 
-
+  return 0;
 }
 
 void JumpTargetManager::harvestStaticAddr(llvm::BasicBlock *thisBlock){
@@ -2166,13 +2215,13 @@ bool JumpTargetManager::isIllegalStaticAddr(uint64_t pc){
   if(ro_StartAddr<=pc and pc<ro_EndAddr)
     return true;
 
-  //if(IllegalStaticAddrs.empty()){
-  //  return false;
-  //}
-  //for(auto addr : IllegalStaticAddrs){
-  //  if(pc >= addr)
-  //    return true;
-  //}
+  if(IllegalStaticAddrs.empty()){
+    return false;
+  }
+  for(auto addr : IllegalStaticAddrs){
+    if(pc >= addr)
+      return true;
+  }
 
   return false;
 }
@@ -2467,6 +2516,8 @@ uint32_t JumpTargetManager::REGLABLE(uint32_t RegOP){
             return R_EBP;
           break;
       }
+      case RSP:
+            return R_ESP;
       case RSI:
             return R_ESI;
           break;

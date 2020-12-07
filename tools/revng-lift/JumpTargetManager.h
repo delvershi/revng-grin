@@ -231,7 +231,8 @@ public:
   StaticAddrsMap UnexploreStaticAddr;
   void harvestStaticAddr(llvm::BasicBlock *thisBlock);
   void harvestJumpTableAddr(llvm::BasicBlock *thisBlock, uint64_t thisAddr);
-  uint64_t GetConst(llvm::Instruction *I, llvm::Value *v);
+  int64_t GetConst(llvm::Instruction *I, llvm::Value *v);
+  void registerJumpTable(llvm::BasicBlock *thisBlock, uint64_t thisAddr, int64_t base, int64_t offset);
   bool handleStaticAddr(void);
   void harvestBlockPCs(std::vector<uint64_t> &BlockPCs);
   void StaticToUnexplore(void);
@@ -266,6 +267,7 @@ public:
   uint64_t getInstructionPC(llvm::Instruction *I);
   std::pair<bool, uint32_t> islegalAddr(llvm::Value *v);
   bool isDataSegmAddr(uint64_t PC);
+  bool isELFDataSegmAddr(uint64_t PC);
   uint32_t StrToInt(const char *str);
 
   uint64_t DataSegmStartAddr;
@@ -482,7 +484,7 @@ public:
   /// \brief Return true if \p PC is in an executable segment
   bool isExecutableAddress(uint64_t PC) const {
     for (std::pair<uint64_t, uint64_t> Range : ExecutableRanges)
-      if (Range.first <= PC && PC < Range.second)
+      if (Range.first <= PC && PC < ro_StartAddr)
         return true;
     return false;
   }
