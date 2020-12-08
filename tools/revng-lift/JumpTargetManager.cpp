@@ -2007,7 +2007,7 @@ void JumpTargetManager::harvestBlockPCs(std::vector<uint64_t> &BlockPCs){
 void JumpTargetManager::registerJumpTable(llvm::BasicBlock *thisBlock, uint64_t thisAddr, int64_t base, int64_t offset){
   if(isExecutableAddress((uint64_t)base))
     revng_abort();
-  if(!isDataSegmAddr((uint64_t)base))
+  if(!isELFDataSegmAddr((uint64_t)base))
     return;
   for(uint64_t n = 0;;n++){
     uint64_t addr = (uint64_t)(base + (n << offset));
@@ -2038,8 +2038,10 @@ void JumpTargetManager::harvestJumpTableAddr(llvm::BasicBlock *thisBlock, uint64
   auto I = begin;
   uint32_t isJumpTable = 0;
   uint64_t PC = 0;
-  llvm::Instruction *shl,*add = nullptr;
-  int64_t base, offset = 0;
+  llvm::Instruction *shl = nullptr;
+  llvm::Instruction *add = nullptr;
+  int64_t base = 0;
+  int64_t offset = 0;
 
   for(;I!=end;I++){
     auto op = I->getOpcode();
@@ -2081,6 +2083,9 @@ void JumpTargetManager::harvestJumpTableAddr(llvm::BasicBlock *thisBlock, uint64
       }
     }
   }
+  
+  if(offset)
+    registerJumpTable(thisBlock,thisAddr,base,offset);
 
 }
 
@@ -2203,8 +2208,10 @@ void JumpTargetManager::harvestStaticAddr(llvm::BasicBlock *thisBlock){
         auto v = store->getValueOperand();
         if(dyn_cast<ConstantInt>(v)){
           auto pc = getLimitedValue(v);
-	  if(!haveTranslatedPC(pc, 0) && !isIllegalStaticAddr(pc))
+	  if(!haveTranslatedPC(pc, 0) && !isIllegalStaticAddr(pc)){
 	    StaticAddrs[pc] = false;
+            //errs()<<format_hex(pc,0)<<"  147852369\n";
+          }
         }
       }
     }
@@ -2227,13 +2234,13 @@ bool JumpTargetManager::isIllegalStaticAddr(uint64_t pc){
 }
 
 void JumpTargetManager::harvestNextAddrofBr(uint64_t blockNext){
-  if(!haveTranslatedPC(blockNext, 0)){
-      if(*ptc.isCall){
-        StaticAddrs[blockNext] = 2;
-      }else{
-        StaticAddrs[blockNext] = true;
-      }
-  }
+//  if(!haveTranslatedPC(blockNext, 0)){
+//      if(*ptc.isCall){
+//        StaticAddrs[blockNext] = 2;
+//      }else{
+//        StaticAddrs[blockNext] = true;
+//      }
+//  }
   if(Statistics and *ptc.isDirectJmp){
       IndirectBlocksMap::iterator it = DirectJmpBlocks.find(*ptc.isDirectJmp);
       if(it == DirectJmpBlocks.end())
@@ -2242,8 +2249,8 @@ void JumpTargetManager::harvestNextAddrofBr(uint64_t blockNext){
 }
 
 void JumpTargetManager::harvestRetBlocks(uint64_t thisAddr, uint64_t blockNext){
-  if(!haveTranslatedPC(blockNext, 0))
-    StaticAddrs[blockNext] = true;
+//  if(!haveTranslatedPC(blockNext, 0))
+//    StaticAddrs[blockNext] = true;
   if(Statistics){
     IndirectBlocksMap::iterator it = RetBlocks.find(thisAddr);
     if(it == RetBlocks.end())
@@ -3634,8 +3641,10 @@ void JumpTargetManager::harvestCallBasicBlock(llvm::BasicBlock *thisBlock,uint64
     if(it == CallBranches.end())
       CallBranches[*ptc.CallNext] = 1;
   }
-  if(!haveTranslatedPC(*ptc.CallNext, 0))
-      StaticAddrs[*ptc.CallNext] = 2;
+//  if(!haveTranslatedPC(*ptc.CallNext, 0)){
+//      StaticAddrs[*ptc.CallNext] = 2;
+//      errs()<<format_hex(*ptc.CallNext,0)<<"  147852369\n";
+//  }
   for(auto item : BranchTargets){
     if(std::get<0>(item) == *ptc.CallNext)
         return;

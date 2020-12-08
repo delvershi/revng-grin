@@ -1054,11 +1054,11 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     if(!JumpTargets.haveBB && crashBB==nullptr)
       JumpTargets.harvestStaticAddr(BlockBRs);
 
-    if(!JumpTargets.haveBB and *ptc.isIndirect)
-      JumpTargets.handleIndirectCall(BlockBRs,tmpVA, StaticAddrFlag);
+    //if(!JumpTargets.haveBB and *ptc.isIndirect)
+    //  JumpTargets.handleIndirectCall(BlockBRs,tmpVA, StaticAddrFlag);
 
-    if(!JumpTargets.haveBB and *ptc.isIndirectJmp)
-      JumpTargets.handleIndirectJmp(BlockBRs,tmpVA, StaticAddrFlag);
+    //if(!JumpTargets.haveBB and *ptc.isIndirectJmp)
+    //  JumpTargets.handleIndirectJmp(BlockBRs,tmpVA, StaticAddrFlag);
   
     if(!traverseFLAG){
     if(DynamicVirtualAddress){
