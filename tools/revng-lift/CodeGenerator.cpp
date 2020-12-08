@@ -1035,11 +1035,9 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       }
     }
     if(!JumpTargets.haveBB and *ptc.exception_syscall == 11){
-      crashBB = JumpTargets.handleIllegalMemoryAccess(BlockBRs,tmpVA);
+      DynamicVirtualAddress = JumpTargets.handleIllegalMemoryAccess(BlockBRs,tmpVA,ConsumedSize);
       *ptc.exception_syscall = -1;
-      DynamicVirtualAddress = tmpVA;
-      //if(crashBB)
-	//  BlockBRs = nullptr;
+      crashBB = nullptr;
     }
     if(StaticAddrFlag and (*ptc.isRet or *ptc.isIndirect))
       DynamicVirtualAddress = 0;
@@ -1104,7 +1102,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     {
       outs()<<"occure invalid address: "<<format_hex(DynamicVirtualAddress,0)
             <<"  explore branch: "<<format_hex(tmpVA,0)<<"\n";
-      JumpTargets.handleIllegalJumpAddress(BlockBRs,tmpVA);
+      //JumpTargets.handleIllegalJumpAddress(BlockBRs,tmpVA);
       DynamicVirtualAddress = 0;
    
     }

@@ -242,7 +242,7 @@ public:
   bool isIllegalStaticAddr(uint64_t pc);
 
   void handleIndirectCall(llvm::BasicBlock *thisBlock, uint64_t thisAddr, bool StaticFlag);
-  llvm::BasicBlock *handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock, uint64_t thisAddr);
+  uint64_t handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock, uint64_t thisAddr, size_t ConsumedSize);
   llvm::BasicBlock *getSplitedBlock(llvm::BranchInst *branch);
   uint32_t REGLABLE(uint32_t RegOP);
   void handleIllegalJumpAddress(llvm::BasicBlock *thisBlock, uint64_t thisAddr);
