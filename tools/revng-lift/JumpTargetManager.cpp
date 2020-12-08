@@ -2110,7 +2110,10 @@ int64_t JumpTargetManager::GetConst(llvm::Instruction *I, llvm::Value *v){
       case CurrentBlockValueDef:
       {
         auto load = dyn_cast<llvm::LoadInst>(lastInst);
-        revng_assert(load);
+        if(load==nullptr){
+          return 0;
+          //revng_assert(load);
+        }
         v1 = load->getPointerOperand();
         if(dyn_cast<Constant>(v1)){
           if(dyn_cast<ConstantInt>(v1)){
