@@ -2007,7 +2007,8 @@ void JumpTargetManager::harvestBlockPCs(std::vector<uint64_t> &BlockPCs){
 
 void JumpTargetManager::registerJumpTable(llvm::BasicBlock *thisBlock, uint64_t thisAddr, int64_t base, int64_t offset){
   if(isExecutableAddress((uint64_t)base))
-    revng_abort();
+    return;
+    //revng_abort();
   if(!isELFDataSegmAddr((uint64_t)base))
     return;
   for(uint64_t n = 0;;n++){

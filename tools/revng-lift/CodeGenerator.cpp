@@ -1039,6 +1039,10 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       *ptc.exception_syscall = -1;
       crashBB = nullptr;
     }
+    if(JumpTargets.haveBB and *ptc.exception_syscall == 11){
+      DynamicVirtualAddress = 0;
+      *ptc.exception_syscall = -1;
+    }
     if(StaticAddrFlag and (*ptc.isRet or *ptc.isIndirect))
       DynamicVirtualAddress = 0;
     if(!JumpTargets.haveBB and BlockPCFlag){
