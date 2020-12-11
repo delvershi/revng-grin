@@ -2013,8 +2013,12 @@ void JumpTargetManager::registerJumpTable(llvm::BasicBlock *thisBlock, uint64_t 
     return;
   for(uint64_t n = 0;;n++){
     uint64_t addr = (uint64_t)(base + (n << offset));
-    while(isELFDataSegmAddr(addr))
-      addr = *((uint64_t *)addr);  
+    while(isELFDataSegmAddr(addr)){
+      auto pre = addr;
+      addr = *((uint64_t *)addr);
+      if(pre==addr)
+          break;
+    }
 
     if(addr==0)
         continue;
@@ -3767,13 +3771,16 @@ void JumpTargetManager::harvestbranchBasicBlock(uint64_t nextAddr,
 	}
 	if(!isRecord){
           /* Recording current CPU state */
-          if(!isDataSegmAddr(ptc.regs[R_ESP]))
+          if(!isDataSegmAddr(ptc.regs[R_ESP]) and isDataSegmAddr(ptc.regs[R_EBP]))
               ptc.regs[R_ESP] = ptc.regs[R_EBP];
+	  if(isDataSegmAddr(ptc.regs[R_ESP]) and !isDataSegmAddr(ptc.regs[R_EBP]))
+	      ptc.regs[R_EBP] = ptc.regs[R_ESP] + 256;
+	  ptc.regs[R_ESP] = *ptc.ElfStartStack - 512;
+	  ptc.regs[R_EBP] = ptc.regs[R_ESP] + 256;
           auto success = ptc.storeCPUState();
-	  if(!success){
-	    IllegalStaticAddrs.push_back(thisAddr);
+	  if(!success)
 	    revng_abort("Store CPU stat failed!\n");
-	  }
+	  
           /* Recording not execute branch destination relationship 
 	   * with current BasicBlock and address */ 
           BranchTargets.push_back(std::make_tuple(
