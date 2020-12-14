@@ -366,7 +366,10 @@ void newpc(uint64_t pc,
 // if so serialize and jump
 bool is_executable(uint64_t pc) {
   assert(segments_count != 0);
-  printf("PC: %lx\n",pc);
+
+  //const char *error = "Unknown PC\n";
+  //write(2, error, strlen(error));
+  fprintf(stderr,"PC: %lx ",pc);
 
   // Check if the pc is inside one of the executable segments
   for (int i = 0; i < segments_count; i++)
