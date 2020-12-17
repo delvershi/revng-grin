@@ -270,6 +270,10 @@ public:
   bool isELFDataSegmAddr(uint64_t PC);
   uint32_t StrToInt(const char *str);
 
+  void harvestCodePointerInDataSegment(uint64_t PC);
+  bool isGlobalData(uint64_t pc);
+  bool haveBinaryOperation(llvm::Instruction *I);
+
   uint64_t DataSegmStartAddr;
   uint64_t DataSegmEndAddr;
   uint64_t ro_StartAddr;

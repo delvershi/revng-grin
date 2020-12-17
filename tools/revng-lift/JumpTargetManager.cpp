@@ -462,6 +462,10 @@ JumpTargetManager::JumpTargetManager(Function *TheFunction,
   haveBB = 0;
   range = 0;
  
+  auto PointerPath = "GlobalPointer.log";
+  std::ofstream PointerAddrInfoStream(PointerPath);
+  PointerAddrInfoStream << "Global Pointer Base Addr:\n";
+
   auto Path = "JumpTable.log";
   std::ofstream JumpTableAddrInfoStream(Path);
   JumpTableAddrInfoStream << "Jump Table Addr:\n";
@@ -2198,6 +2202,14 @@ int64_t JumpTargetManager::GetConst(llvm::Instruction *I, llvm::Value *v){
   return 0;
 }
 
+void JumpTargetManager::harvestCodePointerInDataSegment(uint64_t PC){
+        auto Path = "GlobalPointer.log";
+        std::ofstream BaseAddr;
+        BaseAddr.open(Path,std::ofstream::out | std::ofstream::app);
+        BaseAddr <<"0x"<< std::hex << PC <<"\n";
+        BaseAddr.close(); 
+}
+
 void JumpTargetManager::harvestStaticAddr(llvm::BasicBlock *thisBlock){
 //  if(!isDataSegmAddr(ptc.regs[R_ESP]))
 //    return;
@@ -2235,7 +2247,17 @@ void JumpTargetManager::harvestStaticAddr(llvm::BasicBlock *thisBlock){
         auto v = store->getValueOperand();
         if(dyn_cast<ConstantInt>(v)){
           auto pc = getLimitedValue(v);
-	  if(!haveTranslatedPC(pc, 0) && !isIllegalStaticAddr(pc)){
+          // Harvest entry addresses stored in data segment
+          if(isGlobalData(pc) and haveBinaryOperation(&*I)){
+            auto addr = getInstructionPC(&*I);
+            auto Path = "GlobalPointer.log";
+            std::ofstream BaseAddr;
+            BaseAddr.open(Path,std::ofstream::out | std::ofstream::app);
+            BaseAddr <<"PC: "<< std::hex << addr <<" : ";
+            BaseAddr.close(); 
+            harvestCodePointerInDataSegment(pc);
+          }
+	  if(!haveTranslatedPC(pc, 0) and !isIllegalStaticAddr(pc)){
 	    StaticAddrs[pc] = false;
             //errs()<<format_hex(pc,0)<<"  147852369\n";
           }
@@ -2243,6 +2265,64 @@ void JumpTargetManager::harvestStaticAddr(llvm::BasicBlock *thisBlock){
       }
     }
   }
+}
+
+bool JumpTargetManager::isGlobalData(uint64_t pc){
+  if(DataSegmStartAddr<pc and pc<DataSegmEndAddr)
+    return true;
+
+  return false;
+}
+
+bool JumpTargetManager::haveBinaryOperation(llvm::Instruction *I){
+  BasicBlock::iterator it(I);
+  BasicBlock::iterator end = I->getParent()->end();
+  BasicBlock::iterator lastInst(I->getParent()->back());
+
+  auto v = dyn_cast<llvm::Value>(I);
+  if(I->getOpcode()==Instruction::Store){
+    auto store = dyn_cast<llvm::StoreInst>(I);
+    v = store->getPointerOperand();
+  }
+
+  it++;
+  for(; it!=end; it++){ 
+    switch(it->getOpcode()){
+      case llvm::Instruction::Add:{
+        auto add = dyn_cast<Instruction>(it);
+        if((add->getOperand(0) - v) == 0)
+          return true;
+        else if((add->getOperand(1) - v) == 0)
+          return true;
+        break;
+      }
+      case llvm::Instruction::Call:
+        break;
+      case llvm::Instruction::Load:{
+        auto load = dyn_cast<llvm::LoadInst>(it);
+	if((load->getPointerOperand() - v) == 0)
+	    v = dyn_cast<Value>(it);
+        break;
+      }
+      case llvm::Instruction::Store:{
+        auto store = dyn_cast<llvm::StoreInst>(it);
+        if((store->getValueOperand() - v) == 0)
+	    v = store->getPointerOperand();
+	break;
+      }
+      default:{
+        auto instr = dyn_cast<Instruction>(it);
+        for(Use &u : instr->operands()){
+            Value *InstV = u.get();
+            if((InstV - v) == 0){
+	      v = dyn_cast<Value>(instr);
+              break; 
+            }
+        }
+      }  
+    }
+  }//??end for
+  return false;
 }
 
 bool JumpTargetManager::isIllegalStaticAddr(uint64_t pc){
