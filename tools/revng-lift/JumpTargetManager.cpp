@@ -424,6 +424,7 @@ JumpTargetManager::JumpTargetManager(Function *TheFunction,
   TheFunction(TheFunction),
   OriginalInstructionAddresses(),
   JumpTargets(),
+  assign_gadge(),
   PCReg(PCReg),
   ExitTB(nullptr),
   Dispatcher(nullptr),
@@ -2202,12 +2203,36 @@ int64_t JumpTargetManager::GetConst(llvm::Instruction *I, llvm::Value *v){
   return 0;
 }
 
-void JumpTargetManager::harvestCodePointerInDataSegment(uint64_t PC){
-        auto Path = "GlobalPointer.log";
-        std::ofstream BaseAddr;
-        BaseAddr.open(Path,std::ofstream::out | std::ofstream::app);
-        BaseAddr <<"0x"<< std::hex << PC <<"\n";
-        BaseAddr.close(); 
+void JumpTargetManager::harvestCodePointerInDataSegment(uint64_t basePC, llvm::Instruction *I){
+  //auto pc = getInstructionPC(&*(I->getParent()->begin()) );
+ 
+  if((assign_gadge[basePC].static_addr_block - assign_gadge[basePC].operation_block)==0){ 
+    auto thisAddr = getInstructionPC(&*(assign_gadge[basePC].operation_block->begin()));
+    auto current_pc = getInstructionPC(assign_gadge[basePC].global_I);
+    std::map<uint64_t,bool> addr; 
+    if(current_pc == thisAddr){
+      //if(assign_gadge[basePC].indirect)
+      //else static addr stored in register
+      //ptc.exec(thisAddr);
+    }else{
+      if(assign_gadge[basePC].indirect){
+        
+        // auto pc = ptc.exec()
+        addr[basePC] = 0;
+        
+      }
+      //else static addr stored in register
+      // TODO:
+    }
+  }
+
+ 
+ //       auto Path = "GlobalPointer.log";
+ //       std::ofstream BaseAddr;
+ //       BaseAddr.open(Path,std::ofstream::out | std::ofstream::app);
+ //       BaseAddr <<"PC: "<<std::hex<< pc <<" : "<<"0x"<< std::hex << basePC <<"\n";
+ //       BaseAddr.close();
+  
 }
 
 void JumpTargetManager::harvestStaticAddr(llvm::BasicBlock *thisBlock){
@@ -2248,14 +2273,20 @@ void JumpTargetManager::harvestStaticAddr(llvm::BasicBlock *thisBlock){
         if(dyn_cast<ConstantInt>(v)){
           auto pc = getLimitedValue(v);
           // Harvest entry addresses stored in data segment
-          if(isGlobalData(pc) and haveBinaryOperation(&*I)){
-            auto addr = getInstructionPC(&*I);
-            auto Path = "GlobalPointer.log";
-            std::ofstream BaseAddr;
-            BaseAddr.open(Path,std::ofstream::out | std::ofstream::app);
-            BaseAddr <<"PC: "<< std::hex << addr <<" : ";
-            BaseAddr.close(); 
-            harvestCodePointerInDataSegment(pc);
+          if(isGlobalData(pc)){
+            assign_gadge[pc] = AssignGadge(pc); 
+            assign_gadge[pc].global_I = &*I; 
+            if(haveBinaryOperation(&*I)){
+              assign_gadge[pc].operation_block = thisBlock;
+              //TODO: if thisBlock is indirect || StaticAddr in Registers 
+              if(*ptc.isIndirect or *ptc.isIndirectJmp){
+                assign_gadge[pc].static_addr_block = thisBlock;
+                assign_gadge[pc].indirect = true;
+                harvestCodePointerInDataSegment(pc,&*I);
+              }
+              //TODO: There have global data in thisBlock
+              //  register it.
+            }
           }
 	  if(!haveTranslatedPC(pc, 0) and !isIllegalStaticAddr(pc)){
 	    StaticAddrs[pc] = false;

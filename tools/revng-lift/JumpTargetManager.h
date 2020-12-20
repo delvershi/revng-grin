@@ -270,9 +270,36 @@ public:
   bool isELFDataSegmAddr(uint64_t PC);
   uint32_t StrToInt(const char *str);
 
-  void harvestCodePointerInDataSegment(uint64_t PC);
+  void harvestCodePointerInDataSegment(uint64_t basePC,llvm::Instruction *I);
   bool isGlobalData(uint64_t pc);
   bool haveBinaryOperation(llvm::Instruction *I);
+  //std::map<uint64_t, AssignGadge> assign_gadge;
+  class AssignGadge{
+  public:
+   AssignGadge():
+     global_addr(0),
+     global_I(nullptr),
+     operation_block(nullptr),
+     static_addr_block(nullptr),
+     indirect(false),
+     offset(0) {}
+   AssignGadge(uint64_t addr):
+     global_addr(addr),
+     global_I(nullptr),
+     operation_block(nullptr),
+     static_addr_block(nullptr),
+     indirect(false),
+     offset(0) {}
+
+   uint64_t global_addr;
+   llvm::Instruction * global_I;
+   llvm::BasicBlock * operation_block;
+ 
+   llvm::BasicBlock * static_addr_block;
+   bool indirect;
+   uint64_t offset;
+ };
+ 
 
   uint64_t DataSegmStartAddr;
   uint64_t DataSegmEndAddr;
@@ -782,6 +809,9 @@ private:
   InstructionMap OriginalInstructionAddresses;
   /// Holds the association between a PC and a BasicBlock.
   BlockMap JumpTargets;
+
+  std::map<uint64_t, AssignGadge> assign_gadge;
+
   /// Queue of program counters we still have to translate.
   std::vector<BlockWithAddress> Unexplored;
   llvm::Value *PCReg;
