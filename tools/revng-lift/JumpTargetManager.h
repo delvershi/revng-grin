@@ -270,6 +270,10 @@ public:
   bool isELFDataSegmAddr(uint64_t PC);
   uint32_t StrToInt(const char *str);
 
+  std::vector<uint64_t> TempCPURegister;
+  void storeCPURegister();
+  void recoverCPURegister();
+  std::pair<uint32_t,uint64_t> getLastOperandandNextPC(llvm::Instruction *I);
   void harvestCodePointerInDataSegment(uint64_t basePC,llvm::Instruction *I);
   bool isGlobalData(uint64_t pc);
   bool haveBinaryOperation(llvm::Instruction *I);

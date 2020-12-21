@@ -2203,36 +2203,57 @@ int64_t JumpTargetManager::GetConst(llvm::Instruction *I, llvm::Value *v){
   return 0;
 }
 
+void JumpTargetManager::storeCPURegister(){
+  TempCPURegister.clear();
+  for(int i=0; i<16;i++) TempCPURegister.push_back(ptc.regs[i]);
+}
+
+void JumpTargetManager::recoverCPURegister(){
+  for(size_t i=0; i<TempCPURegister.size(); i++) 
+    ptc.regs[i] = TempCPURegister[i];
+}
+
 void JumpTargetManager::harvestCodePointerInDataSegment(uint64_t basePC, llvm::Instruction *I){
   //auto pc = getInstructionPC(&*(I->getParent()->begin()) );
  
   if((assign_gadge[basePC].static_addr_block - assign_gadge[basePC].operation_block)==0){ 
     auto thisAddr = getInstructionPC(&*(assign_gadge[basePC].operation_block->begin()));
     auto current_pc = getInstructionPC(assign_gadge[basePC].global_I);
-    std::map<uint64_t,bool> addr; 
+    std::vector<uint64_t> AddrVec; 
     if(current_pc == thisAddr){
       //if(assign_gadge[basePC].indirect)
       //else static addr stored in register
       //ptc.exec(thisAddr);
     }else{
       if(assign_gadge[basePC].indirect){
-        
-        // auto pc = ptc.exec()
-        addr[basePC] = 0;
-        
+        uint32_t op = 0;
+        uint64_t virtualAddr = 0;
+        std::tie(op,virtualAddr) = getLastOperandandNextPC(&*(assign_gadge[basePC].static_addr_block->begin())); 
+        auto Path = "GlobalPointer.log";
+        std::ofstream BaseAddr;
+        BaseAddr.open(Path,std::ofstream::out | std::ofstream::app);
+        BaseAddr <<"PC: "<<std::hex<< current_pc <<" : \n";
+
+        storeCPURegister();
+        for(int i=0; ;i++){
+          ptc.regs[op] = i; 
+          auto tmpPC = ptc.exec(virtualAddr);
+          revng_assert(tmpPC!=-1);
+          if(!isExecutableAddress(tmpPC))
+            break;
+          AddrVec.push_back(tmpPC);
+          harvestBTBasicBlock(assign_gadge[basePC].operation_block,thisAddr,tmpPC);
+          
+          BaseAddr <<"    0x"<< std::hex << tmpPC <<"\n";     
+        }
+        recoverCPURegister();
+        BaseAddr.close();
       }
       //else static addr stored in register
       // TODO:
     }
   }
 
- 
- //       auto Path = "GlobalPointer.log";
- //       std::ofstream BaseAddr;
- //       BaseAddr.open(Path,std::ofstream::out | std::ofstream::app);
- //       BaseAddr <<"PC: "<<std::hex<< pc <<" : "<<"0x"<< std::hex << basePC <<"\n";
- //       BaseAddr.close();
-  
 }
 
 void JumpTargetManager::harvestStaticAddr(llvm::BasicBlock *thisBlock){
@@ -2696,6 +2717,40 @@ uint32_t JumpTargetManager::REGLABLE(uint32_t RegOP){
       default:
           return UndefineOP;
   }
+}
+
+std::pair<uint32_t,uint64_t> JumpTargetManager::getLastOperandandNextPC(llvm::Instruction *I){
+  BasicBlock::iterator it(I);
+  BasicBlock::iterator end = I->getParent()->end();
+  uint32_t op = 0;
+  uint64_t addr = UndefineOP;
+  it++;
+  for(; it!=end; it++){
+    //if(it->getOpcode() == Instruction::Load){
+    //  auto load = dyn_cast<LoadInst>(&*it);
+    //  load->get
+    //}
+    if(it->getOpcode() == Instruction::Store){
+      auto store = dyn_cast<StoreInst>(&*it);
+      auto v = store->getPointerOperand();
+      if(dyn_cast<Constant>(v)){
+        StringRef name = v->getName();
+        auto number = StrToInt(name.data());
+        op = REGLABLE(number); 
+      }
+    }
+    if(it->getOpcode() == Instruction::Call){
+      auto call = dyn_cast<CallInst>(&*it);
+      revng_assert(call);
+      auto *Callee = call->getCalledFunction();
+      if(Callee != nullptr && Callee->getName() == "newpc"){
+        addr = getLimitedValue(call->getArgOperand(0));
+        break;
+      }
+    }
+  }
+  revng_assert(op!=UndefineOP);
+  return std::make_pair(op,addr);
 }
 
 uint64_t JumpTargetManager::getInstructionPC(llvm::Instruction *I){
