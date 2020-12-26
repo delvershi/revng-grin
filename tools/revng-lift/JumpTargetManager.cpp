@@ -2225,33 +2225,36 @@ void JumpTargetManager::harvestCodePointerInDataSegment(uint64_t basePC, llvm::I
       //else static addr stored in register
       //ptc.exec(thisAddr);
     }else{
-      if(assign_gadge[basePC].indirect){
-        uint32_t op = 0;
-        uint64_t virtualAddr = 0;
-        std::tie(op,virtualAddr) = getLastOperandandNextPC(&*(assign_gadge[basePC].static_addr_block->begin())); 
-        auto Path = "GlobalPointer.log";
-        std::ofstream BaseAddr;
-        BaseAddr.open(Path,std::ofstream::out | std::ofstream::app);
-        BaseAddr <<"PC: "<<std::hex<< current_pc <<" : \n";
+      uint32_t op = 0;
+      uint64_t virtualAddr = 0;
+      std::tie(op,virtualAddr) = getLastOperandandNextPC(&*(assign_gadge[basePC].static_addr_block->begin())); 
 
-        storeCPURegister();
-        for(int i=0; ;i++){
-          ptc.regs[op] = i; 
-          auto tmpPC = ptc.exec(virtualAddr);
-          revng_assert(tmpPC!=-1);
-          if(!isExecutableAddress(tmpPC))
-            break;
-          AddrVec.push_back(tmpPC);
-          harvestBTBasicBlock(assign_gadge[basePC].operation_block,thisAddr,tmpPC);
-          
-          BaseAddr <<"    0x"<< std::hex << tmpPC <<"\n";     
-        }
-        recoverCPURegister();
-        BaseAddr.close();
+      auto Path = "GlobalPointer.log";
+      std::ofstream BaseAddr;
+      BaseAddr.open(Path,std::ofstream::out | std::ofstream::app);
+      BaseAddr <<"PC: "<<std::hex<< current_pc <<" : \n";
+
+      storeCPURegister();
+      for(int i=0; ;i++){
+        ptc.regs[op] = i; 
+        //Static addresses are indirect jump target address.
+        int64_t tmpPC = ptc.exec(virtualAddr);
+        revng_assert(tmpPC!=-1);
+        // Static addresses stored in registers.
+        if(!assign_gadge[basePC].indirect)
+          tmpPC = getStaticAddrfromRegs(assign_gadge[basePC].operation_block);
+        
+        if(!isExecutableAddress(tmpPC))
+          break;    
+        harvestBTBasicBlock(assign_gadge[basePC].operation_block,thisAddr,tmpPC);
+        
+        BaseAddr <<"    0x"<< std::hex << tmpPC <<"\n";     
       }
-      //else static addr stored in register
-      // TODO:
-    }
+      recoverCPURegister();
+ 
+      BaseAddr.close();
+    }//if(current..)..else 
+      
   }
 
 }
@@ -2299,10 +2302,12 @@ void JumpTargetManager::harvestStaticAddr(llvm::BasicBlock *thisBlock){
             assign_gadge[pc].global_I = &*I; 
             if(haveBinaryOperation(&*I)){
               assign_gadge[pc].operation_block = thisBlock;
-              //TODO: if thisBlock is indirect || StaticAddr in Registers 
-              if(*ptc.isIndirect or *ptc.isIndirectJmp){
+              //if thisBlock is indirect or StaticAddr is stored in registers. 
+              if(*ptc.isIndirect or *ptc.isIndirectJmp or getStaticAddrfromRegs(thisBlock))
+              {
                 assign_gadge[pc].static_addr_block = thisBlock;
-                assign_gadge[pc].indirect = true;
+                if(*ptc.isIndirect or *ptc.isIndirectJmp) 
+                    assign_gadge[pc].indirect = true;
                 harvestCodePointerInDataSegment(pc,&*I);
               }
               //TODO: There have global data in thisBlock
@@ -2375,6 +2380,41 @@ bool JumpTargetManager::haveBinaryOperation(llvm::Instruction *I){
     }
   }//??end for
   return false;
+}
+
+uint64_t JumpTargetManager::getStaticAddrfromRegs(llvm::BasicBlock *thisBlock){
+  BasicBlock::iterator it(thisBlock->begin());
+  BasicBlock::iterator end(thisBlock->end());
+  
+  for(;it!=end;it++){
+    if(it->getOpcode()==Instruction::Load){
+      auto load = dyn_cast<llvm::LoadInst>(it);
+      auto v = load->getPointerOperand();
+      if(dyn_cast<Constant>(v)){
+        StringRef name = v->getName();
+        auto number = StrToInt(name.data());
+        auto op = REGLABLE(number); 
+        if(op==UndefineOP) 
+          continue;
+        if(isExecutableAddress(ptc.regs[op]))
+          return ptc.regs[op]; 
+      }
+    }
+    if(it->getOpcode()==Instruction::Store){
+      auto store = dyn_cast<llvm::StoreInst>(it);
+      auto v = store->getPointerOperand();
+      if(dyn_cast<Constant>(v)){
+       StringRef name = v->getName();
+       auto number = StrToInt(name.data());
+       auto op = REGLABLE(number); 
+       if(op==UndefineOP) 
+         continue;
+       if(isExecutableAddress(ptc.regs[op]))
+         return ptc.regs[op]; 
+      }     
+    }
+  }
+  return 0;
 }
 
 bool JumpTargetManager::isIllegalStaticAddr(uint64_t pc){

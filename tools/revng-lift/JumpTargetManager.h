@@ -273,6 +273,7 @@ public:
   std::vector<uint64_t> TempCPURegister;
   void storeCPURegister();
   void recoverCPURegister();
+  uint64_t getStaticAddrfromRegs(llvm::BasicBlock *thisBlock);
   std::pair<uint32_t,uint64_t> getLastOperandandNextPC(llvm::Instruction *I);
   void harvestCodePointerInDataSegment(uint64_t basePC,llvm::Instruction *I);
   bool isGlobalData(uint64_t pc);
