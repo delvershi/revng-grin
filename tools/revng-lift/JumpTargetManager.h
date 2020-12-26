@@ -274,6 +274,8 @@ public:
   void storeCPURegister();
   void recoverCPURegister();
   uint64_t getStaticAddrfromRegs(llvm::BasicBlock *thisBlock);
+  void getGlobalDatafromRegs(llvm::BasicBlock *thisBlock, uint64_t base);
+  void getGlobalDatafromRegs(llvm::BasicBlock *thisBlock);
   std::pair<uint32_t,uint64_t> getLastOperandandNextPC(llvm::Instruction *I);
   void harvestCodePointerInDataSegment(uint64_t basePC,llvm::Instruction *I);
   bool isGlobalData(uint64_t pc);
@@ -283,6 +285,7 @@ public:
   public:
    AssignGadge():
      global_addr(0),
+     pre(0),
      global_I(nullptr),
      operation_block(nullptr),
      static_addr_block(nullptr),
@@ -290,6 +293,7 @@ public:
      offset(0) {}
    AssignGadge(uint64_t addr):
      global_addr(addr),
+     pre(0),
      global_I(nullptr),
      operation_block(nullptr),
      static_addr_block(nullptr),
@@ -297,6 +301,7 @@ public:
      offset(0) {}
 
    uint64_t global_addr;
+   uint64_t pre;
    llvm::Instruction * global_I;
    llvm::BasicBlock * operation_block;
  

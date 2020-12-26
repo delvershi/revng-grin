@@ -2309,9 +2309,10 @@ void JumpTargetManager::harvestStaticAddr(llvm::BasicBlock *thisBlock){
                 if(*ptc.isIndirect or *ptc.isIndirectJmp) 
                     assign_gadge[pc].indirect = true;
                 harvestCodePointerInDataSegment(pc,&*I);
+              }else{
+                // There have global data by logical operations in thisBlock registers
+                getGlobalDatafromRegs(thisBlock,pc);
               }
-              //TODO: There have global data in thisBlock
-              //  register it.
             }
           }
 	  if(!haveTranslatedPC(pc, 0) and !isIllegalStaticAddr(pc)){
@@ -2415,6 +2416,92 @@ uint64_t JumpTargetManager::getStaticAddrfromRegs(llvm::BasicBlock *thisBlock){
     }
   }
   return 0;
+}
+
+void JumpTargetManager::getGlobalDatafromRegs(llvm::BasicBlock *thisBlock, uint64_t base){
+  BasicBlock::iterator it(thisBlock->begin());
+  BasicBlock::iterator end(thisBlock->end());
+  
+  for(;it!=end;it++){
+    if(it->getOpcode()==Instruction::Load){
+      auto load = dyn_cast<llvm::LoadInst>(it);
+      auto v = load->getPointerOperand();
+      if(dyn_cast<Constant>(v)){
+        StringRef name = v->getName();
+        auto number = StrToInt(name.data());
+        auto op = REGLABLE(number); 
+        if(op==UndefineOP) 
+          continue;
+        if(isGlobalData(ptc.regs[op])){
+          std::map<uint64_t, AssignGadge>::iterator TargetIt = assign_gadge.find(ptc.regs[op]);
+          if(TargetIt == assign_gadge.end()){ 
+            assign_gadge[ptc.regs[op]] = AssignGadge(ptc.regs[op]);
+            assign_gadge[ptc.regs[op]].pre = base;
+          }
+        }
+      }
+    }
+
+    if(it->getOpcode()==Instruction::Store){
+      auto store = dyn_cast<llvm::StoreInst>(it);
+      auto v = store->getPointerOperand();
+      if(dyn_cast<Constant>(v)){
+       StringRef name = v->getName();
+       auto number = StrToInt(name.data());
+       auto op = REGLABLE(number); 
+       if(op==UndefineOP) 
+         continue;
+       if(isGlobalData(ptc.regs[op])){
+         std::map<uint64_t, AssignGadge>::iterator TargetIt = assign_gadge.find(ptc.regs[op]);
+         if(TargetIt == assign_gadge.end()){
+           assign_gadge[ptc.regs[op]] = AssignGadge(ptc.regs[op]);
+           assign_gadge[ptc.regs[op]].pre = base;
+         }
+       } 
+      }     
+    }
+  }//?end for?
+}
+
+void JumpTargetManager::getGlobalDatafromRegs(llvm::BasicBlock *thisBlock){
+  BasicBlock::iterator it(thisBlock->begin());
+  BasicBlock::iterator end(thisBlock->end());
+  
+  for(;it!=end;it++){
+    if(it->getOpcode()==Instruction::Load){
+      auto load = dyn_cast<llvm::LoadInst>(it);
+      auto v = load->getPointerOperand();
+      if(dyn_cast<Constant>(v)){
+        StringRef name = v->getName();
+        auto number = StrToInt(name.data());
+        auto op = REGLABLE(number); 
+        if(op==UndefineOP) 
+          continue;
+        if(isGlobalData(ptc.regs[op])){
+          std::map<uint64_t, AssignGadge>::iterator TargetIt = assign_gadge.find(ptc.regs[op]);
+          if(TargetIt == assign_gadge.end()) 
+            assign_gadge[ptc.regs[op]] = AssignGadge(ptc.regs[op]);
+        }
+      }
+    }
+
+    if(it->getOpcode()==Instruction::Store){
+      auto store = dyn_cast<llvm::StoreInst>(it);
+      auto v = store->getPointerOperand();
+      if(dyn_cast<Constant>(v)){
+       StringRef name = v->getName();
+       auto number = StrToInt(name.data());
+       auto op = REGLABLE(number); 
+       if(op==UndefineOP) 
+         continue;
+       if(isGlobalData(ptc.regs[op])){
+         std::map<uint64_t, AssignGadge>::iterator TargetIt = assign_gadge.find(ptc.regs[op]);
+         if(TargetIt == assign_gadge.end())
+           assign_gadge[ptc.regs[op]] = AssignGadge(ptc.regs[op]);
+       } 
+      }     
+    }
+  }//?end for?
 }
 
 bool JumpTargetManager::isIllegalStaticAddr(uint64_t pc){
