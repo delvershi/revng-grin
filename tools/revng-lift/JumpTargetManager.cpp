@@ -2216,8 +2216,8 @@ void JumpTargetManager::recoverCPURegister(){
 void JumpTargetManager::harvestCodePointerInDataSegment(uint64_t basePC, llvm::Instruction *I){
   //auto pc = getInstructionPC(&*(I->getParent()->begin()) );
  
-  if((assign_gadge[basePC].static_addr_block - assign_gadge[basePC].operation_block)==0){ 
-    auto thisAddr = getInstructionPC(&*(assign_gadge[basePC].operation_block->begin()));
+  if(assign_gadge[basePC].static_addr_block and assign_gadge[basePC].pre==0){ 
+    auto thisAddr = getInstructionPC(&*(assign_gadge[basePC].static_addr_block->begin()));
     auto current_pc = getInstructionPC(assign_gadge[basePC].global_I);
     std::vector<uint64_t> AddrVec; 
     if(current_pc == thisAddr){
@@ -2242,11 +2242,11 @@ void JumpTargetManager::harvestCodePointerInDataSegment(uint64_t basePC, llvm::I
         revng_assert(tmpPC!=-1);
         // Static addresses stored in registers.
         if(!assign_gadge[basePC].indirect)
-          tmpPC = getStaticAddrfromRegs(assign_gadge[basePC].operation_block);
+          tmpPC = getStaticAddrfromRegs(assign_gadge[basePC].static_addr_block);
         
         if(!isExecutableAddress(tmpPC))
           break;    
-        harvestBTBasicBlock(assign_gadge[basePC].operation_block,thisAddr,tmpPC);
+        harvestBTBasicBlock(assign_gadge[basePC].static_addr_block,thisAddr,tmpPC);
         
         BaseAddr <<"    0x"<< std::hex << tmpPC <<"\n";     
       }
@@ -2299,13 +2299,14 @@ void JumpTargetManager::harvestStaticAddr(llvm::BasicBlock *thisBlock){
           // Harvest entry addresses stored in data segment
           if(isGlobalData(pc)){
             assign_gadge[pc] = AssignGadge(pc); 
-            assign_gadge[pc].global_I = &*I; 
             if(haveBinaryOperation(&*I)){
               assign_gadge[pc].operation_block = thisBlock;
+              assign_gadge[pc].global_I = &*I;
               //if thisBlock is indirect or StaticAddr is stored in registers. 
               if(*ptc.isIndirect or *ptc.isIndirectJmp or getStaticAddrfromRegs(thisBlock))
               {
                 assign_gadge[pc].static_addr_block = thisBlock;
+                assign_gadge[pc].operation_block = nullptr;
                 if(*ptc.isIndirect or *ptc.isIndirectJmp) 
                     assign_gadge[pc].indirect = true;
                 harvestCodePointerInDataSegment(pc,&*I);
@@ -2325,10 +2326,71 @@ void JumpTargetManager::harvestStaticAddr(llvm::BasicBlock *thisBlock){
   }
 }
 
+void JumpTargetManager::handleGlobalDataGadget(llvm::BasicBlock *thisBlock, uint64_t baseGlobal, uint32_t op){
+  BasicBlock::iterator it(thisBlock->begin());
+  BasicBlock::iterator end(thisBlock->end());
+  
+  for(;it!=end;it++){
+    if(it->getOpcode()==Instruction::Load){
+      auto load = dyn_cast<llvm::LoadInst>(it);
+      auto v = load->getPointerOperand();
+      if(dyn_cast<Constant>(v)){
+        StringRef name = v->getName();
+        auto number = StrToInt(name.data());
+        auto reg = REGLABLE(number); 
+        if(reg==UndefineOP) 
+          continue;
+        // If thisBlock only transfer baseGlobal, and there is no operation, skip it.
+        if(reg==op and haveBinaryOperation(&*it)){
+          if(haveDefOperation(&*it,v))
+            return;
+          llvm::BasicBlock *tmpBB = nullptr;
+          auto bb = assign_gadge[baseGlobal].operation_block;
+          if(bb){
+            tmpBB = bb;
+            errs()<<*bb<<"\n";
+            errs()<<*tmpBB<<"\n";
+            errs()<<baseGlobal<<"\n";
+            errs()<<op<<"\n";
+            //revng_assert(bb==nullptr);
+          }
+          assign_gadge[baseGlobal].operation_block = thisBlock;
+          assign_gadge[baseGlobal].global_I = &*it;
+          if(*ptc.isIndirect or *ptc.isIndirectJmp or getStaticAddrfromRegs(thisBlock)){
+            assign_gadge[baseGlobal].static_addr_block = thisBlock;
+            assign_gadge[baseGlobal].operation_block = nullptr;
+            if(*ptc.isIndirect or *ptc.isIndirectJmp)
+              assign_gadge[baseGlobal].indirect = true;  
+            harvestCodePointerInDataSegment(baseGlobal,&*it);
+            break;
+          }else{
+            getGlobalDatafromRegs(thisBlock,baseGlobal);
+            break;
+          }
+        }
+      }
+    }
+  }//?end for? 
+}
+
 bool JumpTargetManager::isGlobalData(uint64_t pc){
   if(DataSegmStartAddr<pc and pc<DataSegmEndAddr)
     return true;
 
+  return false;
+}
+
+bool JumpTargetManager::haveDefOperation(llvm::Instruction *I, llvm::Value *v){
+  BasicBlock::reverse_iterator it(I);
+  BasicBlock::reverse_iterator rend = I->getParent()->rend();
+
+  for(; it!=rend; it++){
+    if(it->getOpcode()==Instruction::Store){
+      auto store = dyn_cast<llvm::StoreInst>(&*it);
+      if(store->getPointerOperand()==v)
+        return true;
+    }
+  }
   return false;
 }
 
@@ -2343,15 +2405,22 @@ bool JumpTargetManager::haveBinaryOperation(llvm::Instruction *I){
     v = store->getPointerOperand();
   }
 
+  bool flag = false;
   it++;
   for(; it!=end; it++){ 
     switch(it->getOpcode()){
-      case llvm::Instruction::Add:{
+      case llvm::Instruction::Add:{  
         auto add = dyn_cast<Instruction>(it);
-        if((add->getOperand(0) - v) == 0)
-          return true;
-        else if((add->getOperand(1) - v) == 0)
-          return true;
+        if((add->getOperand(0) - v) == 0){
+          v = dyn_cast<Value>(add);
+          if(!flag)
+            flag = true; 
+        }
+        else if((add->getOperand(1) - v) == 0){
+          v = dyn_cast<Value>(add);
+          if(!flag)
+            flag = true;
+        }
         break;
       }
       case llvm::Instruction::Call:
@@ -2364,8 +2433,13 @@ bool JumpTargetManager::haveBinaryOperation(llvm::Instruction *I){
       }
       case llvm::Instruction::Store:{
         auto store = dyn_cast<llvm::StoreInst>(it);
-        if((store->getValueOperand() - v) == 0)
+        if((store->getValueOperand() - v) == 0){
 	    v = store->getPointerOperand();
+            if(flag){
+              if(dyn_cast<Constant>(v))
+                return true;
+            }
+        }
 	break;
       }
       default:{
@@ -2381,6 +2455,18 @@ bool JumpTargetManager::haveBinaryOperation(llvm::Instruction *I){
     }
   }//??end for
   return false;
+}
+
+std::pair<uint64_t, uint32_t> JumpTargetManager::haveGlobalDatainRegs(){
+  for(int i=0; i<16; i++){
+    if(isGlobalData(ptc.regs[i])){
+      std::map<uint64_t, AssignGadge>::iterator TargetIt = assign_gadge.find(ptc.regs[i]);
+      if(TargetIt != assign_gadge.end())  
+        return {ptc.regs[i], i};
+    }
+  }  
+
+  return {0,UndefineOP};
 }
 
 uint64_t JumpTargetManager::getStaticAddrfromRegs(llvm::BasicBlock *thisBlock){

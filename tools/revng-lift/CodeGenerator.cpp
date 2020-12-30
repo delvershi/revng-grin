@@ -800,6 +800,8 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
   std::vector<uint64_t> BlockPCs1;
   std::vector<uint64_t> &BlockPCs = BlockPCs1;
   bool BlockPCFlag = false;
+  uint64_t haveGlobal = 0;
+  uint32_t RegOP = UndefineOP;
   while (Entry != nullptr) {
     jjj++;
     BlockBRs = nullptr;
@@ -816,6 +818,9 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     PTCInstructionListPtr InstructionList(new PTCInstructionList);
     size_t ConsumedSize = 0; 
 
+    if(!traverseFLAG or !JumpTargets.haveBB){
+      std::tie(haveGlobal,RegOP) = JumpTargets.haveGlobalDatainRegs();
+    }
     if(!traverseFLAG){
       ConsumedSize = ptc.translate(VirtualAddress, InstructionList.get(),&DynamicVirtualAddress);
       tmpVA = VirtualAddress;
@@ -994,6 +999,11 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       JumpTargets.harvestRetBlocks(*ptc.isRet,NextPC);
     if(*ptc.isDirectJmp or *ptc.isIndirectJmp or *ptc.isCall)
       JumpTargets.harvestNextAddrofBr(NextPC);
+
+    if(haveGlobal){
+      JumpTargets.handleGlobalDataGadget(BlockBRs,haveGlobal,RegOP); 
+      haveGlobal=0;
+    }
       
     }////?end if(!JumpTargets.haveBB)
 

@@ -280,6 +280,9 @@ public:
   void harvestCodePointerInDataSegment(uint64_t basePC,llvm::Instruction *I);
   bool isGlobalData(uint64_t pc);
   bool haveBinaryOperation(llvm::Instruction *I);
+  bool haveDefOperation(llvm::Instruction *I, llvm::Value *v);
+  std::pair<uint64_t, uint32_t> haveGlobalDatainRegs();
+  void handleGlobalDataGadget(llvm::BasicBlock *thisBlock, uint64_t baseGlobal, uint32_t op);
   //std::map<uint64_t, AssignGadge> assign_gadge;
   class AssignGadge{
   public:

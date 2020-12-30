@@ -2378,6 +2378,8 @@ getFunctionNameString	lib/FunctionIsolation/IsolateFunctions.cpp	/^StringRef IFI
 getFunctionSummary	lib/StackAnalysis/Intraprocedural.h	/^  const IntraproceduralFunctionSummary &getFunctionSummary() {$/;"	f	class:StackAnalysis::Intraprocedural::Interrupt
 getGCBIOrNull	include/revng/ReachingDefinitions/ReachingDefinitionsAnalysisImpl.h	/^getGCBIOrNull<GeneratedCodeBasicInfo>(const GeneratedCodeBasicInfo &GCBI) {$/;"	f	namespace:RDA
 getGCBIOrNull	include/revng/ReachingDefinitions/ReachingDefinitionsAnalysisImpl.h	/^inline const GeneratedCodeBasicInfo *getGCBIOrNull(const T &Obj) {$/;"	f	namespace:RDA
+getGlobalDatafromRegs	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::getGlobalDatafromRegs(llvm::BasicBlock *thisBlock){$/;"	f	class:JumpTargetManager
+getGlobalDatafromRegs	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::getGlobalDatafromRegs(llvm::BasicBlock *thisBlock, uint64_t base){$/;"	f	class:JumpTargetManager
 getIllegalValueDFG	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::getIllegalValueDFG(llvm::Value *v,$/;"	f	class:JumpTargetManager
 getInstructionPC	tools/revng-lift/JumpTargetManager.cpp	/^uint64_t JumpTargetManager::getInstructionPC(llvm::Instruction *I){$/;"	f	class:JumpTargetManager
 getInterval	tools/revng-lift/OSRA.cpp	/^  static boost::icl::interval_set<T> getInterval(const BoundedValue &BV) {$/;"	f	class:BoundedValueHelpers
@@ -2497,6 +2499,7 @@ handleEdge	lib/StackAnalysis/IncoherentCallsAnalysis.cpp	/^  llvm::Optional<Elem
 handleEdge	lib/StackAnalysis/Intraprocedural.h	/^  llvm::Optional<Element> handleEdge(const Element &Original,$/;"	f	class:StackAnalysis::Intraprocedural::Analysis
 handleEdge	lib/Support/ExampleAnalysis.cpp	/^  llvm::Optional<LatticeElement> handleEdge(const LatticeElement &Original,$/;"	f	class:ExampleAnalysis::Analysis
 handleGenericInstruction	lib/StackAnalysis/Intraprocedural.cpp	/^  void handleGenericInstruction(Instruction *I) {$/;"	f	class:StackAnalysis::Intraprocedural::BasicBlockState
+handleGlobalDataGadget	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::handleGlobalDataGadget(llvm::BasicBlock *thisBlock, uint64_t thisAddr, uint64_t baseGlobal){$/;"	f	class:JumpTargetManager
 handleIllegalJumpAddress	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::handleIllegalJumpAddress(llvm::BasicBlock *thisBlock,$/;"	f	class:JumpTargetManager
 handleIllegalMemoryAccess	tools/revng-lift/JumpTargetManager.cpp	/^uint64_t JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock,$/;"	f	class:JumpTargetManager
 handleIndirectCall	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::handleIndirectCall(llvm::BasicBlock *thisBlock, $/;"	f	class:JumpTargetManager
@@ -2555,6 +2558,7 @@ hash	lib/StackAnalysis/Element.h	/^struct hash<StackAnalysis::Intraprocedural::E
 hash	lib/StackAnalysis/Element.h	/^struct hash<StackAnalysis::Intraprocedural::Value> {$/;"	s	namespace:std
 haveBB	tools/revng-lift/JumpTargetManager.h	/^  unsigned int haveBB;$/;"	m	class:JumpTargetManager
 haveBinaryOperation	tools/revng-lift/JumpTargetManager.cpp	/^bool JumpTargetManager::haveBinaryOperation(llvm::Instruction *I){$/;"	f	class:JumpTargetManager
+haveGlobalDatainRegs	tools/revng-lift/JumpTargetManager.cpp	/^uint64_t JumpTargetManager::haveGlobalDatainRegs(){$/;"	f	class:JumpTargetManager
 haveTranslatedPC	tools/revng-lift/JumpTargetManager.cpp	/^bool JumpTargetManager::haveTranslatedPC(uint64_t pc, uint64_t next){$/;"	f	class:JumpTargetManager
 head	include/revng/ADT/Queue.h	/^  T head() const { return Queue.front(); }$/;"	f	class:QueueImpl
 head	include/revng/Support/MonotoneFramework.h	/^  Iterated head() const { return Queue.head(); }$/;"	f	class:MonotoneFrameworkWorkList
@@ -3143,6 +3147,7 @@ pop	tools/revng-lift/VariableManager.cpp	/^  std::pair<int64_t, Value *> pop() {
 popUntil	lib/StackAnalysis/InterproceduralAnalysis.h	/^  void popUntil(const Analysis *WI) {$/;"	f	class:StackAnalysis::InterproceduralAnalysis
 populateFunctionDispatcher	lib/FunctionIsolation/IsolateFunctions.cpp	/^void IFI::populateFunctionDispatcher() {$/;"	f	class:IFI
 positive	tests/Runtime/calc.c	/^typedef enum { none, positive, negative } literal_status;$/;"	e	enum:__anon1	file:
+pre	tools/revng-lift/JumpTargetManager.h	/^   uint64_t pre;$/;"	m	class:JumpTargetManager::AssignGadge
 pred_begin	include/revng/BasicAnalyses/CustomCFG.h	/^  links_const_iterator pred_begin() const { return Predecessors.begin(); }$/;"	f	class:CustomCFGNode
 pred_begin	include/revng/BasicAnalyses/CustomCFG.h	/^  links_iterator pred_begin() { return Predecessors.begin(); }$/;"	f	class:CustomCFGNode
 pred_end	include/revng/BasicAnalyses/CustomCFG.h	/^  links_const_iterator pred_end() const { return Predecessors.end(); }$/;"	f	class:CustomCFGNode
