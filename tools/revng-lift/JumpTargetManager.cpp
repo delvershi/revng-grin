@@ -2221,12 +2221,38 @@ void JumpTargetManager::harvestCodePointerInDataSegment(uint64_t basePC, llvm::I
     auto current_pc = getInstructionPC(assign_gadge[basePC].global_I);
     std::vector<uint64_t> AddrVec; 
     if(current_pc == thisAddr){
-      //if(assign_gadge[basePC].indirect)
-      //else static addr stored in register
-      //ptc.exec(thisAddr);
+      /* If the instruction to operate global data is entry address,
+       * we consider that no instruction operates offset, and offset value
+       * has been designated in global_I. */
+      auto Path = "GlobalPointer.log";
+      std::ofstream BaseAddr;
+      BaseAddr.open(Path,std::ofstream::out | std::ofstream::app);
+      BaseAddr <<"PC: "<<std::hex<< current_pc <<" : \n";
+
+      storeCPURegister();
+      for(;;){
+        //Static addresses are indirect jump target address.
+        int64_t tmpPC = ptc.exec(thisAddr);
+        revng_assert(tmpPC!=-1);
+        // Static addresses stored in registers.
+        if(!assign_gadge[basePC].indirect)
+          tmpPC = getStaticAddrfromRegs(assign_gadge[basePC].static_addr_block);
+        
+        if(!isExecutableAddress(tmpPC))
+          break;    
+        harvestBTBasicBlock(assign_gadge[basePC].static_addr_block,thisAddr,tmpPC);
+        
+        BaseAddr <<"    0x"<< std::hex << tmpPC <<"\n";     
+      }
+      recoverCPURegister();
+ 
+      BaseAddr.close();
     }else{
       uint32_t op = 0;
       uint64_t virtualAddr = 0;
+      /* If the instruction to operate global data isn't entry address of block, 
+       * then we consider all instructions before this instruction will be the instruction
+       * to operate offset value. */
       std::tie(op,virtualAddr) = getLastOperandandNextPC(&*(assign_gadge[basePC].static_addr_block->begin())); 
 
       auto Path = "GlobalPointer.log";
@@ -2253,8 +2279,7 @@ void JumpTargetManager::harvestCodePointerInDataSegment(uint64_t basePC, llvm::I
       recoverCPURegister();
  
       BaseAddr.close();
-    }//if(current..)..else 
-      
+    }//if(current..)..else   
   }
 
 }
@@ -2346,6 +2371,7 @@ void JumpTargetManager::handleGlobalDataGadget(llvm::BasicBlock *thisBlock, uint
             return;
           llvm::BasicBlock *tmpBB = nullptr;
           llvm::Instruction *tmpI = nullptr;
+          // global_I is an instruction to operate global data
           auto bb = assign_gadge[baseGlobal].operation_block;
           if(bb){
             tmpBB = bb;
