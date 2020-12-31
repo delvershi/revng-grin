@@ -274,8 +274,8 @@ public:
   void storeCPURegister();
   void recoverCPURegister();
   uint64_t getStaticAddrfromRegs(llvm::BasicBlock *thisBlock);
-  void getGlobalDatafromRegs(llvm::BasicBlock *thisBlock, uint64_t base);
-  void getGlobalDatafromRegs(llvm::BasicBlock *thisBlock);
+  bool getGlobalDatafromRegs(llvm::BasicBlock *thisBlock, uint64_t base);
+  bool getGlobalDatafromRegs(llvm::BasicBlock *thisBlock);
   std::pair<uint32_t,uint64_t> getLastOperandandNextPC(llvm::Instruction *I);
   void harvestCodePointerInDataSegment(uint64_t basePC,llvm::Instruction *I);
   bool isGlobalData(uint64_t pc);

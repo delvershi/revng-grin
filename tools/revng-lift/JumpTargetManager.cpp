@@ -2345,14 +2345,11 @@ void JumpTargetManager::handleGlobalDataGadget(llvm::BasicBlock *thisBlock, uint
           if(haveDefOperation(&*it,v))
             return;
           llvm::BasicBlock *tmpBB = nullptr;
+          llvm::Instruction *tmpI = nullptr;
           auto bb = assign_gadge[baseGlobal].operation_block;
           if(bb){
             tmpBB = bb;
-            errs()<<*bb<<"\n";
-            errs()<<*tmpBB<<"\n";
-            errs()<<baseGlobal<<"\n";
-            errs()<<op<<"\n";
-            //revng_assert(bb==nullptr);
+            tmpI = assign_gadge[baseGlobal].global_I;
           }
           assign_gadge[baseGlobal].operation_block = thisBlock;
           assign_gadge[baseGlobal].global_I = &*it;
@@ -2364,7 +2361,11 @@ void JumpTargetManager::handleGlobalDataGadget(llvm::BasicBlock *thisBlock, uint
             harvestCodePointerInDataSegment(baseGlobal,&*it);
             break;
           }else{
-            getGlobalDatafromRegs(thisBlock,baseGlobal);
+            auto result = getGlobalDatafromRegs(thisBlock,baseGlobal);
+            if(!result){
+              assign_gadge[baseGlobal].operation_block = tmpBB;
+              assign_gadge[baseGlobal].global_I = tmpI;
+            }
             break;
           }
         }
@@ -2504,10 +2505,11 @@ uint64_t JumpTargetManager::getStaticAddrfromRegs(llvm::BasicBlock *thisBlock){
   return 0;
 }
 
-void JumpTargetManager::getGlobalDatafromRegs(llvm::BasicBlock *thisBlock, uint64_t base){
+bool JumpTargetManager::getGlobalDatafromRegs(llvm::BasicBlock *thisBlock, uint64_t base){
   BasicBlock::iterator it(thisBlock->begin());
   BasicBlock::iterator end(thisBlock->end());
   
+  bool result =false; 
   for(;it!=end;it++){
     if(it->getOpcode()==Instruction::Load){
       auto load = dyn_cast<llvm::LoadInst>(it);
@@ -2523,6 +2525,7 @@ void JumpTargetManager::getGlobalDatafromRegs(llvm::BasicBlock *thisBlock, uint6
           if(TargetIt == assign_gadge.end()){ 
             assign_gadge[ptc.regs[op]] = AssignGadge(ptc.regs[op]);
             assign_gadge[ptc.regs[op]].pre = base;
+            result = true;
           }
         }
       }
@@ -2542,17 +2545,22 @@ void JumpTargetManager::getGlobalDatafromRegs(llvm::BasicBlock *thisBlock, uint6
          if(TargetIt == assign_gadge.end()){
            assign_gadge[ptc.regs[op]] = AssignGadge(ptc.regs[op]);
            assign_gadge[ptc.regs[op]].pre = base;
+           result = true;
          }
        } 
       }     
     }
   }//?end for?
+  if(result)
+    return result;
+  return false; 
 }
 
-void JumpTargetManager::getGlobalDatafromRegs(llvm::BasicBlock *thisBlock){
+bool JumpTargetManager::getGlobalDatafromRegs(llvm::BasicBlock *thisBlock){
   BasicBlock::iterator it(thisBlock->begin());
   BasicBlock::iterator end(thisBlock->end());
   
+  bool result;
   for(;it!=end;it++){
     if(it->getOpcode()==Instruction::Load){
       auto load = dyn_cast<llvm::LoadInst>(it);
@@ -2565,8 +2573,10 @@ void JumpTargetManager::getGlobalDatafromRegs(llvm::BasicBlock *thisBlock){
           continue;
         if(isGlobalData(ptc.regs[op])){
           std::map<uint64_t, AssignGadge>::iterator TargetIt = assign_gadge.find(ptc.regs[op]);
-          if(TargetIt == assign_gadge.end()) 
+          if(TargetIt == assign_gadge.end()){ 
             assign_gadge[ptc.regs[op]] = AssignGadge(ptc.regs[op]);
+            result = true;
+          }
         }
       }
     }
@@ -2582,12 +2592,17 @@ void JumpTargetManager::getGlobalDatafromRegs(llvm::BasicBlock *thisBlock){
          continue;
        if(isGlobalData(ptc.regs[op])){
          std::map<uint64_t, AssignGadge>::iterator TargetIt = assign_gadge.find(ptc.regs[op]);
-         if(TargetIt == assign_gadge.end())
+         if(TargetIt == assign_gadge.end()){
            assign_gadge[ptc.regs[op]] = AssignGadge(ptc.regs[op]);
+           result = true;
+         }
        } 
       }     
     }
   }//?end for?
+  if(result)
+    return result;
+  return false;
 }
 
 bool JumpTargetManager::isIllegalStaticAddr(uint64_t pc){
