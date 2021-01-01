@@ -290,6 +290,7 @@ public:
      global_addr(0),
      pre(0),
      global_I(nullptr),
+     op(UndefineOP),
      operation_block(nullptr),
      static_addr_block(nullptr),
      indirect(false),
@@ -298,6 +299,7 @@ public:
      global_addr(addr),
      pre(0),
      global_I(nullptr),
+     op(UndefineOP),
      operation_block(nullptr),
      static_addr_block(nullptr),
      indirect(false),
@@ -306,6 +308,7 @@ public:
    uint64_t global_addr;
    uint64_t pre;
    llvm::Instruction * global_I;
+   uint32_t op;
    llvm::BasicBlock * operation_block;
  
    llvm::BasicBlock * static_addr_block;

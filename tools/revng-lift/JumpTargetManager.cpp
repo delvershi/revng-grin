@@ -2337,7 +2337,11 @@ void JumpTargetManager::harvestStaticAddr(llvm::BasicBlock *thisBlock){
                 harvestCodePointerInDataSegment(pc,&*I);
               }else{
                 // There have global data by logical operations in thisBlock registers
-                getGlobalDatafromRegs(thisBlock,pc);
+                auto result = getGlobalDatafromRegs(thisBlock,pc);
+                if(!result){
+                  assign_gadge[pc].operation_block = nullptr;
+                  assign_gadge[pc].global_I = nullptr; 
+                }
               }
             }
           }
@@ -2371,14 +2375,17 @@ void JumpTargetManager::handleGlobalDataGadget(llvm::BasicBlock *thisBlock, uint
             return;
           llvm::BasicBlock *tmpBB = nullptr;
           llvm::Instruction *tmpI = nullptr;
+          uint32_t tmpOP = UndefineOP;
           // global_I is an instruction to operate global data
           auto bb = assign_gadge[baseGlobal].operation_block;
           if(bb){
             tmpBB = bb;
             tmpI = assign_gadge[baseGlobal].global_I;
+            tmpOP = assign_gadge[baseGlobal].op;
           }
           assign_gadge[baseGlobal].operation_block = thisBlock;
           assign_gadge[baseGlobal].global_I = &*it;
+          assign_gadge[baseGlobal].op = op;
           if(*ptc.isIndirect or *ptc.isIndirectJmp or getStaticAddrfromRegs(thisBlock)){
             assign_gadge[baseGlobal].static_addr_block = thisBlock;
             assign_gadge[baseGlobal].operation_block = nullptr;
@@ -2391,6 +2398,7 @@ void JumpTargetManager::handleGlobalDataGadget(llvm::BasicBlock *thisBlock, uint
             if(!result){
               assign_gadge[baseGlobal].operation_block = tmpBB;
               assign_gadge[baseGlobal].global_I = tmpI;
+              assign_gadge[baseGlobal].op = tmpOP;
             }
             break;
           }
