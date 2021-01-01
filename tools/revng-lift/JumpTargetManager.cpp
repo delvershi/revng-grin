@@ -2213,12 +2213,36 @@ void JumpTargetManager::recoverCPURegister(){
     ptc.regs[i] = TempCPURegister[i];
 }
 
-void JumpTargetManager::harvestCodePointerInDataSegment(uint64_t basePC, llvm::Instruction *I){
+void JumpTargetManager::harvestCodePointerInDataSegment(uint64_t basePC){
   //auto pc = getInstructionPC(&*(I->getParent()->begin()) );
- 
-  if(assign_gadge[basePC].static_addr_block and assign_gadge[basePC].pre==0){ 
-    auto thisAddr = getInstructionPC(&*(assign_gadge[basePC].static_addr_block->begin()));
-    auto current_pc = getInstructionPC(assign_gadge[basePC].global_I);
+  std::vector<uint64_t> GadgeChain;
+  GadgeChain.push_back(basePC);
+  uint64_t base = basePC;
+  while(assign_gadge[base].pre!=0){
+    base = assign_gadge[assign_gadge[base].pre].global_addr;
+    GadgeChain.push_back(base);
+  }
+  std::vector<uint64_t> tmpGlobal;
+  std::vector<uint64_t> &tmpGlobal1 = tmpGlobal;
+  for(auto global_addr : GadgeChain){
+    auto gadget = assign_gadge[global_addr].operation_block ? 
+                 assign_gadge[global_addr].operation_block:assign_gadge[global_addr].static_addr_block;
+    auto global_I = assign_gadge[global_addr].global_I;
+    auto op = assign_gadge[global_addr].op;
+    auto indirect = assign_gadge[global_addr].indirect;
+    runGlobalGadget(global_addr,gadget,global_I,op,indirect,tmpGlobal1);
+  }
+}
+
+void JumpTargetManager::runGlobalGadget(uint64_t basePC,
+                                        llvm::BasicBlock * gadget,
+                                        llvm::Instruction * global_I,
+                                        uint32_t op,
+                                        bool indirect,
+                                        std::vector<uint64_t> &tmpGlobal){
+
+    auto thisAddr = getInstructionPC(&*(gadget->begin()));
+    auto current_pc = getInstructionPC(global_I);
     std::vector<uint64_t> AddrVec; 
     if(current_pc == thisAddr){
       /* If the instruction to operate global data is entry address,
@@ -2235,12 +2259,12 @@ void JumpTargetManager::harvestCodePointerInDataSegment(uint64_t basePC, llvm::I
         int64_t tmpPC = ptc.exec(thisAddr);
         revng_assert(tmpPC!=-1);
         // Static addresses stored in registers.
-        if(!assign_gadge[basePC].indirect)
-          tmpPC = getStaticAddrfromRegs(assign_gadge[basePC].static_addr_block);
+        if(!indirect)
+          tmpPC = getStaticAddrfromRegs(gadget);
         
         if(!isExecutableAddress(tmpPC))
           break;    
-        harvestBTBasicBlock(assign_gadge[basePC].static_addr_block,thisAddr,tmpPC);
+        harvestBTBasicBlock(gadget,thisAddr,tmpPC);
         
         BaseAddr <<"    0x"<< std::hex << tmpPC <<"\n";     
       }
@@ -2248,12 +2272,12 @@ void JumpTargetManager::harvestCodePointerInDataSegment(uint64_t basePC, llvm::I
  
       BaseAddr.close();
     }else{
-      uint32_t op = 0;
+      uint32_t opt = 0;
       uint64_t virtualAddr = 0;
       /* If the instruction to operate global data isn't entry address of block, 
        * then we consider all instructions before this instruction will be the instruction
        * to operate offset value. */
-      std::tie(op,virtualAddr) = getLastOperandandNextPC(&*(assign_gadge[basePC].static_addr_block->begin())); 
+      std::tie(opt,virtualAddr) = getLastOperandandNextPC(&*(gadget->begin())); 
 
       auto Path = "GlobalPointer.log";
       std::ofstream BaseAddr;
@@ -2262,17 +2286,17 @@ void JumpTargetManager::harvestCodePointerInDataSegment(uint64_t basePC, llvm::I
 
       storeCPURegister();
       for(int i=0; ;i++){
-        ptc.regs[op] = i; 
+        ptc.regs[opt] = i; 
         //Static addresses are indirect jump target address.
         int64_t tmpPC = ptc.exec(virtualAddr);
         revng_assert(tmpPC!=-1);
         // Static addresses stored in registers.
-        if(!assign_gadge[basePC].indirect)
-          tmpPC = getStaticAddrfromRegs(assign_gadge[basePC].static_addr_block);
+        if(!indirect)
+          tmpPC = getStaticAddrfromRegs(gadget);
         
         if(!isExecutableAddress(tmpPC))
           break;    
-        harvestBTBasicBlock(assign_gadge[basePC].static_addr_block,thisAddr,tmpPC);
+        harvestBTBasicBlock(gadget,thisAddr,tmpPC);
         
         BaseAddr <<"    0x"<< std::hex << tmpPC <<"\n";     
       }
@@ -2280,7 +2304,6 @@ void JumpTargetManager::harvestCodePointerInDataSegment(uint64_t basePC, llvm::I
  
       BaseAddr.close();
     }//if(current..)..else   
-  }
 
 }
 
@@ -2334,7 +2357,7 @@ void JumpTargetManager::harvestStaticAddr(llvm::BasicBlock *thisBlock){
                 assign_gadge[pc].operation_block = nullptr;
                 if(*ptc.isIndirect or *ptc.isIndirectJmp) 
                     assign_gadge[pc].indirect = true;
-                harvestCodePointerInDataSegment(pc,&*I);
+                harvestCodePointerInDataSegment(pc);
               }else{
                 // There have global data by logical operations in thisBlock registers
                 auto result = getGlobalDatafromRegs(thisBlock,pc);
@@ -2391,7 +2414,7 @@ void JumpTargetManager::handleGlobalDataGadget(llvm::BasicBlock *thisBlock, uint
             assign_gadge[baseGlobal].operation_block = nullptr;
             if(*ptc.isIndirect or *ptc.isIndirectJmp)
               assign_gadge[baseGlobal].indirect = true;  
-            harvestCodePointerInDataSegment(baseGlobal,&*it);
+            harvestCodePointerInDataSegment(baseGlobal);
             break;
           }else{
             auto result = getGlobalDatafromRegs(thisBlock,baseGlobal);

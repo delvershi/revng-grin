@@ -277,7 +277,13 @@ public:
   bool getGlobalDatafromRegs(llvm::BasicBlock *thisBlock, uint64_t base);
   bool getGlobalDatafromRegs(llvm::BasicBlock *thisBlock);
   std::pair<uint32_t,uint64_t> getLastOperandandNextPC(llvm::Instruction *I);
-  void harvestCodePointerInDataSegment(uint64_t basePC,llvm::Instruction *I);
+  void harvestCodePointerInDataSegment(uint64_t basePC);
+  void runGlobalGadget(uint64_t basePC, 
+                       llvm::BasicBlock * gadget,
+                       llvm::Instruction * global_I,
+                       uint32_t op,
+                       bool indirect,
+                       std::vector<uint64_t> &tmpGlobal);
   bool isGlobalData(uint64_t pc);
   bool haveBinaryOperation(llvm::Instruction *I);
   bool haveDefOperation(llvm::Instruction *I, llvm::Value *v);
