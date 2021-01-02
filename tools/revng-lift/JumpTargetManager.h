@@ -275,11 +275,12 @@ public:
   void recoverCPURegister();
   uint64_t getStaticAddrfromRegs(llvm::BasicBlock *thisBlock);
   bool getGlobalDatafromRegs(llvm::BasicBlock *thisBlock, uint64_t base);
-  bool getGlobalDatafromRegs(llvm::BasicBlock *thisBlock);
+  uint64_t getGlobalDatafromDestRegs(llvm::BasicBlock *thisBlock);
   std::pair<uint32_t,uint64_t> getLastOperandandNextPC(llvm::Instruction *I);
   void harvestCodePointerInDataSegment(uint64_t basePC);
   void runGlobalGadget(uint64_t basePC, 
                        llvm::BasicBlock * gadget,
+                       bool oper,
                        llvm::Instruction * global_I,
                        uint32_t op,
                        bool indirect,
@@ -287,6 +288,7 @@ public:
   bool isGlobalData(uint64_t pc);
   bool haveBinaryOperation(llvm::Instruction *I);
   bool haveDefOperation(llvm::Instruction *I, llvm::Value *v);
+  bool haveDef2OP(llvm::Instruction *I, uint32_t op);
   std::pair<uint64_t, uint32_t> haveGlobalDatainRegs();
   void handleGlobalDataGadget(llvm::BasicBlock *thisBlock, uint64_t baseGlobal, uint32_t op);
   //std::map<uint64_t, AssignGadge> assign_gadge;
@@ -299,8 +301,7 @@ public:
      op(UndefineOP),
      operation_block(nullptr),
      static_addr_block(nullptr),
-     indirect(false),
-     offset(0) {}
+     indirect(false) {}
    AssignGadge(uint64_t addr):
      global_addr(addr),
      pre(0),
@@ -308,8 +309,7 @@ public:
      op(UndefineOP),
      operation_block(nullptr),
      static_addr_block(nullptr),
-     indirect(false),
-     offset(0) {}
+     indirect(false) {}
 
    uint64_t global_addr;
    uint64_t pre;
@@ -319,7 +319,6 @@ public:
  
    llvm::BasicBlock * static_addr_block;
    bool indirect;
-   uint64_t offset;
  };
  
 
