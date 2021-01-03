@@ -2251,6 +2251,7 @@ void JumpTargetManager::runGlobalGadget(uint64_t basePC,
     if(tmpGlobal.empty())
       tmpGlobal.push_back(basePC);
 
+    size_t pagesize = 0;
     if(current_pc == thisAddr){
       /* If the instruction to operate global data is entry address,
        * we consider that no instruction operates offset, and offset value
@@ -2261,20 +2262,36 @@ void JumpTargetManager::runGlobalGadget(uint64_t basePC,
       BaseAddr <<"PC: "<<std::hex<< current_pc <<" : \n";
 
       storeCPURegister();
-      for(;;){
-        //Static addresses are indirect jump target address.
-        int64_t tmpPC = ptc.exec(thisAddr);
-        revng_assert(tmpPC!=-1);
-        // Static addresses stored in registers.
-        if(!indirect)
-          tmpPC = getStaticAddrfromRegs(gadget);
-        
-        if(!isExecutableAddress(tmpPC))
-          break;    
-        harvestBTBasicBlock(gadget,thisAddr,tmpPC);
-        
-        BaseAddr <<"    0x"<< std::hex << tmpPC <<"\n";     
+      for(auto base:tmpGlobal){
+        if(op!=UndefineOP)
+          ptc.regs[op] = base;
+        for(;;){
+          //Static addresses are indirect jump target address.
+          int64_t tmpPC = ptc.exec(thisAddr);
+          revng_assert(tmpPC!=-1);
+          // Static addresses stored in registers.
+          if(!indirect)
+            tmpPC = getStaticAddrfromRegs(gadget);
+          if(oper){
+            auto data = getGlobalDatafromDestRegs(gadget);
+            if(!isGlobalData(data) or !haveDef2OP(global_I,op))
+              break;
+            pagesize++;
+            if(pagesize>512)
+              break;
+            tempVec.push_back(data);
+            BaseAddr <<"    0x"<< std::hex << tmpPC <<"\n";
+            continue;
+          }
+          if(!isExecutableAddress(tmpPC))
+            break;    
+          harvestBTBasicBlock(gadget,thisAddr,tmpPC);
+         
+          BaseAddr <<"    0x"<< std::hex << tmpPC <<"\n";     
+        }
       }
+      tmpGlobal.clear();
+      tmpGlobal = tempVec;
       recoverCPURegister();
  
       BaseAddr.close();
@@ -2304,11 +2321,16 @@ void JumpTargetManager::runGlobalGadget(uint64_t basePC,
           if(!indirect)
             tmpPC = getStaticAddrfromRegs(gadget);
           if(oper){
+            //TODO:vector data
             auto data = getGlobalDatafromDestRegs(gadget);
-            if(!isGlobalData(data) or !haveDef2OP(global_I,op))
+            if(!isGlobalData(data))
               break;
+            pagesize++;
+            if(pagesize>512)
+              break; 
             tempVec.push_back(data);
             BaseAddr <<"    0x"<< std::hex << tmpPC <<"\n";
+            continue;
           }
             
           if(!isExecutableAddress(tmpPC))
@@ -2414,6 +2436,7 @@ void JumpTargetManager::handleGlobalDataGadget(llvm::BasicBlock *thisBlock, uint
           continue;
         // If thisBlock only transfer baseGlobal, and there is no operation, skip it.
         if(reg==op and haveBinaryOperation(&*it)){
+          //TODO: offset is or not const
           if(haveDefOperation(&*it,v))
             return;
           llvm::BasicBlock *tmpBB = nullptr;
@@ -2496,6 +2519,7 @@ bool JumpTargetManager::haveDef2OP(llvm::Instruction *I, uint32_t op){
   return false;
 }
 
+// If this value have a binary operation and assign to reg/mem.
 bool JumpTargetManager::haveBinaryOperation(llvm::Instruction *I){
   BasicBlock::iterator it(I);
   BasicBlock::iterator end = I->getParent()->end();
