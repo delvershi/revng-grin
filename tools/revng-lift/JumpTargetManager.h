@@ -273,7 +273,7 @@ public:
   std::vector<uint64_t> TempCPURegister;
   void storeCPURegister();
   void recoverCPURegister();
-  uint64_t getStaticAddrfromRegs(llvm::BasicBlock *thisBlock);
+  uint64_t getStaticAddrfromDestRegs(llvm::BasicBlock *thisBlock);
   bool getGlobalDatafromRegs(llvm::BasicBlock *thisBlock, uint64_t base);
   uint64_t getGlobalDatafromDestRegs(llvm::BasicBlock *thisBlock);
   std::pair<uint32_t,uint64_t> getLastOperandandNextPC(llvm::Instruction *I);
@@ -289,8 +289,8 @@ public:
   bool haveBinaryOperation(llvm::Instruction *I);
   bool haveDefOperation(llvm::Instruction *I, llvm::Value *v);
   bool haveDef2OP(llvm::Instruction *I, uint32_t op);
-  std::pair<uint64_t, uint32_t> haveGlobalDatainRegs();
-  void handleGlobalDataGadget(llvm::BasicBlock *thisBlock, uint64_t baseGlobal, uint32_t op);
+  std::map<uint32_t, uint64_t> haveGlobalDatainRegs();
+  void handleGlobalDataGadget(llvm::BasicBlock *thisBlock, std::map<uint32_t, uint64_t> GloData);
   //std::map<uint64_t, AssignGadge> assign_gadge;
   class AssignGadge{
   public:

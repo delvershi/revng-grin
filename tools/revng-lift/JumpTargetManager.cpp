@@ -2251,6 +2251,7 @@ void JumpTargetManager::runGlobalGadget(uint64_t basePC,
     if(tmpGlobal.empty())
       tmpGlobal.push_back(basePC);
 
+    uint32_t crash = 0;
     size_t pagesize = 0;
     if(current_pc == thisAddr){
       /* If the instruction to operate global data is entry address,
@@ -2268,24 +2269,34 @@ void JumpTargetManager::runGlobalGadget(uint64_t basePC,
         for(;;){
           //Static addresses are indirect jump target address.
           int64_t tmpPC = ptc.exec(thisAddr);
-          revng_assert(tmpPC!=-1);
+          if(tmpPC==-1){
+            if(!crash)
+              revng_assert(tmpPC!=-1);
+            else
+              break;
+          }
+          crash++;
           // Static addresses stored in registers.
           if(!indirect)
-            tmpPC = getStaticAddrfromRegs(gadget);
+            tmpPC = getStaticAddrfromDestRegs(gadget);
           if(oper){
             auto data = getGlobalDatafromDestRegs(gadget);
-            if(!isGlobalData(data) or !haveDef2OP(global_I,op))
-              break;
-            pagesize++;
-            if(pagesize>512)
+            if(!isGlobalData(data))
               break;
             tempVec.push_back(data);
             BaseAddr <<"    0x"<< std::hex << tmpPC <<"\n";
+            pagesize++;
+            if(pagesize>512)
+              break;
+            if(!haveDef2OP(global_I,op))
+              break;
             continue;
           }
           if(!isExecutableAddress(tmpPC))
             break;    
           harvestBTBasicBlock(gadget,thisAddr,tmpPC);
+          if(!haveDef2OP(global_I,op))
+            break;
          
           BaseAddr <<"    0x"<< std::hex << tmpPC <<"\n";     
         }
@@ -2316,20 +2327,26 @@ void JumpTargetManager::runGlobalGadget(uint64_t basePC,
           ptc.regs[opt] = i; 
           //Static addresses are indirect jump target address.
           int64_t tmpPC = ptc.exec(virtualAddr);
-          revng_assert(tmpPC!=-1);
+          if(tmpPC==-1){
+            if(!crash)
+              revng_assert(tmpPC!=-1);
+            else
+              break;
+          }
+          crash++;
           // Static addresses stored in registers.
           if(!indirect)
-            tmpPC = getStaticAddrfromRegs(gadget);
+            tmpPC = getStaticAddrfromDestRegs(gadget);
           if(oper){
-            //TODO:vector data
+            //TODO:vector data ?
             auto data = getGlobalDatafromDestRegs(gadget);
             if(!isGlobalData(data))
-              break;
-            pagesize++;
-            if(pagesize>512)
               break; 
             tempVec.push_back(data);
             BaseAddr <<"    0x"<< std::hex << tmpPC <<"\n";
+            pagesize++;
+            if(pagesize>512)
+              break;
             continue;
           }
             
@@ -2393,7 +2410,7 @@ void JumpTargetManager::harvestStaticAddr(llvm::BasicBlock *thisBlock){
               assign_gadge[pc].operation_block = thisBlock;
               assign_gadge[pc].global_I = &*I;
               //if thisBlock is indirect or StaticAddr is stored in registers. 
-              if(*ptc.isIndirect or *ptc.isIndirectJmp or getStaticAddrfromRegs(thisBlock))
+              if(*ptc.isIndirect or *ptc.isIndirectJmp or getStaticAddrfromDestRegs(thisBlock))
               {
                 assign_gadge[pc].static_addr_block = thisBlock;
                 assign_gadge[pc].operation_block = nullptr;
@@ -2420,10 +2437,10 @@ void JumpTargetManager::harvestStaticAddr(llvm::BasicBlock *thisBlock){
   }
 }
 
-void JumpTargetManager::handleGlobalDataGadget(llvm::BasicBlock *thisBlock, uint64_t baseGlobal, uint32_t op){
+void JumpTargetManager::handleGlobalDataGadget(llvm::BasicBlock *thisBlock, std::map<uint32_t, uint64_t> GloData){
   BasicBlock::iterator it(thisBlock->begin());
   BasicBlock::iterator end(thisBlock->end());
-  
+
   for(;it!=end;it++){
     if(it->getOpcode()==Instruction::Load){
       auto load = dyn_cast<llvm::LoadInst>(it);
@@ -2435,7 +2452,9 @@ void JumpTargetManager::handleGlobalDataGadget(llvm::BasicBlock *thisBlock, uint
         if(reg==UndefineOP) 
           continue;
         // If thisBlock only transfer baseGlobal, and there is no operation, skip it.
-        if(reg==op and haveBinaryOperation(&*it)){
+        auto TargetIt = GloData.find(reg);
+        if(TargetIt!=GloData.end() and haveBinaryOperation(&*it)){
+          auto baseGlobal = TargetIt->second;
           //TODO: offset is or not const
           if(haveDefOperation(&*it,v))
             return;
@@ -2451,8 +2470,8 @@ void JumpTargetManager::handleGlobalDataGadget(llvm::BasicBlock *thisBlock, uint
           }
           assign_gadge[baseGlobal].operation_block = thisBlock;
           assign_gadge[baseGlobal].global_I = &*it;
-          assign_gadge[baseGlobal].op = op;
-          if(*ptc.isIndirect or *ptc.isIndirectJmp or getStaticAddrfromRegs(thisBlock)){
+          assign_gadge[baseGlobal].op = reg;
+          if(*ptc.isIndirect or *ptc.isIndirectJmp or getStaticAddrfromDestRegs(thisBlock)){
             assign_gadge[baseGlobal].static_addr_block = thisBlock;
             assign_gadge[baseGlobal].operation_block = nullptr;
             if(*ptc.isIndirect or *ptc.isIndirectJmp)
@@ -2583,51 +2602,17 @@ bool JumpTargetManager::haveBinaryOperation(llvm::Instruction *I){
   return false;
 }
 
-std::pair<uint64_t, uint32_t> JumpTargetManager::haveGlobalDatainRegs(){
+std::map<uint32_t, uint64_t> JumpTargetManager::haveGlobalDatainRegs(){
+  std::map<uint32_t, uint64_t> vec;
   for(int i=0; i<16; i++){
     if(isGlobalData(ptc.regs[i])){
       std::map<uint64_t, AssignGadge>::iterator TargetIt = assign_gadge.find(ptc.regs[i]);
       if(TargetIt != assign_gadge.end())  
-        return {ptc.regs[i], i};
+        vec[i] = ptc.regs[i];
     }
   }  
 
-  return {0,UndefineOP};
-}
-
-uint64_t JumpTargetManager::getStaticAddrfromRegs(llvm::BasicBlock *thisBlock){
-  BasicBlock::iterator it(thisBlock->begin());
-  BasicBlock::iterator end(thisBlock->end());
-  
-  for(;it!=end;it++){
-    if(it->getOpcode()==Instruction::Load){
-      auto load = dyn_cast<llvm::LoadInst>(it);
-      auto v = load->getPointerOperand();
-      if(dyn_cast<Constant>(v)){
-        StringRef name = v->getName();
-        auto number = StrToInt(name.data());
-        auto op = REGLABLE(number); 
-        if(op==UndefineOP) 
-          continue;
-        if(isExecutableAddress(ptc.regs[op]))
-          return ptc.regs[op]; 
-      }
-    }
-    if(it->getOpcode()==Instruction::Store){
-      auto store = dyn_cast<llvm::StoreInst>(it);
-      auto v = store->getPointerOperand();
-      if(dyn_cast<Constant>(v)){
-       StringRef name = v->getName();
-       auto number = StrToInt(name.data());
-       auto op = REGLABLE(number); 
-       if(op==UndefineOP) 
-         continue;
-       if(isExecutableAddress(ptc.regs[op]))
-         return ptc.regs[op]; 
-      }     
-    }
-  }
-  return 0;
+  return vec;
 }
 
 bool JumpTargetManager::getGlobalDatafromRegs(llvm::BasicBlock *thisBlock, uint64_t base){
@@ -2703,6 +2688,29 @@ uint64_t JumpTargetManager::getGlobalDatafromDestRegs(llvm::BasicBlock *thisBloc
     }
   }//?end for?
  
+  return 0;
+}
+
+uint64_t JumpTargetManager::getStaticAddrfromDestRegs(llvm::BasicBlock *thisBlock){
+  BasicBlock::iterator it(thisBlock->begin());
+  BasicBlock::iterator end(thisBlock->end());
+  
+  for(;it!=end;it++){
+    //Only look for dest register.
+    if(it->getOpcode()==Instruction::Store){
+      auto store = dyn_cast<llvm::StoreInst>(it);
+      auto v = store->getPointerOperand();
+      if(dyn_cast<Constant>(v)){
+       StringRef name = v->getName();
+       auto number = StrToInt(name.data());
+       auto op = REGLABLE(number); 
+       if(op==UndefineOP) 
+         continue;
+       if(isExecutableAddress(ptc.regs[op]))
+         return ptc.regs[op]; 
+      }     
+    }
+  }
   return 0;
 }
 
