@@ -285,6 +285,21 @@ public:
                        uint32_t op,
                        bool indirect,
                        std::vector<uint64_t> &tmpGlobal);
+  void ConstOffsetExec(llvm::BasicBlock *gadget,
+                       uint64_t thisAddr,
+                       uint64_t current_pc,
+                       bool oper,
+                       llvm::Instruction * global_I,
+                       uint32_t op,
+                       bool indirect,
+                      std::vector<uint64_t>& tempVec);
+  void VarOffsetExec(llvm::BasicBlock *gadget,
+                     uint64_t thisAddr,
+                     uint64_t virtualAddr,
+                     bool oper,
+                     uint32_t opt,
+                     bool indirect,
+                     std::vector<uint64_t>& tempVec);
   bool isGlobalData(uint64_t pc);
   bool haveBinaryOperation(llvm::Instruction *I);
   bool haveDefOperation(llvm::Instruction *I, llvm::Value *v);

@@ -2248,122 +2248,151 @@ void JumpTargetManager::runGlobalGadget(uint64_t basePC,
     auto thisAddr = getInstructionPC(&*(gadget->begin()));
     auto current_pc = getInstructionPC(global_I);
     std::vector<uint64_t> tempVec; 
+    std::vector<uint64_t> &tempVec1 = tempVec;
+
     if(tmpGlobal.empty())
       tmpGlobal.push_back(basePC);
 
-    uint32_t crash = 0;
-    size_t pagesize = 0;
-    if(current_pc == thisAddr){
+    uint32_t opt = 0;
+    uint64_t virtualAddr = 0;
+    if(current_pc != thisAddr){
+      std::tie(opt,virtualAddr) = getLastOperandandNextPC(&*(gadget->begin()));
+    }
+    if(current_pc == thisAddr or opt==UndefineOP){
       /* If the instruction to operate global data is entry address,
        * we consider that no instruction operates offset, and offset value
        * has been designated in global_I. */
-      auto Path = "GlobalPointer.log";
-      std::ofstream BaseAddr;
-      BaseAddr.open(Path,std::ofstream::out | std::ofstream::app);
-      BaseAddr <<"PC: "<<std::hex<< current_pc <<" : \n";
-
       storeCPURegister();
-      for(auto base:tmpGlobal){
+      for(auto base : tmpGlobal){
         if(op!=UndefineOP)
           ptc.regs[op] = base;
-        for(;;){
-          //Static addresses are indirect jump target address.
-          int64_t tmpPC = ptc.exec(thisAddr);
-          if(tmpPC==-1){
-            if(!crash)
-              revng_assert(tmpPC!=-1);
-            else
-              break;
-          }
-          crash++;
-          // Static addresses stored in registers.
-          if(!indirect)
-            tmpPC = getStaticAddrfromDestRegs(gadget);
-          if(oper){
-            auto data = getGlobalDatafromDestRegs(gadget);
-            if(!isGlobalData(data))
-              break;
-            tempVec.push_back(data);
-            BaseAddr <<"    0x"<< std::hex << tmpPC <<"\n";
-            pagesize++;
-            if(pagesize>512)
-              break;
-            if(!haveDef2OP(global_I,op))
-              break;
-            continue;
-          }
-          if(!isExecutableAddress(tmpPC))
-            break;    
-          harvestBTBasicBlock(gadget,thisAddr,tmpPC);
-          if(!haveDef2OP(global_I,op))
-            break;
-         
-          BaseAddr <<"    0x"<< std::hex << tmpPC <<"\n";     
-        }
+        ConstOffsetExec(gadget,thisAddr,current_pc,oper,global_I,op,indirect,tempVec1);
       }
       tmpGlobal.clear();
-      tmpGlobal = tempVec;
+      tmpGlobal = tempVec1;
       recoverCPURegister();
- 
-      BaseAddr.close();
-    }else{
-      uint32_t opt = 0;
-      uint64_t virtualAddr = 0;
-      /* If the instruction to operate global data isn't entry address of block, 
-       * then we consider all instructions before this instruction will be the instruction
-       * to operate offset value. */
-      std::tie(opt,virtualAddr) = getLastOperandandNextPC(&*(gadget->begin())); 
+      return; 
+    }
 
-      auto Path = "GlobalPointer.log";
-      std::ofstream BaseAddr;
-      BaseAddr.open(Path,std::ofstream::out | std::ofstream::app);
-      BaseAddr <<"PC: "<<std::hex<< current_pc <<" : \n";
+    /* If the instruction to operate global data isn't entry address of block, 
+     * then we consider all instructions before this instruction will be the instruction
+     * to operate offset value. */
+    storeCPURegister();
+    for(auto base:tmpGlobal){
+      if(op!=UndefineOP)
+        ptc.regs[op] = base;
+      VarOffsetExec(gadget,thisAddr,virtualAddr,oper,opt,indirect,tempVec1);
+      
+    }
+    tmpGlobal.clear();
+    tmpGlobal = tempVec1;
+    recoverCPURegister();
+}
 
-      storeCPURegister();
-      for(auto base:tmpGlobal){
-        if(op!=UndefineOP)
-          ptc.regs[op] = base;   
-        for(int i=0; ;i++){
-          ptc.regs[opt] = i; 
-          //Static addresses are indirect jump target address.
-          int64_t tmpPC = ptc.exec(virtualAddr);
-          if(tmpPC==-1){
-            if(!crash)
-              revng_assert(tmpPC!=-1);
-            else
-              break;
-          }
-          crash++;
-          // Static addresses stored in registers.
-          if(!indirect)
-            tmpPC = getStaticAddrfromDestRegs(gadget);
-          if(oper){
-            //TODO:vector data ?
-            auto data = getGlobalDatafromDestRegs(gadget);
-            if(!isGlobalData(data))
-              break; 
-            tempVec.push_back(data);
-            BaseAddr <<"    0x"<< std::hex << tmpPC <<"\n";
-            pagesize++;
-            if(pagesize>512)
-              break;
-            continue;
-          }
-            
-          if(!isExecutableAddress(tmpPC))
-            break;    
-          harvestBTBasicBlock(gadget,thisAddr,tmpPC);
-          
-          BaseAddr <<"    0x"<< std::hex << tmpPC <<"\n";     
-        }
-      }
-      tmpGlobal.clear();
-      tmpGlobal = tempVec;
-      recoverCPURegister();
- 
-      BaseAddr.close();
-    }//if(current..)..else   
+void JumpTargetManager::ConstOffsetExec(llvm::BasicBlock *gadget,
+                                        uint64_t thisAddr, 
+                                        uint64_t current_pc, 
+                                        bool oper,
+                                        llvm::Instruction * global_I, 
+                                        uint32_t op, 
+                                        bool indirect,
+                                        std::vector<uint64_t>& tempVec){
+  uint32_t crash = 0;
+  size_t pagesize = 0;        
 
+  auto Path = "GlobalPointer.log";
+  std::ofstream BaseAddr;
+  BaseAddr.open(Path,std::ofstream::out | std::ofstream::app);
+  BaseAddr <<"PC: "<<std::hex<< current_pc <<" : \n";
+  for(;;){
+    //Static addresses are indirect jump target address.
+    int64_t tmpPC = ptc.exec(thisAddr);
+    if(tmpPC==-1){
+      if(!crash)
+        revng_assert(tmpPC!=-1);
+      else
+        break;
+    }
+    crash++;
+    // Static addresses stored in registers.
+    if(!indirect)
+      tmpPC = getStaticAddrfromDestRegs(gadget);
+    if(oper){
+      auto data = getGlobalDatafromDestRegs(gadget);
+      if(!isGlobalData(data))
+        break;
+      tempVec.push_back(data);
+      BaseAddr <<"    0x"<< std::hex << tmpPC <<"\n";
+      pagesize++;
+      if(pagesize>512)
+        break;
+      if(!haveDef2OP(global_I,op))
+        break;
+      continue;
+    }
+    if(!isExecutableAddress(tmpPC))
+      break;    
+    harvestBTBasicBlock(gadget,thisAddr,tmpPC);
+    pagesize++;
+    if(!haveDef2OP(global_I,op) or pagesize>512)
+      break;
+   
+    BaseAddr <<"    0x"<< std::hex << tmpPC <<"\n";     
+  }
+  BaseAddr.close();
+}
+
+void JumpTargetManager::VarOffsetExec(llvm::BasicBlock *gadget,
+                                      uint64_t thisAddr,
+                                      uint64_t virtualAddr,
+                                      bool oper,
+                                      uint32_t opt,
+                                      bool indirect,
+                                      std::vector<uint64_t>& tempVec){
+  uint32_t crash = 0;
+  size_t pagesize = 0;
+        
+  auto Path = "GlobalPointer.log";
+  std::ofstream BaseAddr;
+  BaseAddr.open(Path,std::ofstream::out | std::ofstream::app);
+  BaseAddr <<"PC: "<<std::hex<< virtualAddr <<" : \n";   
+  for(int i=0; ;i++){
+    ptc.regs[opt] = i; 
+    //Static addresses are indirect jump target address.
+    int64_t tmpPC = ptc.exec(virtualAddr);
+    if(tmpPC==-1){
+      if(!crash)
+        revng_assert(tmpPC!=-1);
+      else
+        break;
+    }
+    crash++;
+    // Static addresses stored in registers.
+    if(!indirect)
+      tmpPC = getStaticAddrfromDestRegs(gadget);
+    if(oper){
+      //TODO:vector data ?
+      auto data = getGlobalDatafromDestRegs(gadget);
+      if(!isGlobalData(data))
+        break; 
+      tempVec.push_back(data);
+      BaseAddr <<"    0x"<< std::hex << tmpPC <<"\n";
+      pagesize++;
+      if(pagesize>512)
+        break;
+      continue;
+    }
+      
+    if(!isExecutableAddress(tmpPC))
+      break;    
+    harvestBTBasicBlock(gadget,thisAddr,tmpPC);
+    pagesize++;
+    if(pagesize>512)
+      break;
+    
+    BaseAddr <<"    0x"<< std::hex << tmpPC <<"\n"; 
+  }
+  BaseAddr.close();    
 }
 
 void JumpTargetManager::harvestStaticAddr(llvm::BasicBlock *thisBlock){
@@ -3059,8 +3088,8 @@ uint32_t JumpTargetManager::REGLABLE(uint32_t RegOP){
 std::pair<uint32_t,uint64_t> JumpTargetManager::getLastOperandandNextPC(llvm::Instruction *I){
   BasicBlock::iterator it(I);
   BasicBlock::iterator end = I->getParent()->end();
-  uint32_t op = 0;
-  uint64_t addr = UndefineOP;
+  uint32_t op = UndefineOP;
+  uint64_t addr = 0;
   it++;
   for(; it!=end; it++){
     //if(it->getOpcode() == Instruction::Load){
@@ -3086,7 +3115,7 @@ std::pair<uint32_t,uint64_t> JumpTargetManager::getLastOperandandNextPC(llvm::In
       }
     }
   }
-  revng_assert(op!=UndefineOP);
+ 
   return std::make_pair(op,addr);
 }
 
