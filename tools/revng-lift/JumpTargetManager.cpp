@@ -2330,7 +2330,7 @@ void JumpTargetManager::ConstOffsetExec(llvm::BasicBlock *gadget,
       if(!isGlobalData(data))
         break;
       tempVec.push_back(data);
-      BaseAddr <<"    0x"<< std::hex << tmpPC <<"\n";
+      BaseAddr <<"    0x"<< std::hex << data <<"\n";
       pagesize++;
       if(pagesize>512)
         break;
@@ -2384,7 +2384,7 @@ void JumpTargetManager::VarOffsetExec(llvm::BasicBlock *gadget,
       if(!isGlobalData(data))
         break; 
       tempVec.push_back(data);
-      BaseAddr <<"    0x"<< std::hex << tmpPC <<"\n";
+      BaseAddr <<"    0x"<< std::hex << data <<"\n";
       pagesize++;
       if(pagesize>512)
         break;
@@ -2510,6 +2510,7 @@ void JumpTargetManager::handleGlobalDataGadget(llvm::BasicBlock *thisBlock, std:
           assign_gadge[baseGlobal].op = reg;
           if(*ptc.isIndirect or *ptc.isIndirectJmp or getStaticAddrfromDestRegs(thisBlock)){
             assign_gadge[baseGlobal].static_addr_block = thisBlock;
+            assign_gadge[baseGlobal].operation_block = nullptr;
             if(*ptc.isIndirect or *ptc.isIndirectJmp)
               assign_gadge[baseGlobal].indirect = true;  
             harvestCodePointerInDataSegment(baseGlobal);
