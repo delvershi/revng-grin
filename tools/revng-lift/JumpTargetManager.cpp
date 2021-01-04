@@ -2235,6 +2235,14 @@ void JumpTargetManager::harvestCodePointerInDataSegment(uint64_t basePC){
     auto indirect = assign_gadge[global_addr].indirect;
     runGlobalGadget(global_addr,gadget,oper,global_I,op,indirect,tmpGlobal1);
   }
+  if(assign_gadge[base].operation_block){
+    auto gadget = assign_gadge[base].static_addr_block;
+    bool oper = false;
+    auto global_I = assign_gadge[base].global_I;
+    auto op = assign_gadge[base].op;
+    auto indirect = assign_gadge[base].indirect;
+    runGlobalGadget(base,gadget,oper,global_I,op,indirect,tmpGlobal1);
+  }
 }
 
 void JumpTargetManager::runGlobalGadget(uint64_t basePC,
@@ -2502,13 +2510,16 @@ void JumpTargetManager::handleGlobalDataGadget(llvm::BasicBlock *thisBlock, std:
           assign_gadge[baseGlobal].op = reg;
           if(*ptc.isIndirect or *ptc.isIndirectJmp or getStaticAddrfromDestRegs(thisBlock)){
             assign_gadge[baseGlobal].static_addr_block = thisBlock;
-            assign_gadge[baseGlobal].operation_block = nullptr;
             if(*ptc.isIndirect or *ptc.isIndirectJmp)
               assign_gadge[baseGlobal].indirect = true;  
             harvestCodePointerInDataSegment(baseGlobal);
             break;
           }else{
             auto result = getGlobalDatafromRegs(thisBlock,baseGlobal);
+            if(result){
+              if(assign_gadge[baseGlobal].static_addr_block)
+                harvestCodePointerInDataSegment(baseGlobal);
+            }
             if(!result){
               assign_gadge[baseGlobal].operation_block = tmpBB;
               assign_gadge[baseGlobal].global_I = tmpI;
