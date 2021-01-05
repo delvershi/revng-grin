@@ -2319,8 +2319,12 @@ void JumpTargetManager::ConstOffsetExec(llvm::BasicBlock *gadget,
     //Static addresses are indirect jump target address.
     int64_t tmpPC = ptc.exec(thisAddr);
     if(tmpPC==-1){
-      if(!crash or !gadgetCrash)
-        revng_assert(tmpPC!=-1);
+      if(!crash){ 
+        if(!gadgetCrash)
+          revng_assert(tmpPC!=-1);
+        else
+          break;
+      }
       else
         break;
     }
@@ -2373,8 +2377,12 @@ void JumpTargetManager::VarOffsetExec(llvm::BasicBlock *gadget,
     //Static addresses are indirect jump target address.
     int64_t tmpPC = ptc.exec(virtualAddr);
     if(tmpPC==-1){
-      if(!crash or !gadgetCrash)
-        revng_assert(tmpPC!=-1);
+      if(!crash){ 
+        if(!gadgetCrash)
+          revng_assert(tmpPC!=-1);
+        else
+          break;
+      }
       else
         break;
     }
