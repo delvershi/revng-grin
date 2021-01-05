@@ -2263,9 +2263,10 @@ void JumpTargetManager::runGlobalGadget(uint64_t basePC,
 
     uint32_t opt = 0;
     uint64_t virtualAddr = 0;
+    uint32_t crash = 0;
     if(current_pc != thisAddr){
       std::tie(opt,virtualAddr) = getLastOperandandNextPC(&*(gadget->begin()));
-    }
+    } 
     if(current_pc == thisAddr or opt==UndefineOP){
       /* If the instruction to operate global data is entry address,
        * we consider that no instruction operates offset, and offset value
@@ -2274,7 +2275,8 @@ void JumpTargetManager::runGlobalGadget(uint64_t basePC,
       for(auto base : tmpGlobal){
         if(op!=UndefineOP)
           ptc.regs[op] = base;
-        ConstOffsetExec(gadget,thisAddr,current_pc,oper,global_I,op,indirect,tempVec1);
+        ConstOffsetExec(gadget,thisAddr,current_pc,oper,global_I,op,indirect,crash,tempVec1);
+        crash++;
       }
       tmpGlobal.clear();
       tmpGlobal = tempVec1;
@@ -2289,8 +2291,8 @@ void JumpTargetManager::runGlobalGadget(uint64_t basePC,
     for(auto base:tmpGlobal){
       if(op!=UndefineOP)
         ptc.regs[op] = base;
-      VarOffsetExec(gadget,thisAddr,virtualAddr,oper,opt,indirect,tempVec1);
-      
+      VarOffsetExec(gadget,thisAddr,virtualAddr,oper,opt,indirect,crash,tempVec1);
+      crash++;
     }
     tmpGlobal.clear();
     tmpGlobal = tempVec1;
@@ -2304,8 +2306,8 @@ void JumpTargetManager::ConstOffsetExec(llvm::BasicBlock *gadget,
                                         llvm::Instruction * global_I, 
                                         uint32_t op, 
                                         bool indirect,
+                                        uint32_t crash,
                                         std::vector<uint64_t>& tempVec){
-  uint32_t crash = 0;
   size_t pagesize = 0;        
 
   auto Path = "GlobalPointer.log";
@@ -2321,7 +2323,6 @@ void JumpTargetManager::ConstOffsetExec(llvm::BasicBlock *gadget,
       else
         break;
     }
-    crash++;
     // Static addresses stored in registers.
     if(!indirect)
       tmpPC = getStaticAddrfromDestRegs(gadget);
@@ -2356,8 +2357,8 @@ void JumpTargetManager::VarOffsetExec(llvm::BasicBlock *gadget,
                                       bool oper,
                                       uint32_t opt,
                                       bool indirect,
+                                      uint32_t crash,
                                       std::vector<uint64_t>& tempVec){
-  uint32_t crash = 0;
   size_t pagesize = 0;
         
   auto Path = "GlobalPointer.log";
@@ -2374,7 +2375,6 @@ void JumpTargetManager::VarOffsetExec(llvm::BasicBlock *gadget,
       else
         break;
     }
-    crash++;
     // Static addresses stored in registers.
     if(!indirect)
       tmpPC = getStaticAddrfromDestRegs(gadget);
