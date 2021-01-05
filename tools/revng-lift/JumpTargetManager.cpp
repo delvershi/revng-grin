@@ -2309,6 +2309,7 @@ void JumpTargetManager::ConstOffsetExec(llvm::BasicBlock *gadget,
                                         uint32_t crash,
                                         std::vector<uint64_t>& tempVec){
   size_t pagesize = 0;        
+  uint32_t gadgetCrash = 0; 
 
   auto Path = "GlobalPointer.log";
   std::ofstream BaseAddr;
@@ -2318,11 +2319,12 @@ void JumpTargetManager::ConstOffsetExec(llvm::BasicBlock *gadget,
     //Static addresses are indirect jump target address.
     int64_t tmpPC = ptc.exec(thisAddr);
     if(tmpPC==-1){
-      if(!crash)
+      if(!crash or !gadgetCrash)
         revng_assert(tmpPC!=-1);
       else
         break;
     }
+    gadgetCrash++;
     // Static addresses stored in registers.
     if(!indirect)
       tmpPC = getStaticAddrfromDestRegs(gadget);
@@ -2360,6 +2362,7 @@ void JumpTargetManager::VarOffsetExec(llvm::BasicBlock *gadget,
                                       uint32_t crash,
                                       std::vector<uint64_t>& tempVec){
   size_t pagesize = 0;
+  uint32_t gadgetCrash = 0;
         
   auto Path = "GlobalPointer.log";
   std::ofstream BaseAddr;
@@ -2370,11 +2373,12 @@ void JumpTargetManager::VarOffsetExec(llvm::BasicBlock *gadget,
     //Static addresses are indirect jump target address.
     int64_t tmpPC = ptc.exec(virtualAddr);
     if(tmpPC==-1){
-      if(!crash)
+      if(!crash or !gadgetCrash)
         revng_assert(tmpPC!=-1);
       else
         break;
     }
+    gadgetCrash++;
     // Static addresses stored in registers.
     if(!indirect)
       tmpPC = getStaticAddrfromDestRegs(gadget);
