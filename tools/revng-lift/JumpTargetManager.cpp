@@ -2267,7 +2267,7 @@ void JumpTargetManager::runGlobalGadget(uint64_t basePC,
     if(current_pc != thisAddr){
       std::tie(opt,virtualAddr) = getLastOperandandNextPC(&*(gadget->begin()));
     } 
-    if(current_pc == thisAddr or opt==UndefineOP){
+    if(current_pc == thisAddr or opt==UndefineOP or opt==R_ESP){
       /* If the instruction to operate global data is entry address,
        * we consider that no instruction operates offset, and offset value
        * has been designated in global_I. */
