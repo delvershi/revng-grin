@@ -2224,25 +2224,26 @@ void JumpTargetManager::harvestCodePointerInDataSegment(uint64_t basePC,llvm::In
   }
   std::vector<uint64_t> tmpGlobal;
   std::vector<uint64_t> &tmpGlobal1 = tmpGlobal;
-  for(auto global_addr : GadgeChain){
-    auto gadget = assign_gadge[global_addr].static_addr_block;
+  std::vector<uint64_t>::reverse_iterator rit = GadgeChain.rbegin();
+  for(;rit!=GadgeChain.rend();rit++){
+    auto gadget = assign_gadge[*rit].static_addr_block;
     bool oper = false;
-    if(assign_gadge[global_addr].operation_block){
-      gadget = assign_gadge[global_addr].operation_block;
+    if(assign_gadge[*rit].operation_block){
+      gadget = assign_gadge[*rit].operation_block;
       oper = true;
     }
-    auto global_I = assign_gadge[global_addr].global_I;
-    auto op = assign_gadge[global_addr].op;
-    auto indirect = assign_gadge[global_addr].indirect;
-    runGlobalGadget(global_addr,gadget,oper,global_I,op,indirect,tmpGlobal1);
+    auto global_I = assign_gadge[*rit].global_I;
+    auto op = assign_gadge[*rit].op;
+    auto indirect = assign_gadge[*rit].indirect;
+    runGlobalGadget(*rit,gadget,oper,global_I,op,indirect,tmpGlobal1);
   }
-  if(assign_gadge[base].operation_block){
-    auto gadget = assign_gadge[base].static_addr_block;
+  if(assign_gadge[basePC].operation_block){
+    auto gadget = assign_gadge[basePC].static_addr_block;
     bool oper = false;
     auto global_I = tmpI;
     auto op = tmpOP;
-    auto indirect = assign_gadge[base].indirect;
-    runGlobalGadget(base,gadget,oper,global_I,op,indirect,tmpGlobal1);
+    auto indirect = assign_gadge[basePC].indirect;
+    runGlobalGadget(basePC,gadget,oper,global_I,op,indirect,tmpGlobal1);
   }
 }
 
@@ -2256,25 +2257,18 @@ void JumpTargetManager::harvestCodePointerInDataSegment(uint64_t basePC){
   }
   std::vector<uint64_t> tmpGlobal;
   std::vector<uint64_t> &tmpGlobal1 = tmpGlobal;
-  for(auto global_addr : GadgeChain){
-    auto gadget = assign_gadge[global_addr].static_addr_block;
+  std::vector<uint64_t>::reverse_iterator rit = GadgeChain.rbegin();
+  for(;rit!=GadgeChain.rend();rit++){
+    auto gadget = assign_gadge[*rit].static_addr_block;
     bool oper = false;
-    if(assign_gadge[global_addr].operation_block){
-      gadget = assign_gadge[global_addr].operation_block;
+    if(assign_gadge[*rit].operation_block){
+      gadget = assign_gadge[*rit].operation_block;
       oper = true;
     }
-    auto global_I = assign_gadge[global_addr].global_I;
-    auto op = assign_gadge[global_addr].op;
-    auto indirect = assign_gadge[global_addr].indirect;
-    runGlobalGadget(global_addr,gadget,oper,global_I,op,indirect,tmpGlobal1);
-  }
-  if(assign_gadge[base].operation_block){
-    auto gadget = assign_gadge[base].static_addr_block;
-    bool oper = false;
-    auto global_I = assign_gadge[base].global_I;
-    auto op = assign_gadge[base].op;
-    auto indirect = assign_gadge[base].indirect;
-    runGlobalGadget(base,gadget,oper,global_I,op,indirect,tmpGlobal1);
+    auto global_I = assign_gadge[*rit].global_I;
+    auto op = assign_gadge[*rit].op;
+    auto indirect = assign_gadge[*rit].indirect;
+    runGlobalGadget(*rit,gadget,oper,global_I,op,indirect,tmpGlobal1);
   }
 }
 
@@ -2285,7 +2279,8 @@ void JumpTargetManager::runGlobalGadget(uint64_t basePC,
                                         uint32_t op,
                                         bool indirect,
                                         std::vector<uint64_t> &tmpGlobal){
-
+    if(gadget==nullptr)
+      return;
     auto thisAddr = getInstructionPC(&*(gadget->begin()));
     auto current_pc = getInstructionPC(global_I);
     std::vector<uint64_t> tempVec; 
