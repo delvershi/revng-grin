@@ -2018,10 +2018,11 @@ void JumpTargetManager::registerJumpTable(llvm::BasicBlock *thisBlock, uint64_t 
     return;
   for(uint64_t n = 0;;n++){
     uint64_t addr = (uint64_t)(base + (n << offset));
+    uint64_t niube = addr;
     while(isELFDataSegmAddr(addr)){
       auto pre = addr;
       addr = *((uint64_t *)addr);
-      if(pre==addr)
+      if(pre==addr or addr==niube)
           break;
     }
 
