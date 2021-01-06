@@ -2213,6 +2213,38 @@ void JumpTargetManager::recoverCPURegister(){
     ptc.regs[i] = TempCPURegister[i];
 }
 
+void JumpTargetManager::harvestCodePointerInDataSegment(uint64_t basePC,llvm::Instruction *tmpI, uint32_t tmpOP){
+  std::vector<uint64_t> GadgeChain;
+  GadgeChain.push_back(basePC);
+  uint64_t base = basePC;
+  while(assign_gadge[base].pre!=0){
+    base = assign_gadge[assign_gadge[base].pre].global_addr;
+    GadgeChain.push_back(base);
+  }
+  std::vector<uint64_t> tmpGlobal;
+  std::vector<uint64_t> &tmpGlobal1 = tmpGlobal;
+  for(auto global_addr : GadgeChain){
+    auto gadget = assign_gadge[global_addr].static_addr_block;
+    bool oper = false;
+    if(assign_gadge[global_addr].operation_block){
+      gadget = assign_gadge[global_addr].operation_block;
+      oper = true;
+    }
+    auto global_I = assign_gadge[global_addr].global_I;
+    auto op = assign_gadge[global_addr].op;
+    auto indirect = assign_gadge[global_addr].indirect;
+    runGlobalGadget(global_addr,gadget,oper,global_I,op,indirect,tmpGlobal1);
+  }
+  if(assign_gadge[base].operation_block){
+    auto gadget = assign_gadge[base].static_addr_block;
+    bool oper = false;
+    auto global_I = tmpI;
+    auto op = tmpOP;
+    auto indirect = assign_gadge[base].indirect;
+    runGlobalGadget(base,gadget,oper,global_I,op,indirect,tmpGlobal1);
+  }
+}
+
 void JumpTargetManager::harvestCodePointerInDataSegment(uint64_t basePC){
   std::vector<uint64_t> GadgeChain;
   GadgeChain.push_back(basePC);
@@ -2329,9 +2361,6 @@ void JumpTargetManager::ConstOffsetExec(llvm::BasicBlock *gadget,
         break;
     }
     gadgetCrash++;
-    // Static addresses stored in registers.
-    if(!indirect)
-      tmpPC = getStaticAddrfromDestRegs(gadget);
     if(oper){
       auto data = getGlobalDatafromDestRegs(gadget);
       if(!isGlobalData(data))
@@ -2345,8 +2374,12 @@ void JumpTargetManager::ConstOffsetExec(llvm::BasicBlock *gadget,
         break;
       continue;
     }
+    // Static addresses stored in registers.
+    if(!indirect)
+      tmpPC = getStaticAddrfromDestRegs(gadget);
     if(!isExecutableAddress(tmpPC))
       break;    
+
     harvestBTBasicBlock(gadget,thisAddr,tmpPC);
     pagesize++;
     if(!haveDef2OP(global_I,op) or pagesize>512)
@@ -2387,9 +2420,6 @@ void JumpTargetManager::VarOffsetExec(llvm::BasicBlock *gadget,
         break;
     }
     gadgetCrash++;
-    // Static addresses stored in registers.
-    if(!indirect)
-      tmpPC = getStaticAddrfromDestRegs(gadget);
     if(oper){
       //TODO:vector data ?
       auto data = getGlobalDatafromDestRegs(gadget);
@@ -2402,9 +2432,12 @@ void JumpTargetManager::VarOffsetExec(llvm::BasicBlock *gadget,
         break;
       continue;
     }
-      
+    // Static addresses stored in registers.
+    if(!indirect)
+      tmpPC = getStaticAddrfromDestRegs(gadget);     
     if(!isExecutableAddress(tmpPC))
       break;    
+
     harvestBTBasicBlock(gadget,thisAddr,tmpPC);
     pagesize++;
     if(pagesize>512)
@@ -2507,16 +2540,14 @@ void JumpTargetManager::handleGlobalDataGadget(llvm::BasicBlock *thisBlock, std:
           //TODO: offset is or not const
           if(haveDefOperation(&*it,v))
             return;
-          llvm::BasicBlock *tmpBB = nullptr;
-          llvm::Instruction *tmpI = nullptr;
+         
           uint32_t tmpOP = UndefineOP;
           // global_I is an instruction to operate global data
           auto bb = assign_gadge[baseGlobal].operation_block;
-          if(bb){
-            tmpBB = bb;
-            tmpI = assign_gadge[baseGlobal].global_I;
-            tmpOP = assign_gadge[baseGlobal].op;
-          }
+          auto tmpBB = bb;
+          auto tmpI = assign_gadge[baseGlobal].global_I;
+          tmpOP = assign_gadge[baseGlobal].op;
+          
           assign_gadge[baseGlobal].operation_block = thisBlock;
           assign_gadge[baseGlobal].global_I = &*it;
           assign_gadge[baseGlobal].op = reg;
@@ -2531,7 +2562,7 @@ void JumpTargetManager::handleGlobalDataGadget(llvm::BasicBlock *thisBlock, std:
             auto result = getGlobalDatafromRegs(thisBlock,baseGlobal);
             if(result){
               if(assign_gadge[baseGlobal].static_addr_block)
-                harvestCodePointerInDataSegment(baseGlobal);
+                harvestCodePointerInDataSegment(baseGlobal,tmpI,tmpOP);
             }
             if(!result){
               assign_gadge[baseGlobal].operation_block = tmpBB;
