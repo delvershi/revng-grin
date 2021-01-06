@@ -446,13 +446,15 @@ JumpTargetManager::JumpTargetManager(Function *TheFunction,
     }
   }
   ro_StartAddr = 0;
-  ro_EndAddr =0;
+  ro_EndAddr = 0;
+  text_StartAddr = 0;
   if(Binary.rodataStartAddr){
     ro_StartAddr = Binary.rodataStartAddr; 
     ro_EndAddr = Binary.ehframeEndAddr;
     revng_assert(ro_StartAddr<=ro_EndAddr);
   }
-    
+  if(Binary.textStartAddr)
+    text_StartAddr = Binary.textStartAddr;
 
   // Configure GlobalValueNumbering
   StringMap<cl::Option *> &Options(cl::getRegisteredOptions());

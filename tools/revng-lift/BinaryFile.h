@@ -472,6 +472,7 @@ public:
   // Accessor methods
   //
 
+  uint64_t textStartAddr;
   uint64_t rodataStartAddr;
   uint64_t ehframeEndAddr;
 

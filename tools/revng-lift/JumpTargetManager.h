@@ -344,6 +344,7 @@ public:
   uint64_t DataSegmEndAddr;
   uint64_t ro_StartAddr;
   uint64_t ro_EndAddr;
+  uint64_t text_StartAddr;
 
   /* Judging whether the Block is User define Block area*/
   uint32_t belongToUBlock(llvm::BasicBlock *block);
@@ -553,8 +554,8 @@ public:
 
   /// \brief Return true if \p PC is in an executable segment
   bool isExecutableAddress(uint64_t PC) const {
-    for (std::pair<uint64_t, uint64_t> Range : ExecutableRanges)
-      if (Range.first <= PC && PC < ro_StartAddr)
+   // for (std::pair<uint64_t, uint64_t> Range : ExecutableRanges)
+    if (text_StartAddr <= PC && PC < ro_StartAddr)
         return true;
     return false;
   }

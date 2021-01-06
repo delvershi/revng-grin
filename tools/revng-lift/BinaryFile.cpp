@@ -66,6 +66,7 @@ BinaryFile::BinaryFile(std::string FilePath, uint64_t BaseAddress) :
   llvm::StringRef JumpAsm = "";
   bool HasRelocationAddend;
 
+  textStartAddr = 0;
   rodataStartAddr = 0;
   ehframeEndAddr = 0;
 
@@ -453,7 +454,9 @@ void BinaryFile::parseELF(object::ObjectFile *TheBinary, uint64_t BaseAddress) {
           DynamicAddress = relocate(static_cast<uint64_t>(Section.sh_addr));
         } else if (Name == ".rodata"){
 	  rodataStartAddr = Section.sh_addr;
-	}
+	} else if (Name == ".init"){
+          textStartAddr = Section.sh_addr;
+        }
       }
     }
   }
