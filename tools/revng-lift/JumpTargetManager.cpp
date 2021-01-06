@@ -2364,7 +2364,7 @@ void JumpTargetManager::ConstOffsetExec(llvm::BasicBlock *gadget,
       tempVec.push_back(data);
       BaseAddr <<"    0x"<< std::hex << data <<"\n";
       pagesize++;
-      if(pagesize>512)
+      if(pagesize>256)
         break;
       if(!haveDef2OP(global_I,op))
         break;
@@ -2378,7 +2378,7 @@ void JumpTargetManager::ConstOffsetExec(llvm::BasicBlock *gadget,
 
     harvestBTBasicBlock(gadget,thisAddr,tmpPC);
     pagesize++;
-    if(!haveDef2OP(global_I,op) or pagesize>512)
+    if(!haveDef2OP(global_I,op) or pagesize>256)
       break;
    
     BaseAddr <<"    0x"<< std::hex << tmpPC <<"\n";     
@@ -2424,7 +2424,7 @@ void JumpTargetManager::VarOffsetExec(llvm::BasicBlock *gadget,
       tempVec.push_back(data);
       BaseAddr <<"    0x"<< std::hex << data <<"\n";
       pagesize++;
-      if(pagesize>512)
+      if(pagesize>256)
         break;
       continue;
     }
@@ -2436,7 +2436,7 @@ void JumpTargetManager::VarOffsetExec(llvm::BasicBlock *gadget,
 
     harvestBTBasicBlock(gadget,thisAddr,tmpPC);
     pagesize++;
-    if(pagesize>512)
+    if(pagesize>256)
       break;
     
     BaseAddr <<"    0x"<< std::hex << tmpPC <<"\n"; 
