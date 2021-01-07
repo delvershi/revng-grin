@@ -2322,7 +2322,7 @@ void JumpTargetManager::runGlobalGadget(uint64_t basePC,
     for(auto base:tmpGlobal){
       if(op!=UndefineOP)
         ptc.regs[op] = base;
-      VarOffsetExec(gadget,thisAddr,virtualAddr,oper,opt,indirect,crash,tempVec1);
+      VarOffsetExec(gadget,thisAddr,virtualAddr,current_pc,oper,opt,indirect,crash,tempVec1);
       crash++;
     }
     tmpGlobal.clear();
@@ -2375,7 +2375,7 @@ void JumpTargetManager::ConstOffsetExec(llvm::BasicBlock *gadget,
     }
     // Static addresses stored in registers.
     if(!indirect)
-      tmpPC = getStaticAddrfromDestRegs(gadget);
+      tmpPC = getStaticAddrfromDestRegs(gadget,current_pc);
     if(!isExecutableAddress(tmpPC))
       break;    
 
@@ -2392,6 +2392,7 @@ void JumpTargetManager::ConstOffsetExec(llvm::BasicBlock *gadget,
 void JumpTargetManager::VarOffsetExec(llvm::BasicBlock *gadget,
                                       uint64_t thisAddr,
                                       uint64_t virtualAddr,
+                                      uint64_t current_pc,
                                       bool oper,
                                       uint32_t opt,
                                       bool indirect,
@@ -2433,7 +2434,7 @@ void JumpTargetManager::VarOffsetExec(llvm::BasicBlock *gadget,
     }
     // Static addresses stored in registers.
     if(!indirect)
-      tmpPC = getStaticAddrfromDestRegs(gadget);     
+      tmpPC = getStaticAddrfromDestRegs(gadget,current_pc);     
     if(!isExecutableAddress(tmpPC))
       break;    
 
@@ -2492,7 +2493,7 @@ void JumpTargetManager::harvestStaticAddr(llvm::BasicBlock *thisBlock){
               assign_gadge[pc].operation_block = thisBlock;
               assign_gadge[pc].global_I = &*I;
               //if thisBlock is indirect or StaticAddr is stored in registers. 
-              if(*ptc.isIndirect or *ptc.isIndirectJmp or getStaticAddrfromDestRegs(thisBlock))
+              if(*ptc.isIndirect or *ptc.isIndirectJmp or getStaticAddrfromDestRegs(thisBlock,getInstructionPC(&*I)))
               {
                 assign_gadge[pc].static_addr_block = thisBlock;
                 assign_gadge[pc].operation_block = nullptr;
@@ -2551,7 +2552,7 @@ void JumpTargetManager::handleGlobalDataGadget(llvm::BasicBlock *thisBlock, std:
           assign_gadge[baseGlobal].operation_block = thisBlock;
           assign_gadge[baseGlobal].global_I = &*it;
           assign_gadge[baseGlobal].op = reg;
-          if(*ptc.isIndirect or *ptc.isIndirectJmp or getStaticAddrfromDestRegs(thisBlock)){
+          if(*ptc.isIndirect or *ptc.isIndirectJmp or getStaticAddrfromDestRegs(thisBlock,getInstructionPC(&*it))){
             assign_gadge[baseGlobal].static_addr_block = thisBlock;
             assign_gadge[baseGlobal].operation_block = nullptr;
             if(*ptc.isIndirect or *ptc.isIndirectJmp)
@@ -2775,23 +2776,28 @@ uint64_t JumpTargetManager::getGlobalDatafromDestRegs(llvm::BasicBlock *thisBloc
   return 0;
 }
 
-uint64_t JumpTargetManager::getStaticAddrfromDestRegs(llvm::BasicBlock *thisBlock){
+uint64_t JumpTargetManager::getStaticAddrfromDestRegs(llvm::BasicBlock *thisBlock, uint64_t bound){
   BasicBlock::iterator it(thisBlock->begin());
   BasicBlock::iterator end(thisBlock->end());
   
+  revng_assert(bound!=0);
   for(;it!=end;it++){
     //Only look for dest register.
     if(it->getOpcode()==Instruction::Store){
       auto store = dyn_cast<llvm::StoreInst>(it);
       auto v = store->getPointerOperand();
       if(dyn_cast<Constant>(v)){
-       StringRef name = v->getName();
-       auto number = StrToInt(name.data());
-       auto op = REGLABLE(number); 
-       if(op==UndefineOP) 
-         continue;
-       if(isExecutableAddress(ptc.regs[op]))
-         return ptc.regs[op]; 
+        StringRef name = v->getName();
+        auto number = StrToInt(name.data());
+        auto op = REGLABLE(number); 
+        if(op==UndefineOP) 
+          continue;
+        if(isExecutableAddress(ptc.regs[op])){
+          auto addr = getInstructionPC(&*it);
+          if(addr >= bound)
+            return ptc.regs[op]; 
+          continue;
+        }
       }     
     }
   }

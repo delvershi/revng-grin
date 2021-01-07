@@ -274,7 +274,7 @@ public:
   std::vector<uint64_t> TempCPURegister;
   void storeCPURegister();
   void recoverCPURegister();
-  uint64_t getStaticAddrfromDestRegs(llvm::BasicBlock *thisBlock);
+  uint64_t getStaticAddrfromDestRegs(llvm::BasicBlock *thisBlock, uint64_t bound);
   bool getGlobalDatafromRegs(llvm::BasicBlock *thisBlock, uint64_t base);
   uint64_t getGlobalDatafromDestRegs(llvm::BasicBlock *thisBlock);
   std::pair<uint32_t,uint64_t> getLastOperandandNextPC(llvm::Instruction *I);
@@ -299,6 +299,7 @@ public:
   void VarOffsetExec(llvm::BasicBlock *gadget,
                      uint64_t thisAddr,
                      uint64_t virtualAddr,
+                     uint64_t current_pc,
                      bool oper,
                      uint32_t opt,
                      bool indirect,
