@@ -2493,7 +2493,7 @@ void JumpTargetManager::harvestStaticAddr(llvm::BasicBlock *thisBlock){
               assign_gadge[pc].operation_block = thisBlock;
               assign_gadge[pc].global_I = &*I;
               //if thisBlock is indirect or StaticAddr is stored in registers. 
-              if(*ptc.isIndirect or *ptc.isIndirectJmp or getStaticAddrfromDestRegs(thisBlock,getInstructionPC(&*I)))
+              if(*ptc.isIndirect or *ptc.isIndirectJmp or getStaticAddrfromDestRegs(&*I))
               {
                 assign_gadge[pc].static_addr_block = thisBlock;
                 assign_gadge[pc].operation_block = nullptr;
@@ -2552,7 +2552,7 @@ void JumpTargetManager::handleGlobalDataGadget(llvm::BasicBlock *thisBlock, std:
           assign_gadge[baseGlobal].operation_block = thisBlock;
           assign_gadge[baseGlobal].global_I = &*it;
           assign_gadge[baseGlobal].op = reg;
-          if(*ptc.isIndirect or *ptc.isIndirectJmp or getStaticAddrfromDestRegs(thisBlock,getInstructionPC(&*it))){
+          if(*ptc.isIndirect or *ptc.isIndirectJmp or getStaticAddrfromDestRegs(&*it)){
             assign_gadge[baseGlobal].static_addr_block = thisBlock;
             assign_gadge[baseGlobal].operation_block = nullptr;
             if(*ptc.isIndirect or *ptc.isIndirectJmp)
@@ -2706,26 +2706,6 @@ bool JumpTargetManager::getGlobalDatafromRegs(llvm::BasicBlock *thisBlock, uint6
   
   bool result =false; 
   for(;it!=end;it++){
-    if(it->getOpcode()==Instruction::Load){
-      auto load = dyn_cast<llvm::LoadInst>(it);
-      auto v = load->getPointerOperand();
-      if(dyn_cast<Constant>(v)){
-        StringRef name = v->getName();
-        auto number = StrToInt(name.data());
-        auto op = REGLABLE(number); 
-        if(op==UndefineOP) 
-          continue;
-        if(isGlobalData(ptc.regs[op])){
-          std::map<uint64_t, AssignGadge>::iterator TargetIt = assign_gadge.find(ptc.regs[op]);
-          if(TargetIt == assign_gadge.end()){ 
-            assign_gadge[ptc.regs[op]] = AssignGadge(ptc.regs[op]);
-            assign_gadge[ptc.regs[op]].pre = base;
-            result = true;
-          }
-        }
-      }
-    }
-
     if(it->getOpcode()==Instruction::Store){
       auto store = dyn_cast<llvm::StoreInst>(it);
       auto v = store->getPointerOperand();
@@ -2774,6 +2754,56 @@ uint64_t JumpTargetManager::getGlobalDatafromDestRegs(llvm::BasicBlock *thisBloc
   }//?end for?
  
   return 0;
+}
+
+
+bool JumpTargetManager::getStaticAddrfromDestRegs(llvm::Instruction *I){
+  BasicBlock::iterator it(I);
+  BasicBlock::iterator end = I->getParent()->end();
+  BasicBlock::iterator lastInst(I->getParent()->back());
+
+  auto v = dyn_cast<llvm::Value>(I);
+  if(I->getOpcode()==Instruction::Store){
+    auto store = dyn_cast<llvm::StoreInst>(I);
+    v = store->getPointerOperand();
+  }
+
+  it++;
+  for(; it!=end; it++){ 
+    switch(it->getOpcode()){
+      case llvm::Instruction::Call:
+        break;
+      case llvm::Instruction::Load:{
+        auto load = dyn_cast<llvm::LoadInst>(it);
+	if((load->getPointerOperand() - v) == 0)
+	    v = dyn_cast<Value>(it);
+        break;
+      }
+      case llvm::Instruction::Store:{
+        auto store = dyn_cast<llvm::StoreInst>(it);
+        if((store->getValueOperand() - v) == 0){
+	    v = store->getPointerOperand(); 
+            if(dyn_cast<ConstantInt>(v)){
+              auto addr = getLimitedValue(v);
+              if(isExecutableAddress(addr))
+                return true;
+            }
+        }
+	break;
+      }
+      default:{
+        auto instr = dyn_cast<Instruction>(it);
+        for(Use &u : instr->operands()){
+            Value *InstV = u.get();
+            if((InstV - v) == 0){
+	      v = dyn_cast<Value>(instr);
+              break; 
+            }
+        }
+      }  
+    }
+  }//??end for
+  return false;
 }
 
 uint64_t JumpTargetManager::getStaticAddrfromDestRegs(llvm::BasicBlock *thisBlock, uint64_t bound){

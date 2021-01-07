@@ -274,6 +274,7 @@ public:
   std::vector<uint64_t> TempCPURegister;
   void storeCPURegister();
   void recoverCPURegister();
+  bool getStaticAddrfromDestRegs(llvm::Instruction *I);
   uint64_t getStaticAddrfromDestRegs(llvm::BasicBlock *thisBlock, uint64_t bound);
   bool getGlobalDatafromRegs(llvm::BasicBlock *thisBlock, uint64_t base);
   uint64_t getGlobalDatafromDestRegs(llvm::BasicBlock *thisBlock);
