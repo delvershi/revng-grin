@@ -237,6 +237,7 @@ public:
   void harvestBlockPCs(std::vector<uint64_t> &BlockPCs);
   void StaticToUnexplore(void);
   void CallNextToStaticAddr(uint32_t PC);
+  StaticAddrsMap JumpTableBase;
 
   std::vector<uint64_t> IllegalStaticAddrs;
   bool isIllegalStaticAddr(uint64_t pc);

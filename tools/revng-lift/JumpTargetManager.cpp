@@ -2018,6 +2018,7 @@ void JumpTargetManager::registerJumpTable(llvm::BasicBlock *thisBlock, uint64_t 
     //revng_abort();
   if(!isELFDataSegmAddr((uint64_t)base))
     return;
+  JumpTableBase[base] = offset;
   for(uint64_t n = 0;;n++){
     uint64_t addr = (uint64_t)(base + (n << offset));
     uint64_t niube = addr;
@@ -2484,7 +2485,8 @@ void JumpTargetManager::harvestStaticAddr(llvm::BasicBlock *thisBlock){
         if(dyn_cast<ConstantInt>(v)){
           auto pc = getLimitedValue(v);
           // Harvest entry addresses stored in data segment
-          if(isGlobalData(pc)){
+          StaticAddrsMap::iterator TargetIt = JumpTableBase.find(pc);
+          if(isGlobalData(pc) and TargetIt==JumpTableBase.end()){
             assign_gadge[pc] = AssignGadge(pc); 
             if(haveBinaryOperation(&*I)){
               assign_gadge[pc].operation_block = thisBlock;
