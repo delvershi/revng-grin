@@ -440,6 +440,9 @@ JumpTargetManager::JumpTargetManager(Function *TheFunction,
 
   for (auto &Segment : Binary.segments()){
     Segment.insertExecutableRanges(std::back_inserter(ExecutableRanges));
+    if(Segment.IsExecutable){
+      codeSeg_StartAddr = Segment.StartVirtualAddress;
+    }
     if(Segment.IsWriteable and !Segment.IsExecutable){
       DataSegmStartAddr = Segment.StartVirtualAddress; 
       DataSegmEndAddr = Segment.EndVirtualAddress;
@@ -2633,12 +2636,16 @@ bool JumpTargetManager::isJumpTabType(llvm::Instruction *I){
       auto v = store->getValueOperand();
       if(dyn_cast<ConstantInt>(v)){
          auto pc = getLimitedValue(v);
-         if(isGlobalData(pc) or isExecutableAddress(pc))
+         if(pc>codeSeg_StartAddr and (pc<text_StartAddr or pc>=ro_StartAddr))
            flag = true;       
       }
     }
-    if(it->getOpcode()==Instruction::Call)
-      break;
+    if(it->getOpcode()==Instruction::Call){
+      auto callI = dyn_cast<CallInst>(&*it);
+      auto *Callee = callI->getCalledFunction();
+      if(Callee != nullptr && Callee->getName() == "newpc")
+        break;
+    }
   }
   return flag;
 }

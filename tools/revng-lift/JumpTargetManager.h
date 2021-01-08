@@ -349,6 +349,7 @@ public:
   uint64_t ro_StartAddr;
   uint64_t ro_EndAddr;
   uint64_t text_StartAddr;
+  uint64_t codeSeg_StartAddr;
 
   /* Judging whether the Block is User define Block area*/
   uint32_t belongToUBlock(llvm::BasicBlock *block);
