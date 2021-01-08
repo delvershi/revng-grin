@@ -2754,7 +2754,7 @@ bool JumpTargetManager::getGlobalDatafromRegs(llvm::Instruction *I, uint64_t bas
         auto store = dyn_cast<llvm::StoreInst>(it);
         if((store->getValueOperand() - v) == 0){
 	    v = store->getPointerOperand(); 
-            if(dyn_cast<ConstantInt>(v)){
+            if(dyn_cast<Constant>(v)){
               StringRef name = v->getName();
               auto number = StrToInt(name.data());
               auto op = REGLABLE(number);
@@ -2841,13 +2841,15 @@ bool JumpTargetManager::getStaticAddrfromDestRegs(llvm::Instruction *I){
         auto store = dyn_cast<llvm::StoreInst>(it);
         if((store->getValueOperand() - v) == 0){
 	    v = store->getPointerOperand();
-            StringRef name = v->getName();
-            auto number = StrToInt(name.data());
-            auto op = REGLABLE(number);
-            if(op==UndefineOP)
-                continue;
-            if(isExecutableAddress(ptc.regs[op]))
+            if(dyn_cast<Constant>(v)){
+              StringRef name = v->getName();
+              auto number = StrToInt(name.data());
+              auto op = REGLABLE(number);
+              if(op==UndefineOP)
+                  continue;
+              if(isExecutableAddress(ptc.regs[op]))
                 return true;
+            }
         }
 	break;
       }
