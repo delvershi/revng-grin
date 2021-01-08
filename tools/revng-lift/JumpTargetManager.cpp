@@ -2502,7 +2502,7 @@ void JumpTargetManager::harvestStaticAddr(llvm::BasicBlock *thisBlock){
                 harvestCodePointerInDataSegment(pc);
               }else{
                 // There have global data by logical operations in thisBlock registers
-                auto result = getGlobalDatafromRegs(thisBlock,pc);
+                auto result = getGlobalDatafromRegs(&*I,pc);
                 if(!result){
                   assign_gadge[pc].operation_block = nullptr;
                   assign_gadge[pc].global_I = nullptr; 
@@ -2536,7 +2536,7 @@ void JumpTargetManager::handleGlobalDataGadget(llvm::BasicBlock *thisBlock, std:
           continue;
         // If thisBlock only transfer baseGlobal, and there is no operation, skip it.
         auto TargetIt = GloData.find(reg);
-        if(TargetIt!=GloData.end() and haveBinaryOperation(&*it)){
+        if(TargetIt!=GloData.end() and haveBinaryOperation(&*it) and !isJumpTabType(&*it)){
           auto baseGlobal = TargetIt->second;
           //TODO: offset is or not const
           if(haveDefOperation(&*it,v))
@@ -2560,7 +2560,7 @@ void JumpTargetManager::handleGlobalDataGadget(llvm::BasicBlock *thisBlock, std:
             harvestCodePointerInDataSegment(baseGlobal);
             break;
           }else{
-            auto result = getGlobalDatafromRegs(thisBlock,baseGlobal);
+            auto result = getGlobalDatafromRegs(&*it,baseGlobal);
             if(result){
               if(assign_gadge[baseGlobal].static_addr_block)
                 harvestCodePointerInDataSegment(baseGlobal,tmpI,tmpOP);
@@ -2621,6 +2621,26 @@ bool JumpTargetManager::haveDef2OP(llvm::Instruction *I, uint32_t op){
     }
   }
   return false;
+}
+
+bool JumpTargetManager::isJumpTabType(llvm::Instruction *I){
+  BasicBlock::iterator it(I);
+  BasicBlock::iterator end = I->getParent()->end();
+  bool flag = false;
+  for(; it!=end; it++){
+    if(it->getOpcode()==Instruction::Store){
+      auto store = dyn_cast<llvm::StoreInst>(&*it);
+      auto v = store->getValueOperand();
+      if(dyn_cast<ConstantInt>(v)){
+         auto pc = getLimitedValue(v);
+         if(isGlobalData(pc) or isExecutableAddress(pc))
+           flag = true;       
+      }
+    }
+    if(it->getOpcode()==Instruction::Call)
+      break;
+  }
+  return flag;
 }
 
 // If this value have a binary operation and assign to reg/mem.
@@ -2700,35 +2720,66 @@ std::map<uint32_t, uint64_t> JumpTargetManager::haveGlobalDatainRegs(){
   return vec;
 }
 
-bool JumpTargetManager::getGlobalDatafromRegs(llvm::BasicBlock *thisBlock, uint64_t base){
-  BasicBlock::iterator it(thisBlock->begin());
-  BasicBlock::iterator end(thisBlock->end());
-  
+bool JumpTargetManager::getGlobalDatafromRegs(llvm::Instruction *I, uint64_t base){
   bool result =false; 
-  for(;it!=end;it++){
-    if(it->getOpcode()==Instruction::Store){
-      auto store = dyn_cast<llvm::StoreInst>(it);
-      auto v = store->getPointerOperand();
-      if(dyn_cast<Constant>(v)){
-       StringRef name = v->getName();
-       auto number = StrToInt(name.data());
-       auto op = REGLABLE(number); 
-       if(op==UndefineOP) 
-         continue;
-       if(isGlobalData(ptc.regs[op])){
-         std::map<uint64_t, AssignGadge>::iterator TargetIt = assign_gadge.find(ptc.regs[op]);
-         if(TargetIt == assign_gadge.end()){
-           assign_gadge[ptc.regs[op]] = AssignGadge(ptc.regs[op]);
-           assign_gadge[ptc.regs[op]].pre = base;
-           result = true;
-         }
-       } 
-      }     
+  BasicBlock::iterator it(I);
+  BasicBlock::iterator end = I->getParent()->end();
+  BasicBlock::iterator lastInst(I->getParent()->back());
+
+  auto v = dyn_cast<llvm::Value>(I);
+  if(I->getOpcode()==Instruction::Store){
+    auto store = dyn_cast<llvm::StoreInst>(I);
+    v = store->getPointerOperand();
+  }
+
+  it++;
+  for(; it!=end; it++){ 
+    switch(it->getOpcode()){
+      case llvm::Instruction::Call:
+        break;
+      case llvm::Instruction::Load:{
+        auto load = dyn_cast<llvm::LoadInst>(it);
+	if((load->getPointerOperand() - v) == 0)
+	    v = dyn_cast<Value>(it);
+        break;
+      }
+      case llvm::Instruction::Store:{
+        auto store = dyn_cast<llvm::StoreInst>(it);
+        if((store->getValueOperand() - v) == 0){
+	    v = store->getPointerOperand(); 
+            if(dyn_cast<ConstantInt>(v)){
+              StringRef name = v->getName();
+              auto number = StrToInt(name.data());
+              auto op = REGLABLE(number);
+              if(op==UndefineOP)
+                continue;
+              if(isGlobalData(ptc.regs[op])){
+                std::map<uint64_t, AssignGadge>::iterator TargetIt = assign_gadge.find(ptc.regs[op]);
+                if(TargetIt == assign_gadge.end()){
+                  assign_gadge[ptc.regs[op]] = AssignGadge(ptc.regs[op]);
+                  assign_gadge[ptc.regs[op]].pre = base;
+                  result = true;
+                }
+              }
+            }
+        }
+	break;
+      }
+      default:{
+        auto instr = dyn_cast<Instruction>(it);
+        for(Use &u : instr->operands()){
+            Value *InstV = u.get();
+            if((InstV - v) == 0){
+	      v = dyn_cast<Value>(instr);
+              break; 
+            }
+        }
+      }  
     }
-  }//?end for?
+  }//??end for
   if(result)
     return result;
-  return false; 
+  return false;
 }
 
 uint64_t JumpTargetManager::getGlobalDatafromDestRegs(llvm::BasicBlock *thisBlock){
@@ -2782,12 +2833,14 @@ bool JumpTargetManager::getStaticAddrfromDestRegs(llvm::Instruction *I){
       case llvm::Instruction::Store:{
         auto store = dyn_cast<llvm::StoreInst>(it);
         if((store->getValueOperand() - v) == 0){
-	    v = store->getPointerOperand(); 
-            if(dyn_cast<ConstantInt>(v)){
-              auto addr = getLimitedValue(v);
-              if(isExecutableAddress(addr))
+	    v = store->getPointerOperand();
+            StringRef name = v->getName();
+            auto number = StrToInt(name.data());
+            auto op = REGLABLE(number);
+            if(op==UndefineOP)
+                continue;
+            if(isExecutableAddress(ptc.regs[op]))
                 return true;
-            }
         }
 	break;
       }

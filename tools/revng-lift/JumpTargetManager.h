@@ -276,7 +276,7 @@ public:
   void recoverCPURegister();
   bool getStaticAddrfromDestRegs(llvm::Instruction *I);
   uint64_t getStaticAddrfromDestRegs(llvm::BasicBlock *thisBlock, uint64_t bound);
-  bool getGlobalDatafromRegs(llvm::BasicBlock *thisBlock, uint64_t base);
+  bool getGlobalDatafromRegs(llvm::Instruction *I, uint64_t base);
   uint64_t getGlobalDatafromDestRegs(llvm::BasicBlock *thisBlock);
   std::pair<uint32_t,uint64_t> getLastOperandandNextPC(llvm::Instruction *I);
   void harvestCodePointerInDataSegment(uint64_t basePC);
@@ -307,6 +307,7 @@ public:
                      uint32_t crash,
                      std::vector<uint64_t>& tempVec);
   bool isGlobalData(uint64_t pc);
+  bool isJumpTabType(llvm::Instruction *I);
   bool haveBinaryOperation(llvm::Instruction *I);
   bool haveDefOperation(llvm::Instruction *I, llvm::Value *v);
   bool haveDef2OP(llvm::Instruction *I, uint32_t op);
