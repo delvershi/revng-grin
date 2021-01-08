@@ -2354,8 +2354,10 @@ void JumpTargetManager::ConstOffsetExec(llvm::BasicBlock *gadget,
     int64_t tmpPC = ptc.exec(thisAddr);
     if(tmpPC==-1){
       if(!crash){ 
-        if(!gadgetCrash)
+        if(!gadgetCrash){
+          errs()<<ptc.regs[0]<<" :rax\n";
           revng_assert(tmpPC!=-1);
+        }
         else
           break;
       }
@@ -2414,8 +2416,10 @@ void JumpTargetManager::VarOffsetExec(llvm::BasicBlock *gadget,
     int64_t tmpPC = ptc.exec(virtualAddr);
     if(tmpPC==-1){
       if(!crash){ 
-        if(!gadgetCrash)
+        if(!gadgetCrash){
+          errs()<<ptc.regs[0]<<" :rax\n";
           revng_assert(tmpPC!=-1);
+        }
         else
           break;
       }
