@@ -817,9 +817,6 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     PTCInstructionListPtr InstructionList(new PTCInstructionList);
     size_t ConsumedSize = 0; 
 
-    if(!traverseFLAG or !JumpTargets.haveBB){
-      GloData = JumpTargets.haveGlobalDatainRegs();
-    }
     if(!traverseFLAG){
       ConsumedSize = ptc.translate(VirtualAddress, InstructionList.get(),&DynamicVirtualAddress);
       tmpVA = VirtualAddress;
@@ -1078,7 +1075,10 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
 
     //if(!JumpTargets.haveBB and *ptc.isIndirectJmp)
     //  JumpTargets.handleIndirectJmp(BlockBRs,tmpVA, StaticAddrFlag);
-  
+ 
+    if(!traverseFLAG or !JumpTargets.haveBB){
+      GloData = JumpTargets.haveGlobalDatainRegs();
+    }
     if(!traverseFLAG){
     if(DynamicVirtualAddress){
       auto tmpBB = JumpTargets.registerJT(DynamicVirtualAddress,JTReason::GlobalData);
@@ -1150,6 +1150,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       JumpTargets.BranchTargets.erase(JumpTargets.BranchTargets.begin());
       ptc.deletCPULINEState();
       DynamicVirtualAddress = jtVirtualAddress;
+      GloData.clear();
     }
 
     if(DynamicVirtualAddress){
@@ -1186,6 +1187,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     }////?end if(traverseFLAG)
     
     if(Entry==nullptr){
+      JumpTargets.handleGlobalStaticAddr();
       BlockPCFlag = JumpTargets.handleStaticAddr();
       StaticAddrFlag = true;
       std::tie(VirtualAddress, Entry) = JumpTargets.peek();

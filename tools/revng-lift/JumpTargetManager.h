@@ -314,6 +314,7 @@ public:
   bool haveDef2OP(llvm::Instruction *I, uint32_t op);
   std::map<uint32_t, uint64_t> haveGlobalDatainRegs();
   void handleGlobalDataGadget(llvm::BasicBlock *thisBlock, std::map<uint32_t, uint64_t> GloData);
+  void handleGlobalStaticAddr(void);
   //std::map<uint64_t, AssignGadge> assign_gadge;
   class AssignGadge{
   public:
@@ -324,6 +325,8 @@ public:
      op(UndefineOP),
      operation_block(nullptr),
      static_addr_block(nullptr),
+     static_global_I(nullptr),
+     static_op(UndefineOP),
      indirect(false) {}
    AssignGadge(uint64_t addr):
      global_addr(addr),
@@ -332,6 +335,8 @@ public:
      op(UndefineOP),
      operation_block(nullptr),
      static_addr_block(nullptr),
+     static_global_I(nullptr),
+     static_op(UndefineOP),
      indirect(false) {}
 
    uint64_t global_addr;
@@ -341,6 +346,8 @@ public:
    llvm::BasicBlock * operation_block;
  
    llvm::BasicBlock * static_addr_block;
+   llvm::Instruction * static_global_I;
+   uint32_t static_op;
    bool indirect;
  };
  

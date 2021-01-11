@@ -2569,8 +2569,11 @@ void JumpTargetManager::handleGlobalDataGadget(llvm::BasicBlock *thisBlock, std:
           }else{
             auto result = getGlobalDatafromRegs(&*it,baseGlobal);
             if(result){
-              if(assign_gadge[baseGlobal].static_addr_block)
+              if(assign_gadge[baseGlobal].static_addr_block){
+                assign_gadge[baseGlobal].static_global_I = tmpI;
+                assign_gadge[baseGlobal].static_op = tmpOP;
                 harvestCodePointerInDataSegment(baseGlobal,tmpI,tmpOP);
+              }
             }
             if(!result){
               assign_gadge[baseGlobal].operation_block = tmpBB;
@@ -2583,6 +2586,24 @@ void JumpTargetManager::handleGlobalDataGadget(llvm::BasicBlock *thisBlock, std:
       }
     }
   }//?end for? 
+}
+
+void JumpTargetManager::handleGlobalStaticAddr(void){
+  for(const auto &base:assign_gadge){
+    if(base.second.operation_block==nullptr and base.second.static_addr_block==nullptr){
+      for(const auto &staticIt:assign_gadge){
+        if(staticIt.second.static_addr_block){
+          auto baseGlobal = base.second.global_addr;
+          if(staticIt.second.operation_block){
+            auto tmpI = staticIt.second.static_global_I;
+            auto tmpOP = staticIt.second.static_op;
+            harvestCodePointerInDataSegment(baseGlobal,tmpI,tmpOP);
+          }
+          harvestCodePointerInDataSegment(baseGlobal);
+        }
+      }
+    }
+  }  
 }
 
 bool JumpTargetManager::isGlobalData(uint64_t pc){
