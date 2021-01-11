@@ -282,6 +282,8 @@ public:
   std::pair<uint32_t,uint64_t> getLastOperandandNextPC(llvm::Instruction *I);
   void harvestCodePointerInDataSegment(uint64_t basePC);
   void harvestCodePointerInDataSegment(uint64_t basePC, llvm::Instruction *tmpI, uint32_t tmpOP);
+  void harvestCodePointerInDataSegment(uint64_t basePC,uint64_t reserve,llvm::Instruction *tmpI, uint32_t tmpOP);
+  void harvestCodePointerInDataSegment(uint64_t basePC, uint64_t reserve);
   void runGlobalGadget(uint64_t basePC, 
                        llvm::BasicBlock * gadget,
                        bool oper,
