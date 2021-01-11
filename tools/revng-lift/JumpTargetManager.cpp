@@ -2725,6 +2725,10 @@ std::map<uint32_t, uint64_t> JumpTargetManager::haveGlobalDatainRegs(){
       std::map<uint64_t, AssignGadge>::iterator TargetIt = assign_gadge.find(ptc.regs[i]);
       if(TargetIt != assign_gadge.end())  
         vec[i] = ptc.regs[i];
+      else{
+        assign_gadge[ptc.regs[i]] = AssignGadge(ptc.regs[i]);
+        vec[i] = ptc.regs[i];
+      }
     }
   }  
 
@@ -4364,6 +4368,18 @@ uint32_t JumpTargetManager::StrToInt(const char *str){
     dest = str[1]*1000;
 
   return dest;
+}
+
+void JumpTargetManager::clearRegs(){
+  //reserve function calling conventions regs
+  ptc.regs[R_EAX] = 0;
+  ptc.regs[R_EBX] = 0;
+  ptc.regs[R_10] = 0;
+  ptc.regs[R_11] = 0;
+  ptc.regs[R_12] = 0;
+  ptc.regs[R_13] = 0;
+  ptc.regs[R_14] = 0;
+  ptc.regs[R_15] = 0;
 }
 
 void JumpTargetManager::harvestCallBasicBlock(llvm::BasicBlock *thisBlock,uint64_t thisAddr){

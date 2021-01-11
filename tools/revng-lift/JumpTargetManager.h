@@ -180,6 +180,7 @@ public:
   // destAddr, srcBB, srcAddr.
   std::vector<std::tuple<uint64_t, llvm::BasicBlock *, uint64_t>> BranchTargets;  
 
+  void clearRegs();
   void harvestCallBasicBlock(llvm::BasicBlock *thisBlock, uint64_t thisAddr);
   void harvestBTBasicBlock(llvm::BasicBlock *thisBlock, uint64_t thisAddr, uint64_t destAddr);
 
