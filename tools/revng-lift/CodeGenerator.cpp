@@ -1187,7 +1187,6 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     }////?end if(traverseFLAG)
     
     if(Entry==nullptr){
-      JumpTargets.handleGlobalStaticAddr();
       BlockPCFlag = JumpTargets.handleStaticAddr();
       StaticAddrFlag = true;
       std::tie(VirtualAddress, Entry) = JumpTargets.peek();
