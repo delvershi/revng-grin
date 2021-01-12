@@ -1023,7 +1023,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       errs()<<*((unsigned long *)ptc.regs[4])<<"<--store callnext\n";
       errs()<<*ptc.CallNext<<"\n";
       JumpTargets.harvestCallBasicBlock(BlockBRs,tmpVA);
-      JumpTargets.clearRegs();
+      //JumpTargets.clearRegs();
       *ptc.isCall = 0;
     }
 

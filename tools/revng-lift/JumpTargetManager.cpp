@@ -2419,8 +2419,9 @@ void JumpTargetManager::ConstOffsetExec(llvm::BasicBlock *gadget,
     if(tmpPC==-1){
       if(!crash){ 
         if(!gadgetCrash){
-          errs()<<ptc.regs[0]<<" :rax\n";
-          revng_assert(tmpPC!=-1);
+          break;
+          //revng_assert(tmpPC!=-1);
+          
         }
         else
           break;
@@ -2481,8 +2482,8 @@ void JumpTargetManager::VarOffsetExec(llvm::BasicBlock *gadget,
     if(tmpPC==-1){
       if(!crash){ 
         if(!gadgetCrash){
-          errs()<<ptc.regs[0]<<" :rax\n";
-          revng_assert(tmpPC!=-1);
+          break;
+          //revng_assert(tmpPC!=-1);
         }
         else
           break;
@@ -4564,10 +4565,12 @@ void JumpTargetManager::harvestbranchBasicBlock(uint64_t nextAddr,
           /* Recording current CPU state */
           if(!isDataSegmAddr(ptc.regs[R_ESP]) and isDataSegmAddr(ptc.regs[R_EBP]))
               ptc.regs[R_ESP] = ptc.regs[R_EBP];
-	  if(isDataSegmAddr(ptc.regs[R_ESP]) and !isDataSegmAddr(ptc.regs[R_EBP]))
+	  //if(isDataSegmAddr(ptc.regs[R_ESP]) and !isDataSegmAddr(ptc.regs[R_EBP]))
+	  //    ptc.regs[R_EBP] = ptc.regs[R_ESP] + 256;
+          if(!isDataSegmAddr(ptc.regs[R_ESP]) and !isDataSegmAddr(ptc.regs[R_EBP])){
+	      ptc.regs[R_ESP] = *ptc.ElfStartStack - 512;
 	      ptc.regs[R_EBP] = ptc.regs[R_ESP] + 256;
-	  ptc.regs[R_ESP] = *ptc.ElfStartStack - 512;
-	  ptc.regs[R_EBP] = ptc.regs[R_ESP] + 256;
+          }
           auto success = ptc.storeCPUState();
 	  if(!success)
 	    revng_abort("Store CPU stat failed!\n");
