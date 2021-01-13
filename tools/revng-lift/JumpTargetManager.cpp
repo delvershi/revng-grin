@@ -2434,10 +2434,15 @@ void JumpTargetManager::ConstOffsetExec(llvm::BasicBlock *gadget,
       auto data = getGlobalDatafromDestRegs(gadget);
       if(!isGlobalData(data))
         break;
+      bool have = false;
       for(auto t:tempVec){
-        if(t!=data)
-          tempVec.push_back(data);
+        if(t==data){
+          have = true;
+          break;
+        }
       }
+      if(have==false)
+        tempVec.push_back(data);
       BaseAddr <<"    0x"<< std::hex << data <<"\n";
       pagesize++;
       if(pagesize>256)
@@ -2500,10 +2505,15 @@ void JumpTargetManager::VarOffsetExec(llvm::BasicBlock *gadget,
       auto data = getGlobalDatafromDestRegs(gadget);
       if(!isGlobalData(data))
         break;
+      bool have = false;
       for(auto t:tempVec){
-        if(t!=data)
-          tempVec.push_back(data);
-      } 
+        if(t==data){
+          have = true;
+          break;
+        }
+      }
+      if(have==false)
+        tempVec.push_back(data); 
       BaseAddr <<"    0x"<< std::hex << data <<"\n";
       pagesize++;
       if(pagesize>256)

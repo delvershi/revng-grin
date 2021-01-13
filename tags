@@ -324,6 +324,7 @@ ConditionalReachedLoadsPass	include/revng/ReachingDefinitions/ReachingDefinition
 ConditionalReachedLoadsPass	include/revng/ReachingDefinitions/ReachingDefinitionsPass.h	/^class ConditionalReachedLoadsPass : public llvm::ModulePass {$/;"	c
 Const	tools/revng-lift/InstructionTranslator.cpp	/^enum ArgumentType { In, Out, Const };$/;"	e	enum:PTC::ArgumentType	file:
 ConstArguments	tools/revng-lift/InstructionTranslator.cpp	/^  const Range<InstructionArgumentsIterator<Const, IsCall>> ConstArguments;$/;"	m	class:PTC::InstructionImpl	file:
+ConstOffsetExec	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::ConstOffsetExec(llvm::BasicBlock *gadget,$/;"	f	class:JumpTargetManager
 ConstantValueAssign	tools/revng-lift/JumpTargetManager.h	/^    ConstantValueAssign, $/;"	e	enum:JumpTargetManager::LastAssignmentResult
 Constants	tools/revng-lift/OSRA.cpp	/^    SmallVector<std::pair<uint64_t, const Value *>, 1> Constants;$/;"	m	struct:OSRA::ComparisonOperand	file:
 Constraints	tools/revng-lift/OSRA.cpp	/^  std::map<const Instruction *, BVVector> Constraints;$/;"	m	class:OSRA	file:
@@ -785,6 +786,7 @@ JmpTable	tools/revng-lift/JumpTargetManager.h	/^  IndirectBlocksMap JmpTable;$/;
 JumpAsm	include/revng/Support/revng.h	/^  llvm::StringRef JumpAsm;$/;"	m	class:Architecture
 JumpInfo	tools/revng-lift/SET.h	/^    JumpInfo(llvm::StoreInst *Instruction,$/;"	f	struct:SETPass::JumpInfo
 JumpInfo	tools/revng-lift/SET.h	/^  struct JumpInfo {$/;"	s	class:SETPass
+JumpTableBase	tools/revng-lift/JumpTargetManager.h	/^  StaticAddrsMap JumpTableBase;$/;"	m	class:JumpTargetManager
 JumpTableMode	tools/revng-lift/JumpTargetManager.h	/^    JumpTableMode, \/* Stopping trackbacking analysis until encountering $/;"	e	enum:JumpTargetManager::TrackbackMode
 JumpTarget	tools/revng-lift/JumpTargetManager.h	/^    JumpTarget() : BB(nullptr), Reasons(0) {}$/;"	f	class:JumpTargetManager::JumpTarget
 JumpTarget	tools/revng-lift/JumpTargetManager.h	/^    JumpTarget(llvm::BasicBlock *BB) : BB(BB), Reasons(0) {}$/;"	f	class:JumpTargetManager::JumpTarget
@@ -1541,6 +1543,7 @@ Values	tools/revng-lift/BinaryFile.h	/^enum Values { Unknown, Code, Data, Sectio
 Values	tools/revng-lift/BinaryFile.h	/^enum Values { Unknown, StaticSymbol, DynamicSymbol, DynamicRelocation };$/;"	g	namespace:LabelOrigin
 Values	tools/revng-lift/BinaryFile.h	/^enum Values {$/;"	g	namespace:LabelType
 Values	tools/revng-lift/JumpTargetManager.h	/^enum Values {$/;"	g	namespace:CFGForm
+VarOffsetExec	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::VarOffsetExec(llvm::BasicBlock *gadget,$/;"	f	class:JumpTargetManager
 Variable	tools/revng-lift/BinaryFile.h	/^  llvm::GlobalVariable *Variable; \/\/\/< \\brief LLVM variable containing this$/;"	m	struct:SegmentInfo
 VariableContent	lib/StackAnalysis/Intraprocedural.cpp	/^  ContentMap &VariableContent; \/\/\/< Reference to map for allocas$/;"	m	class:StackAnalysis::Intraprocedural::BasicBlockState	file:
 VariableContent	lib/StackAnalysis/Intraprocedural.h	/^  std::map<llvm::Instruction *, Value> VariableContent; \/\/\/< Content of allocas$/;"	m	class:StackAnalysis::Intraprocedural::Analysis
@@ -1805,6 +1808,7 @@ clear	lib/StackAnalysis/ABIIR.h	/^  void clear() {$/;"	f	class:StackAnalysis::AB
 clear	lib/StackAnalysis/FunctionABI.h	/^  void clear() {$/;"	f	class:StackAnalysis::DefaultMap
 clear	lib/StackAnalysis/FunctionABI.h	/^  void clear(V NewDefault) {$/;"	f	class:StackAnalysis::DefaultMap
 clear	tools/revng-lift/OSRA.cpp	/^  void clear() {$/;"	f	class:BVMap
+clearRegs	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::clearRegs(){$/;"	f	class:JumpTargetManager
 clone	include/revng/Support/RandomAccessIterator.h	/^  Derived clone(unsigned NewIndex) const {$/;"	f	class:RandomAccessIterator
 cloneInstruction	lib/FunctionIsolation/IsolateFunctions.cpp	/^bool IFI::cloneInstruction(BasicBlock *NewBB,$/;"	f	class:IFI
 cloneSisters	tools/revng-lift/VariableManager.cpp	/^  void cloneSisters(Value *Old, Value *New) {$/;"	f	class:OffsetValueStack
@@ -1821,6 +1825,7 @@ cmp	lib/StackAnalysis/FunctionABI.cpp	/^cmp(const DefaultMap<K, V, N> &This, con
 cmp	lib/StackAnalysis/IncoherentCallsAnalysis.cpp	/^  static unsigned cmp(const MonotoneFrameworkSet<T> &This,$/;"	f	struct:StackAnalysis::debug_cmp
 cmpWithModule	lib/StackAnalysis/FunctionABI.cpp	/^unsigned cmpWithModule(const DefaultMap<K, V, N> &This,$/;"	f	namespace:StackAnalysis::MapHelpers
 codePointers	tools/revng-lift/BinaryFile.h	/^  const std::set<uint64_t> &codePointers() const { return CodePointers; }$/;"	f	class:BinaryFile
+codeSeg_StartAddr	tools/revng-lift/JumpTargetManager.h	/^  uint64_t codeSeg_StartAddr;$/;"	m	class:JumpTargetManager
 collectDefinitions	tools/revng-lift/NoReturnAnalysis.cpp	/^void NoReturnAnalysis::collectDefinitions(ConditionalReachedLoadsPass &CRL) {$/;"	f	class:NoReturnAnalysis
 collectLocalSlots	lib/StackAnalysis/FunctionABI.h	/^  void collectLocalSlots(std::set<ASSlot> &SlotsPool) const {$/;"	f	class:StackAnalysis::FunctionABI
 collectMetadata	tools/revng-lift/SET.cpp	/^void SET::collectMetadata() {$/;"	f	class:SET
@@ -2378,8 +2383,8 @@ getFunctionNameString	lib/FunctionIsolation/IsolateFunctions.cpp	/^StringRef IFI
 getFunctionSummary	lib/StackAnalysis/Intraprocedural.h	/^  const IntraproceduralFunctionSummary &getFunctionSummary() {$/;"	f	class:StackAnalysis::Intraprocedural::Interrupt
 getGCBIOrNull	include/revng/ReachingDefinitions/ReachingDefinitionsAnalysisImpl.h	/^getGCBIOrNull<GeneratedCodeBasicInfo>(const GeneratedCodeBasicInfo &GCBI) {$/;"	f	namespace:RDA
 getGCBIOrNull	include/revng/ReachingDefinitions/ReachingDefinitionsAnalysisImpl.h	/^inline const GeneratedCodeBasicInfo *getGCBIOrNull(const T &Obj) {$/;"	f	namespace:RDA
-getGlobalDatafromRegs	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::getGlobalDatafromRegs(llvm::BasicBlock *thisBlock){$/;"	f	class:JumpTargetManager
-getGlobalDatafromRegs	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::getGlobalDatafromRegs(llvm::BasicBlock *thisBlock, uint64_t base){$/;"	f	class:JumpTargetManager
+getGlobalDatafromDestRegs	tools/revng-lift/JumpTargetManager.cpp	/^uint64_t JumpTargetManager::getGlobalDatafromDestRegs(llvm::BasicBlock *thisBlock){$/;"	f	class:JumpTargetManager
+getGlobalDatafromRegs	tools/revng-lift/JumpTargetManager.cpp	/^bool JumpTargetManager::getGlobalDatafromRegs(llvm::Instruction *I, uint64_t base){$/;"	f	class:JumpTargetManager
 getIllegalValueDFG	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::getIllegalValueDFG(llvm::Value *v,$/;"	f	class:JumpTargetManager
 getInstructionPC	tools/revng-lift/JumpTargetManager.cpp	/^uint64_t JumpTargetManager::getInstructionPC(llvm::Instruction *I){$/;"	f	class:JumpTargetManager
 getInterval	tools/revng-lift/OSRA.cpp	/^  static boost::icl::interval_set<T> getInterval(const BoundedValue &BV) {$/;"	f	class:BoundedValueHelpers
@@ -2459,7 +2464,8 @@ getSignedLimitedValue	include/revng/Support/IRHelpers.h	/^inline uint64_t getSig
 getSize	include/revng/Support/MemoryAccess.h	/^  unsigned getSize(llvm::Type *T) {$/;"	f	class:TypeSizeProvider
 getSmall	include/revng/ADT/LazySmallBitVector.h	/^  uintptr_t getSmall() const {$/;"	f	class:LazySmallBitVector
 getSplitedBlock	tools/revng-lift/JumpTargetManager.cpp	/^BasicBlock * JumpTargetManager::getSplitedBlock(llvm::BranchInst *branch){$/;"	f	class:JumpTargetManager
-getStaticAddrfromRegs	tools/revng-lift/JumpTargetManager.cpp	/^uint64_t JumpTargetManager::getStaticAddrfromRegs(llvm::BasicBlock *thisBlock){$/;"	f	class:JumpTargetManager
+getStaticAddrfromDestRegs	tools/revng-lift/JumpTargetManager.cpp	/^bool JumpTargetManager::getStaticAddrfromDestRegs(llvm::Instruction *I){$/;"	f	class:JumpTargetManager
+getStaticAddrfromDestRegs	tools/revng-lift/JumpTargetManager.cpp	/^uint64_t JumpTargetManager::getStaticAddrfromDestRegs(llvm::BasicBlock *thisBlock, uint64_t bound){$/;"	f	class:JumpTargetManager
 getStoreAddressValue	tools/revng-lift/CPUStateAccessAnalysisPass.cpp	/^static Value *getStoreAddressValue(Instruction *I) {$/;"	f	file:
 getStoredType	tools/revng-lift/CPUStateAccessAnalysisPass.cpp	/^static Type *getStoredType(Instruction *I) {$/;"	f	file:
 getTemporaryName	tools/revng-lift/PTCDump.cpp	/^static void getTemporaryName(char *Buffer,$/;"	f	file:
@@ -2499,7 +2505,8 @@ handleEdge	lib/StackAnalysis/IncoherentCallsAnalysis.cpp	/^  llvm::Optional<Elem
 handleEdge	lib/StackAnalysis/Intraprocedural.h	/^  llvm::Optional<Element> handleEdge(const Element &Original,$/;"	f	class:StackAnalysis::Intraprocedural::Analysis
 handleEdge	lib/Support/ExampleAnalysis.cpp	/^  llvm::Optional<LatticeElement> handleEdge(const LatticeElement &Original,$/;"	f	class:ExampleAnalysis::Analysis
 handleGenericInstruction	lib/StackAnalysis/Intraprocedural.cpp	/^  void handleGenericInstruction(Instruction *I) {$/;"	f	class:StackAnalysis::Intraprocedural::BasicBlockState
-handleGlobalDataGadget	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::handleGlobalDataGadget(llvm::BasicBlock *thisBlock, uint64_t thisAddr, uint64_t baseGlobal){$/;"	f	class:JumpTargetManager
+handleGlobalDataGadget	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::handleGlobalDataGadget(llvm::BasicBlock *thisBlock, std::map<uint32_t, uint64_t> GloData){$/;"	f	class:JumpTargetManager
+handleGlobalStaticAddr	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::handleGlobalStaticAddr(void){$/;"	f	class:JumpTargetManager
 handleIllegalJumpAddress	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::handleIllegalJumpAddress(llvm::BasicBlock *thisBlock,$/;"	f	class:JumpTargetManager
 handleIllegalMemoryAccess	tools/revng-lift/JumpTargetManager.cpp	/^uint64_t JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *thisBlock,$/;"	f	class:JumpTargetManager
 handleIndirectCall	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::handleIndirectCall(llvm::BasicBlock *thisBlock, $/;"	f	class:JumpTargetManager
@@ -2519,7 +2526,10 @@ harvest	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::harvest
 harvestBTBasicBlock	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::harvestBTBasicBlock(llvm::BasicBlock *thisBlock,$/;"	f	class:JumpTargetManager
 harvestBlockPCs	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::harvestBlockPCs(std::vector<uint64_t> &BlockPCs){$/;"	f	class:JumpTargetManager
 harvestCallBasicBlock	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::harvestCallBasicBlock(llvm::BasicBlock *thisBlock,uint64_t thisAddr){$/;"	f	class:JumpTargetManager
-harvestCodePointerInDataSegment	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::harvestCodePointerInDataSegment(uint64_t basePC, llvm::Instruction *I){$/;"	f	class:JumpTargetManager
+harvestCodePointerInDataSegment	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::harvestCodePointerInDataSegment(uint64_t basePC){$/;"	f	class:JumpTargetManager
+harvestCodePointerInDataSegment	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::harvestCodePointerInDataSegment(uint64_t basePC, uint64_t reserve){$/;"	f	class:JumpTargetManager
+harvestCodePointerInDataSegment	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::harvestCodePointerInDataSegment(uint64_t basePC,llvm::Instruction *tmpI, uint32_t tmpOP){$/;"	f	class:JumpTargetManager
+harvestCodePointerInDataSegment	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::harvestCodePointerInDataSegment(uint64_t basePC,uint64_t reserve,llvm::Instruction *tmpI, uint32_t tmpOP){$/;"	f	class:JumpTargetManager
 harvestGlobalData	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::harvestGlobalData() {$/;"	f	class:JumpTargetManager
 harvestJumpTableAddr	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::harvestJumpTableAddr(llvm::BasicBlock *thisBlock, uint64_t thisAddr){$/;"	f	class:JumpTargetManager
 harvestNextAddrofBr	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::harvestNextAddrofBr(uint64_t blockNext){$/;"	f	class:JumpTargetManager
@@ -2558,7 +2568,9 @@ hash	lib/StackAnalysis/Element.h	/^struct hash<StackAnalysis::Intraprocedural::E
 hash	lib/StackAnalysis/Element.h	/^struct hash<StackAnalysis::Intraprocedural::Value> {$/;"	s	namespace:std
 haveBB	tools/revng-lift/JumpTargetManager.h	/^  unsigned int haveBB;$/;"	m	class:JumpTargetManager
 haveBinaryOperation	tools/revng-lift/JumpTargetManager.cpp	/^bool JumpTargetManager::haveBinaryOperation(llvm::Instruction *I){$/;"	f	class:JumpTargetManager
-haveGlobalDatainRegs	tools/revng-lift/JumpTargetManager.cpp	/^uint64_t JumpTargetManager::haveGlobalDatainRegs(){$/;"	f	class:JumpTargetManager
+haveDef2OP	tools/revng-lift/JumpTargetManager.cpp	/^bool JumpTargetManager::haveDef2OP(llvm::Instruction *I, uint32_t op){$/;"	f	class:JumpTargetManager
+haveDefOperation	tools/revng-lift/JumpTargetManager.cpp	/^bool JumpTargetManager::haveDefOperation(llvm::Instruction *I, llvm::Value *v){$/;"	f	class:JumpTargetManager
+haveGlobalDatainRegs	tools/revng-lift/JumpTargetManager.cpp	/^std::map<uint32_t, uint64_t> JumpTargetManager::haveGlobalDatainRegs(){$/;"	f	class:JumpTargetManager
 haveTranslatedPC	tools/revng-lift/JumpTargetManager.cpp	/^bool JumpTargetManager::haveTranslatedPC(uint64_t pc, uint64_t next){$/;"	f	class:JumpTargetManager
 head	include/revng/ADT/Queue.h	/^  T head() const { return Queue.front(); }$/;"	f	class:QueueImpl
 head	include/revng/Support/MonotoneFramework.h	/^  Iterated head() const { return Queue.head(); }$/;"	f	class:MonotoneFrameworkWorkList
@@ -2712,6 +2724,7 @@ isJump	include/revng/BasicAnalyses/GeneratedCodeBasicInfo.h	/^  bool isJump(llvm
 isJump	include/revng/BasicAnalyses/GeneratedCodeBasicInfo.h	/^  bool isJump(llvm::TerminatorInst *T) const {$/;"	f	class:GeneratedCodeBasicInfo
 isJump	tools/revng-lift/JumpTargetManager.h	/^  bool isJump(llvm::TerminatorInst *T) const {$/;"	f	class:JumpTargetManager
 isJumpOutSupported	include/revng/Support/revng.h	/^  bool isJumpOutSupported() const {$/;"	f	class:Architecture
+isJumpTabType	tools/revng-lift/JumpTargetManager.cpp	/^bool JumpTargetManager::isJumpTabType(llvm::Instruction *I){$/;"	f	class:JumpTargetManager
 isJumpTarget	include/revng/BasicAnalyses/GeneratedCodeBasicInfo.h	/^  bool isJumpTarget(llvm::BasicBlock *BB) const {$/;"	f	class:GeneratedCodeBasicInfo
 isJumpTarget	tools/revng-lift/JumpTargetManager.h	/^  bool isJumpTarget(llvm::BasicBlock *BB) {$/;"	f	class:JumpTargetManager
 isJumpTarget	tools/revng-lift/JumpTargetManager.h	/^  bool isJumpTarget(uint64_t PC) const { return JumpTargets.count(PC); }$/;"	f	class:JumpTargetManager
@@ -2948,7 +2961,6 @@ obtainJTBB	tools/revng-lift/JumpTargetManager.cpp	/^BasicBlock * JumpTargetManag
 offset	lib/StackAnalysis/ASSlot.h	/^  int32_t offset() const { return Offset; }$/;"	f	class:StackAnalysis::ASSlot
 offset	tools/revng-lift/BinaryFile.cpp	/^  uint64_t offset() const { return Cursor - Start; }$/;"	f	class:DwarfReader
 offset	tools/revng-lift/BinaryFile.h	/^  uint64_t offset() const {$/;"	f	class:Label
-offset	tools/revng-lift/JumpTargetManager.h	/^   uint64_t offset;$/;"	m	class:JumpTargetManager::AssignGadge
 onQuit	include/revng/Support/Statistics.h	/^  virtual void onQuit() { dump(); }$/;"	f	class:CounterMap
 onQuit	lib/Support/Statistics.cpp	/^static void onQuit() {$/;"	f	file:
 onQuit	lib/Support/Statistics.cpp	/^void RunningStatistics::onQuit() {$/;"	f	class:RunningStatistics
@@ -2960,6 +2972,7 @@ one	tests/Analysis/mips/switch-jump-table-stack.S	/^one:$/;"	l
 one	tests/Analysis/mips/switch-jump-table.S	/^one:$/;"	l
 one	tests/Analysis/x86_64/rda-in-memory.S	/^one:$/;"	l
 one	tests/Analysis/x86_64/switch-jump-table.S	/^one:$/;"	l
+op	tools/revng-lift/JumpTargetManager.h	/^   uint32_t op;$/;"	m	class:JumpTargetManager::AssignGadge
 opcode	lib/StackAnalysis/ABIIR.h	/^  Opcode opcode() const { return O; }$/;"	f	class:StackAnalysis::ABIIRInstruction
 opcode	tools/revng-lift/InstructionTranslator.cpp	/^  PTCOpcode opcode() const { return TheInstruction->opc; }$/;"	f	class:PTC::InstructionImpl
 opcodeToBinaryOp	tools/revng-lift/InstructionTranslator.cpp	/^static Instruction::BinaryOps opcodeToBinaryOp(PTCOpcode Opcode) {$/;"	f	file:
@@ -3323,6 +3336,7 @@ run	tools/revng-lift/CPUStateAccessAnalysisPass.cpp	/^bool CPUSAOA::run() {$/;"	
 run	tools/revng-lift/CPUStateAccessAnalysisPass.cpp	/^bool CPUStateAccessAnalysis::run() {$/;"	f	class:CPUStateAccessAnalysis
 run	tools/revng-lift/OSRA.cpp	/^void OSRA::run() {$/;"	f	class:OSRA
 run	tools/revng-lift/SET.cpp	/^bool SET::run() {$/;"	f	class:SET
+runGlobalGadget	tools/revng-lift/JumpTargetManager.cpp	/^void JumpTargetManager::runGlobalGadget(uint64_t basePC,$/;"	f	class:JumpTargetManager
 runOnModule	lib/BasicAnalyses/GeneratedCodeBasicInfo.cpp	/^bool GeneratedCodeBasicInfo::runOnModule(llvm::Module &M) {$/;"	f	class:GeneratedCodeBasicInfo
 runOnModule	lib/Dump/CollectCFG.cpp	/^bool CollectCFG::runOnModule(Module &M) {$/;"	f	class:CollectCFG
 runOnModule	lib/Dump/CollectNoreturn.cpp	/^bool CollectNoreturn::runOnModule(Module &M) {$/;"	f	class:CollectNoreturn
@@ -3429,6 +3443,8 @@ stackSize	lib/StackAnalysis/Intraprocedural.h	/^  llvm::Optional<int32_t> stackS
 standardDeviation	include/revng/Support/Statistics.h	/^  double standardDeviation() const { return sqrt(variance()); }$/;"	f	class:RunningStatistics
 startsWith	include/revng/Support/revng.h	/^inline bool startsWith(std::string String, std::string Prefix) {$/;"	f
 static_addr_block	tools/revng-lift/JumpTargetManager.h	/^   llvm::BasicBlock * static_addr_block;$/;"	m	class:JumpTargetManager::AssignGadge
+static_global_I	tools/revng-lift/JumpTargetManager.h	/^   llvm::Instruction * static_global_I;$/;"	m	class:JumpTargetManager::AssignGadge
+static_op	tools/revng-lift/JumpTargetManager.h	/^   uint32_t static_op;$/;"	m	class:JumpTargetManager::AssignGadge
 std	lib/StackAnalysis/ASSlot.h	/^namespace std {$/;"	n
 std	lib/StackAnalysis/Element.h	/^namespace std {$/;"	n
 store	lib/StackAnalysis/Element.h	/^  void store(Value Address, Value StoredValue) {$/;"	f	class:StackAnalysis::Intraprocedural::Element
@@ -3477,6 +3493,8 @@ target_reg	runtime/support.h	/^typedef uint64_t target_reg;$/;"	t
 tb_invalidate_phys_range	runtime/support.c	/^void tb_invalidate_phys_range(target_reg start, target_reg end) {$/;"	f
 terminate	lib/Support/Assert.cpp	/^[[noreturn]] static void terminate(void) {$/;"	f	file:
 testFunction	lib/Support/ExampleAnalysis.cpp	/^inline void testFunction() {$/;"	f	namespace:ExampleAnalysis
+textStartAddr	tools/revng-lift/BinaryFile.h	/^  uint64_t textStartAddr;$/;"	m	class:BinaryFile
+text_StartAddr	tools/revng-lift/JumpTargetManager.h	/^  uint64_t text_StartAddr;$/;"	m	class:JumpTargetManager
 tf_names	scripts/monotone-framework.py	/^  tf_names = sorted([e.attr["label"] for e in tf_graph.edges_iter()])$/;"	v
 tfs	scripts/monotone-framework.py	/^  tfs = [e.attr["label"] for e in tf_graph.edges_iter()]$/;"	v
 thisDerived	include/revng/Support/RandomAccessIterator.h	/^  Derived &thisDerived() { return *static_cast<Derived *>(this); }$/;"	f	class:RandomAccessIterator
