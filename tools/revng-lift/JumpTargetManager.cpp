@@ -2369,6 +2369,7 @@ void JumpTargetManager::runGlobalGadget(uint64_t basePC,
       /* If the instruction to operate global data is entry address,
        * we consider that no instruction operates offset, and offset value
        * has been designated in global_I. */
+      ptc.storeStack();
       storeCPURegister();
       for(auto base : tmpGlobal){
         if(op!=UndefineOP)
@@ -2379,12 +2380,14 @@ void JumpTargetManager::runGlobalGadget(uint64_t basePC,
       tmpGlobal.clear();
       tmpGlobal = tempVec1;
       recoverCPURegister();
+      ptc.recoverStack();
       return; 
     }
 
     /* If the instruction to operate global data isn't entry address of block, 
      * then we consider all instructions before this instruction will be the instruction
      * to operate offset value. */
+    ptc.storeStack();
     storeCPURegister();
     for(auto base:tmpGlobal){
       if(op!=UndefineOP)
@@ -2395,6 +2398,7 @@ void JumpTargetManager::runGlobalGadget(uint64_t basePC,
     tmpGlobal.clear();
     tmpGlobal = tempVec1;
     recoverCPURegister();
+    ptc.recoverStack();
 }
 
 void JumpTargetManager::ConstOffsetExec(llvm::BasicBlock *gadget,
@@ -3430,7 +3434,7 @@ uint64_t JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *thisBloc
   lastInst--;
 
   auto PC = getInstructionPC(dyn_cast<Instruction>(lastInst));
-  if(PC == thisAddr or PC == 0)
+  if(PC == thisAddr or PC == 0 or ptc.isSyscall)
     return thisAddr+ConsumedSize;
   return PC;
 
