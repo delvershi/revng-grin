@@ -271,7 +271,6 @@ CodeGenerator::CodeGenerator(BinaryFile &Binary,
       auto DataRef = ArrayRef<uint8_t>(FullData.get(), Segment.size());
       TheData = ConstantDataArray::get(Context, DataRef);
     }
-
     // Create a new global variable
     Segment.Variable = new GlobalVariable(*TheModule,
                                           DataType,
@@ -289,6 +288,17 @@ CodeGenerator::CodeGenerator(BinaryFile &Binary,
                       << Segment.StartVirtualAddress << ",0x" << std::hex
                       << Segment.EndVirtualAddress << "\n";
   }
+ 
+  auto OutString = llvm::StringRef(OutputPath);
+  Constant * ELFData = ConstantDataArray::getString(Context,OutString);
+  auto v = dyn_cast<Value>(ELFData);
+  auto *DT = v->getType();
+  elf_name = new GlobalVariable(*TheModule,
+                                DT,
+                                true,
+                                GlobalValue::ExternalLinkage,
+                                ELFData,
+                                "elf_name");
 
   // Write needed libraries CSV
   std::string NeededLibs = OutputPath + ".need.csv";
@@ -744,7 +754,8 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
   InputArchMD->addOperand(Tuple);
 
   // Create an instance of JumpTargetManager
-  JumpTargetManager JumpTargets(MainFunction, PCReg, Binary);
+  JumpTargetManager JumpTargets(MainFunction, PCReg, Binary, elf_name);
+  //JumpTargets.elf_name = elf_name;
 
 //  if (VirtualAddress == 0) {
 //    outs()<<"testetst\n";

@@ -244,15 +244,18 @@ void g_free(void *memory) {
     return free(memory);
 }
 
-void unknownPC() {
-  int arg;
-  const char *error = "Unknown PC\n";
-  write(2, error, strlen(error));
-  for (arg = 0; arg < saved_argc; arg++) {
-    write(2, saved_argv[arg], strlen(saved_argv[arg]));
-    write(2, " ", 1);
-  }
-  write(2, "\n", 1);
+void unknownPC(uint64_t pc, char *elf_name) {
+//  int arg;
+//  const char *error = "Unknown PC\n";
+//  //fprintf(stderr,"PC: %lx ELF: %s",pc,elf_name);
+//  write(2, stderr, strlen(stderr));
+//  for (arg = 0; arg < saved_argc; arg++) {
+//    write(2, saved_argv[arg], strlen(saved_argv[arg]));
+//    write(2, " ", 1);
+//  }
+//  write(2, "\n", 1);
+  fprintf(stderr,"PC: %lx ELF: %s\n",pc,elf_name); 
+
   abort();
 }
 
@@ -369,7 +372,7 @@ bool is_executable(uint64_t pc) {
 
   //const char *error = "Unknown PC\n";
   //write(2, error, strlen(error));
-  fprintf(stderr,"PC: %lx ",pc);
+  //fprintf(stderr," PC: %lx \n",pc);
 
   // Check if the pc is inside one of the executable segments
   for (int i = 0; i < segments_count; i++)

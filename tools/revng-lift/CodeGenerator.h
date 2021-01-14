@@ -67,6 +67,7 @@ public:
 
   /// Serialize the generated LLVM IR to the specified output path.
   void serialize();
+  llvm::GlobalVariable *elf_name;
 
 private:
   /// \brief Parse the ELF headers.

@@ -168,6 +168,8 @@ private:
 public:  
   /* Determine whether to repeat to TB.*/ 
   unsigned int haveBB;
+  llvm::GlobalVariable *elf_name;
+
   void harvestbranchBasicBlock(uint64_t nextAddr,
 		     uint64_t thisAddr, 
                      llvm::BasicBlock *thisBlock, 
@@ -477,6 +479,11 @@ public:
   JumpTargetManager(llvm::Function *TheFunction,
                     llvm::Value *PCReg,
                     const BinaryFile &Binary);
+ 
+  JumpTargetManager(llvm::Function *TheFunction,
+                    llvm::Value *PCReg,
+                    const BinaryFile &Binary,
+                    llvm::GlobalVariable *ELFName);
 
   /// \brief Transform the IR to represent the request form of CFG
   void setCFGForm(CFGForm::Values NewForm);

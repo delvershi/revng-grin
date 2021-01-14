@@ -466,6 +466,70 @@ JumpTargetManager::JumpTargetManager(Function *TheFunction,
   // getOption<bool>(Options, "enable-pre")->setInitialValue(false);
   // getOption<uint32_t>(Options, "max-recurse-depth")->setInitialValue(10);
   haveBB = 0;
+  elf_name = nullptr;
+  range = 0;
+ 
+  auto PointerPath = "GlobalPointer.log";
+  std::ofstream PointerAddrInfoStream(PointerPath);
+  PointerAddrInfoStream << "Global Pointer Base Addr:\n";
+
+  auto Path = "JumpTable.log";
+  std::ofstream JumpTableAddrInfoStream(Path);
+  JumpTableAddrInfoStream << "Jump Table Addr:\n";
+}
+
+JumpTargetManager::JumpTargetManager(Function *TheFunction,
+                                     Value *PCReg,
+                                     const BinaryFile &Binary,
+                                     GlobalVariable *ELFName) :
+  TheModule(*TheFunction->getParent()),
+  Context(TheModule.getContext()),
+  TheFunction(TheFunction),
+  OriginalInstructionAddresses(),
+  JumpTargets(),
+  assign_gadge(),
+  PCReg(PCReg),
+  ExitTB(nullptr),
+  Dispatcher(nullptr),
+  DispatcherSwitch(nullptr),
+  Binary(Binary),
+  NoReturn(Binary.architecture()),
+  CurrentCFGForm(CFGForm::UnknownFormCFG) {
+  FunctionType *ExitTBTy = FunctionType::get(Type::getVoidTy(Context),
+                                             { Type::getInt32Ty(Context) },
+                                             false);
+  elf_name = ELFName;
+  ExitTB = cast<Function>(TheModule.getOrInsertFunction("exitTB", ExitTBTy));
+  createDispatcher(TheFunction, PCReg);
+
+  for (auto &Segment : Binary.segments()){
+    Segment.insertExecutableRanges(std::back_inserter(ExecutableRanges));
+    if(Segment.IsExecutable){
+      codeSeg_StartAddr = Segment.StartVirtualAddress;
+    }
+    if(Segment.IsWriteable and !Segment.IsExecutable){
+      DataSegmStartAddr = Segment.StartVirtualAddress; 
+      DataSegmEndAddr = Segment.EndVirtualAddress;
+    }
+  }
+  ro_StartAddr = 0;
+  ro_EndAddr = 0;
+  text_StartAddr = 0;
+  if(Binary.rodataStartAddr){
+    ro_StartAddr = Binary.rodataStartAddr; 
+    ro_EndAddr = Binary.ehframeEndAddr;
+    revng_assert(ro_StartAddr<=ro_EndAddr);
+  }
+  if(Binary.textStartAddr)
+    text_StartAddr = Binary.textStartAddr;
+
+  // Configure GlobalValueNumbering
+  StringMap<cl::Option *> &Options(cl::getRegisteredOptions());
+  getOption<bool>(Options, "enable-load-pre")->setInitialValue(false);
+  getOption<unsigned>(Options, "memdep-block-scan-limit")->setInitialValue(100);
+  // getOption<bool>(Options, "enable-pre")->setInitialValue(false);
+  // getOption<uint32_t>(Options, "max-recurse-depth")->setInitialValue(10);
+  haveBB = 0;
   range = 0;
  
   auto PointerPath = "GlobalPointer.log";
@@ -1295,10 +1359,14 @@ void JumpTargetManager::createDispatcher(Function *OutputFunction,
   Builder.SetInsertPoint(DispatcherFail);
 
   Module *TheModule = TheFunction->getParent();
-  auto *UnknownPCTy = FunctionType::get(Type::getVoidTy(Context), {}, false);
+  
+  Value *PC = Builder.CreateLoad(pcReg()); 
+  //Value *ELFName = Builder.CreateLoad(elf_name);
+  Value *ELFName = dyn_cast<Value>(elf_name);
+  auto *UnknownPCTy = FunctionType::get(Type::getVoidTy(Context), {PC->getType(),ELFName->getType()}, false);
   Constant *UnknownPC = TheModule->getOrInsertFunction("unknownPC",
                                                        UnknownPCTy);
-  Builder.CreateCall(cast<Function>(UnknownPC));
+  Builder.CreateCall(cast<Function>(UnknownPC), {PC,ELFName});
   auto *FailUnreachable = Builder.CreateUnreachable();
   FailUnreachable->setMetadata("revng.block.type",
                                QMD.tuple((uint32_t) DispatcherFailureBlock));
@@ -2445,9 +2513,10 @@ void JumpTargetManager::ConstOffsetExec(llvm::BasicBlock *gadget,
           break;
         }
       }
-      if(have==false)
+      if(have==false){
         tempVec.push_back(data);
-      BaseAddr <<"    0x"<< std::hex << data <<"\n";
+        BaseAddr <<"  data:    0x"<< std::hex << data <<"\n";
+      }
       pagesize++;
       if(pagesize>256)
         break;
@@ -2465,7 +2534,7 @@ void JumpTargetManager::ConstOffsetExec(llvm::BasicBlock *gadget,
     pagesize++;
     if(!haveDef2OP(global_I,op) or pagesize>256)
       break;
-   
+    
     BaseAddr <<"    0x"<< std::hex << tmpPC <<"\n";     
   }
   BaseAddr.close();
@@ -2516,9 +2585,10 @@ void JumpTargetManager::VarOffsetExec(llvm::BasicBlock *gadget,
           break;
         }
       }
-      if(have==false)
+      if(have==false){
         tempVec.push_back(data); 
-      BaseAddr <<"    0x"<< std::hex << data <<"\n";
+        BaseAddr <<"  data    0x"<< std::hex << data <<"\n";
+      }
       pagesize++;
       if(pagesize>256)
         break;
