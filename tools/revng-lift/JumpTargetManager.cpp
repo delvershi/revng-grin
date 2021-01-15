@@ -2655,7 +2655,8 @@ void JumpTargetManager::harvestStaticAddr(llvm::BasicBlock *thisBlock){
               assign_gadge[pc].operation_block = thisBlock;
               assign_gadge[pc].global_I = &*I;
               //if thisBlock is indirect or StaticAddr is stored in registers. 
-              if(*ptc.isIndirect or *ptc.isIndirectJmp or getStaticAddrfromDestRegs(&*I))
+              if(*ptc.isIndirect or *ptc.isIndirectJmp or 
+                  (getStaticAddrfromDestRegs(&*I) and !isCase1(&*I,pc)))
               {
                 assign_gadge[pc].static_addr_block = thisBlock;
                 assign_gadge[pc].operation_block = nullptr;
@@ -3001,6 +3002,65 @@ uint64_t JumpTargetManager::getGlobalDatafromDestRegs(llvm::BasicBlock *thisBloc
   return 0;
 }
 
+//Case1: Load static address from global, and store this value to global
+bool JumpTargetManager::isCase1(llvm::Instruction *I, uint64_t global){
+  BasicBlock::iterator it(I);
+  BasicBlock::iterator end = I->getParent()->end();
+  BasicBlock::iterator lastInst(I->getParent()->back());
+
+  Value *v1 = nullptr;
+  auto v = dyn_cast<llvm::Value>(I);
+  if(I->getOpcode()==Instruction::Store){
+    auto store = dyn_cast<llvm::StoreInst>(I);
+    v = store->getPointerOperand();
+  }
+
+  it++;
+  for(; it!=end; it++){ 
+    switch(it->getOpcode()){
+      case llvm::Instruction::Call:
+        break;
+      case llvm::Instruction::Load:{
+        auto load = dyn_cast<llvm::LoadInst>(it);
+	if((load->getPointerOperand() - v) == 0)
+	    v = dyn_cast<Value>(it);
+        if((load->getPointerOperand() - v1) == 0)
+            v1 = dyn_cast<Value>(it);
+        break;
+      }
+      case llvm::Instruction::Store:{
+        auto store = dyn_cast<llvm::StoreInst>(it);
+        if(dyn_cast<ConstantInt>(store->getValueOperand())){
+          auto addr = getLimitedValue(store->getValueOperand()); 
+          if(addr==global)
+            v1 = store->getPointerOperand();
+        }
+        if((store->getValueOperand() - v) == 0)
+	    v = store->getPointerOperand();
+        if((store->getValueOperand() - v1) == 0)
+            v1 = store->getPointerOperand();
+	break;
+      }
+      default:{
+        auto instr = dyn_cast<Instruction>(it);
+        for(Use &u : instr->operands()){
+            Value *InstV = u.get();
+            if((InstV - v) == 0){
+	      v = dyn_cast<Value>(instr);
+              break; 
+            }
+            if((InstV - v1) == 0){
+              v1 = dyn_cast<Value>(instr);
+              break;
+            }
+        }
+      }  
+    }
+    if(v==v1)
+      return true;
+  }//??end for
+  return false;
+}
 
 bool JumpTargetManager::getStaticAddrfromDestRegs(llvm::Instruction *I){
   BasicBlock::iterator it(I);
@@ -3839,7 +3899,17 @@ void JumpTargetManager::harvestBTBasicBlock(llvm::BasicBlock *thisBlock,
         return;
   }
   if(!haveTranslatedPC(destAddr, 0)){
-      ptc.storeCPUState();
+      if(!isDataSegmAddr(ptc.regs[R_ESP]) and isDataSegmAddr(ptc.regs[R_EBP]))
+          ptc.regs[R_ESP] = ptc.regs[R_EBP];
+      //if(isDataSegmAddr(ptc.regs[R_ESP]) and !isDataSegmAddr(ptc.regs[R_EBP]))
+      //    ptc.regs[R_EBP] = ptc.regs[R_ESP] + 256;
+      if(!isDataSegmAddr(ptc.regs[R_ESP]) and !isDataSegmAddr(ptc.regs[R_EBP])){
+          ptc.regs[R_ESP] = *ptc.ElfStartStack - 512;
+          ptc.regs[R_EBP] = ptc.regs[R_ESP] + 256;
+      }
+      auto successed = ptc.storeCPUState();
+      if(!successed)
+        revng_abort("Store CPU stat failed!\n");
       /* Recording not execute branch destination relationship with current BasicBlock */
      // thisBlock = nullptr; 
       BranchTargets.push_back(std::make_tuple(destAddr,thisBlock,thisAddr)); 
@@ -4582,12 +4652,9 @@ void JumpTargetManager::harvestCallBasicBlock(llvm::BasicBlock *thisBlock,uint64
       /* Construct a state that have executed a call to next instruction of CPU state */
       ptc.regs[R_ESP] = ptc.regs[R_ESP] + 8;
       auto success  = ptc.storeCPUState();
-      if(!success){
-        haveBB = 1;
-        *ptc.exception_syscall = -1;
-	IllegalStaticAddrs.push_back(thisAddr);
-	return;
-      }
+      if(!success)
+        revng_abort("Store CPU stat failed!\n");
+      
       // Recover stack state
       ptc.regs[R_ESP] = ptc.regs[R_ESP] - 8;
 

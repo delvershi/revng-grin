@@ -837,7 +837,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       ConsumedSize = ptc.translate(VirtualAddress, InstructionList.get(),&DynamicVirtualAddress);
       tmpVA = VirtualAddress;
     }
-    if(traverseFLAG && JumpTargets.haveBB){
+    if(traverseFLAG and JumpTargets.haveBB){
       ptc_instruction_list_malloc(InstructionList.get()); 
       errs()<<"Nop execute!\n";
     } 
