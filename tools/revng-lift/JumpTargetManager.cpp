@@ -3566,7 +3566,7 @@ uint64_t JumpTargetManager::handleIllegalMemoryAccess(llvm::BasicBlock *thisBloc
   lastInst--;
 
   auto PC = getInstructionPC(dyn_cast<Instruction>(lastInst));
-  if(PC == thisAddr or PC == 0 or ptc.isSyscall)
+  if(PC == thisAddr or PC == 0 or *ptc.isSyscall)
     return thisAddr+ConsumedSize;
   return PC;
 
