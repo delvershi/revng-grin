@@ -2765,7 +2765,9 @@ void JumpTargetManager::handleGlobalStaticAddr(void){
 bool JumpTargetManager::isGlobalData(uint64_t pc){
   if(DataSegmStartAddr<pc and pc<DataSegmEndAddr)
     return true;
-
+  if(ro_StartAddr<pc and pc<ro_EndAddr)
+    return true;
+ 
   return false;
 }
 
