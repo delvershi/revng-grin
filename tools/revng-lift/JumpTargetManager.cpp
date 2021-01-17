@@ -2430,6 +2430,7 @@ void JumpTargetManager::runGlobalGadget(uint64_t basePC,
     uint32_t opt = 0;
     uint64_t virtualAddr = 0;
     uint32_t crash = 0;
+    bool recover = false;
     if(current_pc != thisAddr){
       std::tie(opt,virtualAddr) = getLastOperandandNextPC(&*(gadget->begin()));
     } 
@@ -2437,7 +2438,10 @@ void JumpTargetManager::runGlobalGadget(uint64_t basePC,
       /* If the instruction to operate global data is entry address,
        * we consider that no instruction operates offset, and offset value
        * has been designated in global_I. */
-      ptc.storeStack();
+      if(isDataSegmAddr(ptc.regs[R_ESP])){
+        ptc.storeStack();
+        recover = true;
+      }
       storeCPURegister();
       for(auto base : tmpGlobal){
         if(op!=UndefineOP)
@@ -2448,14 +2452,18 @@ void JumpTargetManager::runGlobalGadget(uint64_t basePC,
       tmpGlobal.clear();
       tmpGlobal = tempVec1;
       recoverCPURegister();
-      ptc.recoverStack();
+      if(recover)
+        ptc.recoverStack();
       return; 
     }
 
     /* If the instruction to operate global data isn't entry address of block, 
      * then we consider all instructions before this instruction will be the instruction
      * to operate offset value. */
-    ptc.storeStack();
+    if(isDataSegmAddr(ptc.regs[R_ESP])){
+      ptc.storeStack();
+      recover = true;
+    }
     storeCPURegister();
     for(auto base:tmpGlobal){
       if(op!=UndefineOP)
@@ -2466,7 +2474,8 @@ void JumpTargetManager::runGlobalGadget(uint64_t basePC,
     tmpGlobal.clear();
     tmpGlobal = tempVec1;
     recoverCPURegister();
-    ptc.recoverStack();
+    if(recover)
+      ptc.recoverStack();
 }
 
 void JumpTargetManager::ConstOffsetExec(llvm::BasicBlock *gadget,
