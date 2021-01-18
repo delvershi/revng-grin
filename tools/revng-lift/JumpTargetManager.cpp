@@ -2489,7 +2489,8 @@ void JumpTargetManager::ConstOffsetExec(llvm::BasicBlock *gadget,
                                         std::vector<uint64_t>& tempVec){
   size_t pagesize = 0;        
   uint32_t gadgetCrash = 0; 
-
+  uint64_t check = 0;
+ 
   auto Path = "GlobalPointer.log";
   std::ofstream BaseAddr;
   BaseAddr.open(Path,std::ofstream::out | std::ofstream::app);
@@ -2536,14 +2537,22 @@ void JumpTargetManager::ConstOffsetExec(llvm::BasicBlock *gadget,
     // Static addresses stored in registers.
     if(!indirect)
       tmpPC = getStaticAddrfromDestRegs(gadget,current_pc);
-    if(!isExecutableAddress(tmpPC))
-      break;    
-
-    harvestBTBasicBlock(gadget,thisAddr,tmpPC);
     pagesize++;
     if(!haveDef2OP(global_I,op) or pagesize>256)
       break;
-    
+    if(tmpPC==0)
+      continue;
+    if(!isExecutableAddress(tmpPC))
+      break;    
+    if(pagesize<5 or pagesize==5){
+      check += tmpPC;
+    }
+    if(pagesize==5){
+      if((check-tmpPC*5)==0) 
+        break;
+    }
+    harvestBTBasicBlock(gadget,thisAddr,tmpPC);
+   
     BaseAddr <<"    0x"<< std::hex << tmpPC <<"\n";     
   }
   BaseAddr.close();
@@ -2560,6 +2569,7 @@ void JumpTargetManager::VarOffsetExec(llvm::BasicBlock *gadget,
                                       std::vector<uint64_t>& tempVec){
   size_t pagesize = 0;
   uint32_t gadgetCrash = 0;
+  uint64_t check = 0;
         
   auto Path = "GlobalPointer.log";
   std::ofstream BaseAddr;
@@ -2605,15 +2615,24 @@ void JumpTargetManager::VarOffsetExec(llvm::BasicBlock *gadget,
     }
     // Static addresses stored in registers.
     if(!indirect)
-      tmpPC = getStaticAddrfromDestRegs(gadget,current_pc);     
-    if(!isExecutableAddress(tmpPC))
-      break;    
-
-    harvestBTBasicBlock(gadget,thisAddr,tmpPC);
+      tmpPC = getStaticAddrfromDestRegs(gadget,current_pc);    
     pagesize++;
     if(pagesize>256)
       break;
-    
+    if(tmpPC==0)
+      continue; 
+    if(!isExecutableAddress(tmpPC))
+      break;   
+    if(pagesize<5 or pagesize==5){
+      check += tmpPC;
+    } 
+    if(pagesize==5){
+      if((check-tmpPC*5)==0)
+        break;
+    }
+
+    harvestBTBasicBlock(gadget,thisAddr,tmpPC);
+   
     BaseAddr <<"    0x"<< std::hex << tmpPC <<"\n"; 
   }
   BaseAddr.close();    
