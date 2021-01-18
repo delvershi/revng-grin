@@ -2684,7 +2684,10 @@ void JumpTargetManager::harvestStaticAddr(llvm::BasicBlock *thisBlock){
               assign_gadge[pc].global_I = &*I;
               //if thisBlock is indirect or StaticAddr is stored in registers. 
               if(*ptc.isIndirect or *ptc.isIndirectJmp or 
-                  (getStaticAddrfromDestRegs(&*I) and !isCase1(&*I,pc)))
+                  (getStaticAddrfromDestRegs(&*I) and 
+                                 !isCase1(&*I,pc) and 
+                                 !isCase2(&*I)
+                  ))
               {
                 assign_gadge[pc].static_addr_block = thisBlock;
                 assign_gadge[pc].operation_block = nullptr;
@@ -3089,6 +3092,80 @@ bool JumpTargetManager::isCase1(llvm::Instruction *I, uint64_t global){
   }//??end for
   return false;
 }
+
+
+//Case2: Load value from global, and add a static addr from a reg to the reg
+//          [global] + reg(static) to reg
+bool JumpTargetManager::isCase2(llvm::Instruction *I){
+  BasicBlock::iterator it(I);
+  BasicBlock::iterator end = I->getParent()->end();
+  BasicBlock::iterator lastInst(I->getParent()->back());
+
+  Value *v1 = nullptr;
+  auto v = dyn_cast<llvm::Value>(I);
+  if(I->getOpcode()==Instruction::Store){
+    auto store = dyn_cast<llvm::StoreInst>(I);
+    v = store->getPointerOperand();
+  }
+
+  it++;
+  for(; it!=end; it++){ 
+    switch(it->getOpcode()){
+      case llvm::Instruction::Call:
+        return false;
+      case llvm::Instruction::Load:{
+        auto load = dyn_cast<llvm::LoadInst>(it);
+        if((load->getPointerOperand() - v) == 0)
+            v = dyn_cast<Value>(it);
+        if((load->getPointerOperand() - v1) == 0)
+            v1 = dyn_cast<Value>(it);
+        auto RegV = load->getPointerOperand();
+        if(dyn_cast<Constant>(RegV)){
+            StringRef name = RegV->getName();
+            auto number = StrToInt(name.data());
+            auto op = REGLABLE(number);
+            if(op==UndefineOP)
+                continue;
+            if(isExecutableAddress(ptc.regs[op]))
+                v1 = dyn_cast<Value>(it);
+        }
+        break;
+      }
+      case llvm::Instruction::Store:{
+        auto store = dyn_cast<llvm::StoreInst>(it);
+        if((store->getValueOperand() - v) == 0)
+	    v = store->getPointerOperand();
+        if((store->getValueOperand() - v1) == 0)
+            v1 = store->getPointerOperand();
+	break;
+      }
+      case llvm::Instruction::Add:{
+        auto instr = dyn_cast<Instruction>(it);
+        for(Use &u : instr->operands()){
+            Value *InstV = u.get();
+            if((InstV - v) == 0)
+                v = dyn_cast<Value>(instr);
+            if((InstV - v1) == 0)
+                v1 = dyn_cast<Value>(instr);
+        }
+        if(v==v1)
+          return true;
+      }
+      default:{
+        auto instr = dyn_cast<Instruction>(it);
+        for(Use &u : instr->operands()){
+            Value *InstV = u.get();
+            if((InstV - v) == 0)
+	      v = dyn_cast<Value>(instr);
+            if((InstV - v1) == 0)
+              v1 = dyn_cast<Value>(instr);
+        }
+      }  
+    }
+  }//??end for
+  return false;
+}
+
 
 bool JumpTargetManager::getStaticAddrfromDestRegs(llvm::Instruction *I){
   BasicBlock::iterator it(I);

@@ -278,6 +278,7 @@ public:
   void storeCPURegister();
   void recoverCPURegister();
   bool isCase1(llvm::Instruction *I, uint64_t global);
+  bool isCase2(llvm::Instruction *I);
   bool getStaticAddrfromDestRegs(llvm::Instruction *I);
   uint64_t getStaticAddrfromDestRegs(llvm::BasicBlock *thisBlock, uint64_t bound);
   bool getGlobalDatafromRegs(llvm::Instruction *I, uint64_t base);
