@@ -2427,7 +2427,7 @@ void JumpTargetManager::runGlobalGadget(uint64_t basePC,
     if(tmpGlobal.empty())
       tmpGlobal.push_back(basePC);
 
-    uint32_t opt = 0;
+    uint32_t opt = UndefineOP;
     uint64_t virtualAddr = 0;
     uint32_t crash = 0;
     bool recover = false;
@@ -2468,7 +2468,7 @@ void JumpTargetManager::runGlobalGadget(uint64_t basePC,
     for(auto base:tmpGlobal){
       if(op!=UndefineOP)
         ptc.regs[op] = base;
-      VarOffsetExec(gadget,thisAddr,virtualAddr,current_pc,oper,opt,indirect,crash,tempVec1);
+      VarOffsetExec(gadget,thisAddr,virtualAddr,current_pc,oper,op,opt,indirect,crash,tempVec1);
       crash++;
     }
     tmpGlobal.clear();
@@ -2565,6 +2565,7 @@ void JumpTargetManager::VarOffsetExec(llvm::BasicBlock *gadget,
                                       uint64_t virtualAddr,
                                       uint64_t current_pc,
                                       bool oper,
+                                      uint32_t op,
                                       uint32_t opt,
                                       bool indirect,
                                       uint32_t crash,

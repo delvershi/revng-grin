@@ -309,6 +309,7 @@ public:
                      uint64_t virtualAddr,
                      uint64_t current_pc,
                      bool oper,
+                     uint32_t op,
                      uint32_t opt,
                      bool indirect,
                      uint32_t crash,
