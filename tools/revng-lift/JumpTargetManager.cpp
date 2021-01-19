@@ -2495,6 +2495,8 @@ void JumpTargetManager::ConstOffsetExec(llvm::BasicBlock *gadget,
   std::ofstream BaseAddr;
   BaseAddr.open(Path,std::ofstream::out | std::ofstream::app);
   BaseAddr <<"PC: "<<std::hex<< current_pc <<" : \n";
+  if(op!=UndefineOP)
+    BaseAddr <<"base: "<<std::hex<< ptc.regs[op] <<" : \n";
   for(;;){
     //Static addresses are indirect jump target address.
     int64_t tmpPC = ptc.exec(thisAddr);
@@ -2574,7 +2576,9 @@ void JumpTargetManager::VarOffsetExec(llvm::BasicBlock *gadget,
   auto Path = "GlobalPointer.log";
   std::ofstream BaseAddr;
   BaseAddr.open(Path,std::ofstream::out | std::ofstream::app);
-  BaseAddr <<"PC: "<<std::hex<< virtualAddr <<" : \n";   
+  BaseAddr <<"PC: "<<std::hex<< virtualAddr <<" : \n";  
+  if(op!=UndefineOP)
+    BaseAddr <<"base: "<<std::hex<< ptc.regs[op] <<" : \n";
   for(int i=0; ;i++){
     ptc.regs[opt] = i; 
     //Static addresses are indirect jump target address.
