@@ -319,8 +319,8 @@ public:
   bool haveBinaryOperation(llvm::Instruction *I);
   bool haveDefOperation(llvm::Instruction *I, llvm::Value *v);
   bool haveDef2OP(llvm::Instruction *I, uint32_t op);
-  std::map<uint32_t, uint64_t> haveGlobalDatainRegs();
-  void handleGlobalDataGadget(llvm::BasicBlock *thisBlock, std::map<uint32_t, uint64_t> GloData);
+  void haveGlobalDatainRegs(std::map<uint32_t, uint64_t> &GloData);
+  void handleGlobalDataGadget(llvm::BasicBlock *thisBlock, std::map<uint32_t, uint64_t> &GloData);
   void handleGlobalStaticAddr(void);
   //std::map<uint64_t, AssignGadge> assign_gadge;
   class AssignGadge{

@@ -65,6 +65,9 @@ using std::make_pair;
 using std::string;
 
 // Register all the arguments
+cl::opt<bool> SPECGcc("spec-gcc",
+                       cl::desc("Configure syscall of SPEC gcc"),
+                       cl::cat(MainCategory));
 
 cl::opt<bool> ExeInit("exe-init",
                        cl::desc("Initial the running binary "
@@ -811,7 +814,8 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
   std::vector<uint64_t> BlockPCs1;
   std::vector<uint64_t> &BlockPCs = BlockPCs1;
   bool BlockPCFlag = false;
-  std::map<uint32_t, uint64_t> GloData;
+  std::map<uint32_t, uint64_t> GloData1;
+  std::map<uint32_t, uint64_t> &GloData = GloData1;
   while (Entry != nullptr) {
     jjj++;
     BlockBRs = nullptr;
@@ -841,7 +845,8 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       ptc_instruction_list_malloc(InstructionList.get()); 
       errs()<<"Nop execute!\n";
     } 
-
+    if(!traverseFLAG or !JumpTargets.haveBB)
+      JumpTargets.haveGlobalDatainRegs(GloData);
 //    if(JumpTargets.haveBB){
 //      errs()<<JumpTargets.haveBB<<" appear repeat\n";
 //    }
@@ -1047,7 +1052,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
 	      ExeNums = ExeNums-1;
 	}
       }	   
-      DynamicVirtualAddress = StaticAddrFlag ? *ptc.syscall_next_eip:ptc.do_syscall2();
+      DynamicVirtualAddress = StaticAddrFlag ? *ptc.syscall_next_eip:ptc.do_syscall2(SPECGcc);
       *ptc.exception_syscall = -1; 
       if(DynamicVirtualAddress == 0 && traverseFLAG && !JumpTargets.BranchTargets.empty()){
         JumpTargets.haveBB = 0;
@@ -1087,9 +1092,8 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     //if(!JumpTargets.haveBB and *ptc.isIndirectJmp)
     //  JumpTargets.handleIndirectJmp(BlockBRs,tmpVA, StaticAddrFlag);
  
-    if(!traverseFLAG or !JumpTargets.haveBB){
-      GloData = JumpTargets.haveGlobalDatainRegs();
-    }
+    if(!traverseFLAG or !JumpTargets.haveBB)
+        JumpTargets.haveGlobalDatainRegs(GloData);
     if(!traverseFLAG){
     if(DynamicVirtualAddress){
       auto tmpBB = JumpTargets.registerJT(DynamicVirtualAddress,JTReason::GlobalData);

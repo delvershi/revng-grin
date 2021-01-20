@@ -2719,7 +2719,7 @@ void JumpTargetManager::harvestStaticAddr(llvm::BasicBlock *thisBlock){
   }
 }
 
-void JumpTargetManager::handleGlobalDataGadget(llvm::BasicBlock *thisBlock, std::map<uint32_t, uint64_t> GloData){
+void JumpTargetManager::handleGlobalDataGadget(llvm::BasicBlock *thisBlock, std::map<uint32_t, uint64_t> &GloData){
   BasicBlock::iterator it(thisBlock->begin());
   BasicBlock::iterator end(thisBlock->end());
 
@@ -2738,8 +2738,8 @@ void JumpTargetManager::handleGlobalDataGadget(llvm::BasicBlock *thisBlock, std:
         if(TargetIt!=GloData.end() and haveBinaryOperation(&*it) and !isJumpTabType(&*it)){
           auto baseGlobal = TargetIt->second;
           //TODO: offset is or not const
-          if(haveDefOperation(&*it,v))
-            return;
+          //if(haveDefOperation(&*it,v))
+          //  return;
          
           uint32_t tmpOP = UndefineOP;
           // global_I is an instruction to operate global data
@@ -2934,21 +2934,21 @@ bool JumpTargetManager::haveBinaryOperation(llvm::Instruction *I){
   return false;
 }
 
-std::map<uint32_t, uint64_t> JumpTargetManager::haveGlobalDatainRegs(){
-  std::map<uint32_t, uint64_t> vec;
+void JumpTargetManager::haveGlobalDatainRegs(std::map<uint32_t, uint64_t> &GloData){
   for(int i=0; i<16; i++){
     if(isGlobalData(ptc.regs[i])){
       std::map<uint64_t, AssignGadge>::iterator TargetIt = assign_gadge.find(ptc.regs[i]);
-      if(TargetIt != assign_gadge.end())  
-        vec[i] = ptc.regs[i];
+      if(TargetIt != assign_gadge.end()){  
+        std::map<uint32_t, uint64_t>::iterator Target = GloData.find(i);
+        if(Target==GloData.end())
+          GloData[i] = ptc.regs[i];
+      }
       else{
         assign_gadge[ptc.regs[i]] = AssignGadge(ptc.regs[i]);
-        vec[i] = ptc.regs[i];
+        GloData[i] = ptc.regs[i];
       }
     }
   }  
-
-  return vec;
 }
 
 bool JumpTargetManager::getGlobalDatafromRegs(llvm::Instruction *I, uint64_t base){
