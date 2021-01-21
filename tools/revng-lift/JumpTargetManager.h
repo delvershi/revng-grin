@@ -281,10 +281,10 @@ public:
   bool isCase2(llvm::Instruction *I);
   bool getStaticAddrfromDestRegs(llvm::Instruction *I);
   uint64_t getStaticAddrfromDestRegs(llvm::BasicBlock *thisBlock, uint64_t bound);
-  bool getGlobalDatafromRegs(llvm::Instruction *I, uint64_t base);
+  bool getGlobalDatafromRegs(llvm::Instruction *I, uint64_t preI);
   uint64_t getGlobalDatafromDestRegs(llvm::BasicBlock *thisBlock);
   std::pair<uint32_t,uint64_t> getLastOperandandNextPC(llvm::Instruction *I);
-  void harvestCodePointerInDataSegment(uint64_t basePC);
+  void harvestCodePointerInDataSegment(int64_t pos);
   void harvestCodePointerInDataSegment(uint64_t basePC, llvm::Instruction *tmpI, uint32_t tmpOP);
   void harvestCodePointerInDataSegment(uint64_t basePC,uint64_t reserve,llvm::Instruction *tmpI, uint32_t tmpOP);
   void harvestCodePointerInDataSegment(uint64_t basePC, uint64_t reserve);
@@ -316,18 +316,20 @@ public:
                      std::vector<uint64_t>& tempVec);
   bool isGlobalData(uint64_t pc);
   bool isJumpTabType(llvm::Instruction *I);
+  bool isRecordGlobalBase(uint64_t base);
+  int64_t isRecordGadgetBlock(uint64_t base, llvm::BasicBlock *gadget);
   bool haveBinaryOperation(llvm::Instruction *I);
   bool haveDefOperation(llvm::Instruction *I, llvm::Value *v);
   bool haveDef2OP(llvm::Instruction *I, uint32_t op);
   void haveGlobalDatainRegs(std::map<uint32_t, uint64_t> &GloData);
   void handleGlobalDataGadget(llvm::BasicBlock *thisBlock, std::map<uint32_t, uint64_t> &GloData);
   void handleGlobalStaticAddr(void);
-  //std::map<uint64_t, AssignGadge> assign_gadge;
+  //std::vector<uint64_t, AssignGadge> assign_gadge;
   class AssignGadge{
   public:
    AssignGadge():
      global_addr(0),
-     pre(0),
+     pre(-1),
      global_I(nullptr),
      op(UndefineOP),
      operation_block(nullptr),
@@ -337,7 +339,7 @@ public:
      indirect(false) {}
    AssignGadge(uint64_t addr):
      global_addr(addr),
-     pre(0),
+     pre(-1),
      global_I(nullptr),
      op(UndefineOP),
      operation_block(nullptr),
@@ -347,7 +349,7 @@ public:
      indirect(false) {}
 
    uint64_t global_addr;
-   uint64_t pre;
+   int64_t pre;
    llvm::Instruction * global_I;
    uint32_t op;
    llvm::BasicBlock * operation_block;
@@ -875,7 +877,7 @@ private:
   /// Holds the association between a PC and a BasicBlock.
   BlockMap JumpTargets;
 
-  std::map<uint64_t, AssignGadge> assign_gadge;
+  std::vector<std::pair<uint64_t, AssignGadge>> assign_gadge;
 
   /// Queue of program counters we still have to translate.
   std::vector<BlockWithAddress> Unexplored;

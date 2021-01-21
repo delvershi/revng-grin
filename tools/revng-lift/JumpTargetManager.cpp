@@ -2357,28 +2357,28 @@ void JumpTargetManager::harvestCodePointerInDataSegment(uint64_t basePC,uint64_t
   }
 }
 
-void JumpTargetManager::harvestCodePointerInDataSegment(uint64_t basePC){
-  std::vector<uint64_t> GadgeChain;
-  GadgeChain.push_back(basePC);
-  uint64_t base = basePC;
-  while(assign_gadge[base].pre!=0){
-    base = assign_gadge[assign_gadge[base].pre].global_addr;
-    GadgeChain.push_back(base);
+void JumpTargetManager::harvestCodePointerInDataSegment(int64_t pos){
+  std::vector<int64_t> GadgeChain;
+  GadgeChain.push_back(pos);
+  int64_t pos_base = pos;
+  while(assign_gadge[pos_base].second.pre!=-1){
+    pos_base = assign_gadge[pos_base].second.pre;
+    GadgeChain.push_back(pos_base);
   }
   std::vector<uint64_t> tmpGlobal;
   std::vector<uint64_t> &tmpGlobal1 = tmpGlobal;
   std::vector<uint64_t>::reverse_iterator rit = GadgeChain.rbegin();
   for(;rit!=GadgeChain.rend();rit++){
-    auto gadget = assign_gadge[*rit].static_addr_block;
+    auto gadget = assign_gadge[*rit].second.static_addr_block;
     bool oper = false;
-    if(assign_gadge[*rit].operation_block){
-      gadget = assign_gadge[*rit].operation_block;
+    if(assign_gadge[*rit].second.operation_block){
+      gadget = assign_gadge[*rit].second.operation_block;
       oper = true;
     }
-    auto global_I = assign_gadge[*rit].global_I;
-    auto op = assign_gadge[*rit].op;
-    auto indirect = assign_gadge[*rit].indirect;
-    runGlobalGadget(*rit,gadget,oper,global_I,op,indirect,tmpGlobal1);
+    auto global_I = assign_gadge[*rit].second.global_I;
+    auto op = assign_gadge[*rit].second.op;
+    auto indirect = assign_gadge[*rit].second.indirect;
+    runGlobalGadget(assign_gadge[*rit].second.global_addr,gadget,oper,global_I,op,indirect,tmpGlobal1);
   }
 }
 
@@ -2740,37 +2740,43 @@ void JumpTargetManager::handleGlobalDataGadget(llvm::BasicBlock *thisBlock, std:
           //TODO: offset is or not const
           //if(haveDefOperation(&*it,v))
           //  return;
-         
+          int64_t i = isRecordGadgetBlock(baseGlobal,thisBlock);
+	  if(i==-2)
+              break;
+	  if(i==-1){
+	    AssignGadge AG(baseGlobal);
+	    assign_gadge.push_back({baseGlobal,AG});
+	    i = assign_gadge.size()-1;
+	  }
           uint32_t tmpOP = UndefineOP;
           // global_I is an instruction to operate global data
-          auto bb = assign_gadge[baseGlobal].operation_block;
-          auto tmpBB = bb;
-          auto tmpI = assign_gadge[baseGlobal].global_I;
-          tmpOP = assign_gadge[baseGlobal].op;
-          
-          assign_gadge[baseGlobal].operation_block = thisBlock;
-          assign_gadge[baseGlobal].global_I = &*it;
-          assign_gadge[baseGlobal].op = reg;
+          auto tmpBB = assign_gadge[i].second.operation_block;
+          auto tmpI = assign_gadge[i].second.global_I;
+          tmpOP = assign_gadge[i].second.op;
+
+	  assign_gadge[i].second.operation_block = thisBlock;
+          assign_gadge[i].second.global_I = &*it;
+          assign_gadge[i].second.op = reg;
           if(*ptc.isIndirect or *ptc.isIndirectJmp or getStaticAddrfromDestRegs(&*it)){
-            assign_gadge[baseGlobal].static_addr_block = thisBlock;
-            assign_gadge[baseGlobal].operation_block = nullptr;
+            assign_gadge[i].second.static_addr_block = thisBlock;
+            assign_gadge[i].second.operation_block = nullptr;
             if(*ptc.isIndirect or *ptc.isIndirectJmp)
-              assign_gadge[baseGlobal].indirect = true;  
-            harvestCodePointerInDataSegment(baseGlobal);
+              assign_gadge[i].second.indirect = true;  
+            harvestCodePointerInDataSegment(i);
             break;
           }else{
-            auto result = getGlobalDatafromRegs(&*it,baseGlobal);
+            auto result = getGlobalDatafromRegs(&*it,i);
             if(result){
-              if(assign_gadge[baseGlobal].static_addr_block){
-                assign_gadge[baseGlobal].static_global_I = tmpI;
-                assign_gadge[baseGlobal].static_op = tmpOP;
+              if(assign_gadge[i].second.static_addr_block){
+                assign_gadge[i].second.static_global_I = tmpI;
+                assign_gadge[i].second.static_op = tmpOP;
                 harvestCodePointerInDataSegment(baseGlobal,tmpI,tmpOP);
               }
             }
             if(!result){
-              assign_gadge[baseGlobal].operation_block = tmpBB;
-              assign_gadge[baseGlobal].global_I = tmpI;
-              assign_gadge[baseGlobal].op = tmpOP;
+              assign_gadge[i].second.operation_block = tmpBB;
+              assign_gadge[i].second.global_I = tmpI;
+              assign_gadge[i].second.op = tmpOP;
             }
             break;
           }
@@ -2844,6 +2850,23 @@ bool JumpTargetManager::haveDef2OP(llvm::Instruction *I, uint32_t op){
     }
   }
   return false;
+}
+
+int64_t JumpTargetManager::isRecordGadgetBlock(uint64_t base, llvm::BasicBlock *gadget){
+  bool have = false;
+  for(auto g:assign_gadge){
+    if(g.second.operation_block==gadget){
+      return -2;
+  }
+  
+  for(unsigned i=0; i<assign_gadge.size(); i++){
+    if(assign_gadge[i].first==base){
+      if(assign_gadge[i].second.operation_block==nullptr)
+        return i;
+    }
+  }
+
+  return -1;
 }
 
 bool JumpTargetManager::isJumpTabType(llvm::Instruction *I){
@@ -2951,7 +2974,7 @@ void JumpTargetManager::haveGlobalDatainRegs(std::map<uint32_t, uint64_t> &GloDa
   }  
 }
 
-bool JumpTargetManager::getGlobalDatafromRegs(llvm::Instruction *I, uint64_t base){
+bool JumpTargetManager::getGlobalDatafromRegs(llvm::Instruction *I, uint64_t preI){
   bool result =false; 
   BasicBlock::iterator it(I);
   BasicBlock::iterator end = I->getParent()->end();
@@ -2985,10 +3008,10 @@ bool JumpTargetManager::getGlobalDatafromRegs(llvm::Instruction *I, uint64_t bas
               if(op==UndefineOP)
                 continue;
               if(isGlobalData(ptc.regs[op])){
-                std::map<uint64_t, AssignGadge>::iterator TargetIt = assign_gadge.find(ptc.regs[op]);
-                if(TargetIt == assign_gadge.end()){
-                  assign_gadge[ptc.regs[op]] = AssignGadge(ptc.regs[op]);
-                  assign_gadge[ptc.regs[op]].pre = base;
+                if(!isRecordGlobalBase(ptc.regs[op])){
+	          AssignGadge AG(ptc.regs[op])
+                  AG.pre = preI;
+		  assign_gadge.push_back({ptc.regs[op],AG});
                   result = true;
                 }
               }
