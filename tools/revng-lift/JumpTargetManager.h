@@ -281,13 +281,13 @@ public:
   bool isCase2(llvm::Instruction *I);
   bool getStaticAddrfromDestRegs(llvm::Instruction *I);
   uint64_t getStaticAddrfromDestRegs(llvm::BasicBlock *thisBlock, uint64_t bound);
-  bool getGlobalDatafromRegs(llvm::Instruction *I, uint64_t preI);
+  bool getGlobalDatafromRegs(llvm::Instruction *I, int64_t pre);
   uint64_t getGlobalDatafromDestRegs(llvm::BasicBlock *thisBlock);
   std::pair<uint32_t,uint64_t> getLastOperandandNextPC(llvm::Instruction *I);
   void harvestCodePointerInDataSegment(int64_t pos);
-  void harvestCodePointerInDataSegment(uint64_t basePC, llvm::Instruction *tmpI, uint32_t tmpOP);
-  void harvestCodePointerInDataSegment(uint64_t basePC,uint64_t reserve,llvm::Instruction *tmpI, uint32_t tmpOP);
-  void harvestCodePointerInDataSegment(uint64_t basePC, uint64_t reserve);
+  void harvestCodePointerInDataSegment(int64_t pos, llvm::Instruction *tmpI, uint32_t tmpOP);
+  void harvestCodePointerInDataSegment(int64_t pos,uint64_t reserve,llvm::Instruction *tmpI, uint32_t tmpOP);
+  void harvestCodePointerInDataSegment(int64_t pos, uint64_t reserve);
   void runGlobalGadget(uint64_t basePC, 
                        llvm::BasicBlock * gadget,
                        bool oper,

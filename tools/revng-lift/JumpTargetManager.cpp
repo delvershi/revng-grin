@@ -2288,72 +2288,72 @@ void JumpTargetManager::recoverCPURegister(){
     ptc.regs[i] = TempCPURegister[i];
 }
 
-void JumpTargetManager::harvestCodePointerInDataSegment(uint64_t basePC,llvm::Instruction *tmpI, uint32_t tmpOP){
-  std::vector<uint64_t> GadgeChain;
-  GadgeChain.push_back(basePC);
-  uint64_t base = basePC;
-  while(assign_gadge[base].pre!=0){
-    base = assign_gadge[assign_gadge[base].pre].global_addr;
-    GadgeChain.push_back(base);
+void JumpTargetManager::harvestCodePointerInDataSegment(int64_t pos,llvm::Instruction *tmpI, uint32_t tmpOP){
+  std::vector<int64_t> GadgeChain;
+  GadgeChain.push_back(pos);
+  uint64_t pos_base = pos;
+  while(assign_gadge[pos_base].second.pre!=-1){
+    pos_base = assign_gadge[pos_base].second.pre;
+    GadgeChain.push_back(pos_base);
   }
   std::vector<uint64_t> tmpGlobal;
   std::vector<uint64_t> &tmpGlobal1 = tmpGlobal;
-  std::vector<uint64_t>::reverse_iterator rit = GadgeChain.rbegin();
+  std::vector<int64_t>::reverse_iterator rit = GadgeChain.rbegin();
   for(;rit!=GadgeChain.rend();rit++){
-    auto gadget = assign_gadge[*rit].static_addr_block;
+    auto gadget = assign_gadge[*rit].second.static_addr_block;
     bool oper = false;
-    if(assign_gadge[*rit].operation_block){
-      gadget = assign_gadge[*rit].operation_block;
+    if(assign_gadge[*rit].second.operation_block){
+      gadget = assign_gadge[*rit].second.operation_block;
       oper = true;
     }
-    auto global_I = assign_gadge[*rit].global_I;
-    auto op = assign_gadge[*rit].op;
-    auto indirect = assign_gadge[*rit].indirect;
-    runGlobalGadget(*rit,gadget,oper,global_I,op,indirect,tmpGlobal1);
+    auto global_I = assign_gadge[*rit].second.global_I;
+    auto op = assign_gadge[*rit].second.op;
+    auto indirect = assign_gadge[*rit].second.indirect;
+    runGlobalGadget(assign_gadge[*rit].first,gadget,oper,global_I,op,indirect,tmpGlobal1);
   }
-  if(assign_gadge[basePC].operation_block){
-    auto gadget = assign_gadge[basePC].static_addr_block;
+  if(assign_gadge[pos].second.operation_block){
+    auto gadget = assign_gadge[pos].second.static_addr_block;
     bool oper = false;
     auto global_I = tmpI;
     auto op = tmpOP;
-    auto indirect = assign_gadge[basePC].indirect;
-    runGlobalGadget(basePC,gadget,oper,global_I,op,indirect,tmpGlobal1);
+    auto indirect = assign_gadge[pos].second.indirect;
+    runGlobalGadget(assign_gadge[pos].first,gadget,oper,global_I,op,indirect,tmpGlobal1);
   }
 }
 
-void JumpTargetManager::harvestCodePointerInDataSegment(uint64_t basePC,uint64_t reserve,llvm::Instruction *tmpI, uint32_t tmpOP){
-  std::vector<uint64_t> GadgeChain;
-  GadgeChain.push_back(basePC);
-  uint64_t base = basePC;
-  while(assign_gadge[base].pre!=0){
-    base = assign_gadge[assign_gadge[base].pre].global_addr;
-    GadgeChain.push_back(base);
+void JumpTargetManager::harvestCodePointerInDataSegment(int64_t pos,uint64_t reserve,llvm::Instruction *tmpI, uint32_t tmpOP){
+  std::vector<int64_t> GadgeChain;
+  GadgeChain.push_back(pos);
+  int64_t pos_base = pos;
+  while(assign_gadge[pos_base].second.pre!=-1){
+    pos_base = assign_gadge[pos_base].second.pre;
+    GadgeChain.push_back(pos_base);
   }
   std::vector<uint64_t> tmpGlobal;
   std::vector<uint64_t> &tmpGlobal1 = tmpGlobal;
-  std::vector<uint64_t>::reverse_iterator rit = GadgeChain.rbegin();
-  auto back = assign_gadge[GadgeChain.back()].global_addr;
-  assign_gadge[GadgeChain.back()].global_addr = reserve;
+  std::vector<int64_t>::reverse_iterator rit = GadgeChain.rbegin();
+  auto back = assign_gadge[GadgeChain.back()].second.global_addr;
+  assign_gadge[GadgeChain.back()].second.global_addr = reserve;
   for(;rit!=GadgeChain.rend();rit++){
-    auto gadget = assign_gadge[*rit].static_addr_block;
+    auto gadget = assign_gadge[*rit].second.static_addr_block;
     bool oper = false;
-    if(assign_gadge[*rit].operation_block){
-      gadget = assign_gadge[*rit].operation_block;
+    if(assign_gadge[*rit].second.operation_block){
+      gadget = assign_gadge[*rit].second.operation_block;
       oper = true;
     }
-    auto global_I = assign_gadge[*rit].global_I;
-    auto op = assign_gadge[*rit].op;
-    auto indirect = assign_gadge[*rit].indirect;
-    runGlobalGadget(assign_gadge[*rit].global_addr,gadget,oper,global_I,op,indirect,tmpGlobal1);
+    auto global_I = assign_gadge[*rit].second.global_I;
+    auto op = assign_gadge[*rit].second.op;
+    auto indirect = assign_gadge[*rit].second.indirect;
+    runGlobalGadget(assign_gadge[*rit].second.global_addr,gadget,oper,global_I,op,indirect,tmpGlobal1);
   }
-  assign_gadge[GadgeChain.back()].global_addr = back;
-  if(assign_gadge[basePC].operation_block){
-    auto gadget = assign_gadge[basePC].static_addr_block;
+  assign_gadge[GadgeChain.back()].second.global_addr = back;
+  if(assign_gadge[pos].second.operation_block){
+    auto gadget = assign_gadge[pos].second.static_addr_block;
     bool oper = false;
     auto global_I = tmpI;
     auto op = tmpOP;
-    auto indirect = assign_gadge[basePC].indirect;
-    runGlobalGadget(basePC,gadget,oper,global_I,op,indirect,tmpGlobal1);
+    auto indirect = assign_gadge[pos].second.indirect;
+    runGlobalGadget(assign_gadge[pos].first,gadget,oper,global_I,op,indirect,tmpGlobal1);
   }
 }
 
@@ -2367,7 +2367,34 @@ void JumpTargetManager::harvestCodePointerInDataSegment(int64_t pos){
   }
   std::vector<uint64_t> tmpGlobal;
   std::vector<uint64_t> &tmpGlobal1 = tmpGlobal;
-  std::vector<uint64_t>::reverse_iterator rit = GadgeChain.rbegin();
+  std::vector<int64_t>::reverse_iterator rit = GadgeChain.rbegin();
+  for(;rit!=GadgeChain.rend();rit++){
+    auto gadget = assign_gadge[*rit].second.static_addr_block;
+    bool oper = false;
+    if(assign_gadge[*rit].second.operation_block){
+      gadget = assign_gadge[*rit].second.operation_block;
+      oper = true;
+    }
+    auto global_I = assign_gadge[*rit].second.global_I;
+    auto op = assign_gadge[*rit].second.op;
+    auto indirect = assign_gadge[*rit].second.indirect;
+    runGlobalGadget(assign_gadge[*rit].first,gadget,oper,global_I,op,indirect,tmpGlobal1);
+  }
+}
+
+void JumpTargetManager::harvestCodePointerInDataSegment(int64_t pos, uint64_t reserve){
+  std::vector<int64_t> GadgeChain;
+  GadgeChain.push_back(pos);
+  int64_t pos_base = pos;
+  while(assign_gadge[pos_base].second.pre!=-1){
+    pos_base = assign_gadge[pos_base].second.pre;
+    GadgeChain.push_back(pos_base);
+  }
+  std::vector<uint64_t> tmpGlobal;
+  std::vector<uint64_t> &tmpGlobal1 = tmpGlobal;
+  std::vector<int64_t>::reverse_iterator rit = GadgeChain.rbegin();
+  auto back = assign_gadge[GadgeChain.back()].second.global_addr;
+  assign_gadge[GadgeChain.back()].second.global_addr = reserve;
   for(;rit!=GadgeChain.rend();rit++){
     auto gadget = assign_gadge[*rit].second.static_addr_block;
     bool oper = false;
@@ -2380,34 +2407,7 @@ void JumpTargetManager::harvestCodePointerInDataSegment(int64_t pos){
     auto indirect = assign_gadge[*rit].second.indirect;
     runGlobalGadget(assign_gadge[*rit].second.global_addr,gadget,oper,global_I,op,indirect,tmpGlobal1);
   }
-}
-
-void JumpTargetManager::harvestCodePointerInDataSegment(uint64_t basePC, uint64_t reserve){
-  std::vector<uint64_t> GadgeChain;
-  GadgeChain.push_back(basePC);
-  uint64_t base = basePC;
-  while(assign_gadge[base].pre!=0){
-    base = assign_gadge[assign_gadge[base].pre].global_addr;
-    GadgeChain.push_back(base);
-  }
-  std::vector<uint64_t> tmpGlobal;
-  std::vector<uint64_t> &tmpGlobal1 = tmpGlobal;
-  std::vector<uint64_t>::reverse_iterator rit = GadgeChain.rbegin();
-  auto back = assign_gadge[GadgeChain.back()].global_addr;
-  assign_gadge[GadgeChain.back()].global_addr = reserve;
-  for(;rit!=GadgeChain.rend();rit++){
-    auto gadget = assign_gadge[*rit].static_addr_block;
-    bool oper = false;
-    if(assign_gadge[*rit].operation_block){
-      gadget = assign_gadge[*rit].operation_block;
-      oper = true;
-    }
-    auto global_I = assign_gadge[*rit].global_I;
-    auto op = assign_gadge[*rit].op;
-    auto indirect = assign_gadge[*rit].indirect;
-    runGlobalGadget(assign_gadge[*rit].global_addr,gadget,oper,global_I,op,indirect,tmpGlobal1);
-  }
-  assign_gadge[GadgeChain.back()].global_addr = back;
+  assign_gadge[GadgeChain.back()].second.global_addr = back;
 }
 
 void JumpTargetManager::runGlobalGadget(uint64_t basePC,
@@ -2418,6 +2418,8 @@ void JumpTargetManager::runGlobalGadget(uint64_t basePC,
                                         bool indirect,
                                         std::vector<uint64_t> &tmpGlobal){
     if(gadget==nullptr)
+      return;
+    if((int64_t)(global_I->getParent() - 0)<0xffffffff)
       return;
     auto thisAddr = getInstructionPC(&*(gadget->begin()));
     auto current_pc = getInstructionPC(global_I);
@@ -2683,10 +2685,13 @@ void JumpTargetManager::harvestStaticAddr(llvm::BasicBlock *thisBlock){
           // Harvest entry addresses stored in data segment
           StaticAddrsMap::iterator TargetIt = JumpTableBase.find(pc);
           if(isGlobalData(pc) and TargetIt==JumpTableBase.end()){
-            assign_gadge[pc] = AssignGadge(pc); 
+            AssignGadge AG(pc);
+            assign_gadge.push_back({pc,AG});
+            int64_t pos = assign_gadge.size()-1; 
             if(haveBinaryOperation(&*I)){
-              assign_gadge[pc].operation_block = thisBlock;
-              assign_gadge[pc].global_I = &*I;
+              assign_gadge[pos].second.operation_block = thisBlock;
+              auto Itt = dyn_cast<llvm::Instruction>(&*I);
+              assign_gadge[pos].second.global_I = Itt;
               //if thisBlock is indirect or StaticAddr is stored in registers. 
               if(*ptc.isIndirect or *ptc.isIndirectJmp or 
                   (getStaticAddrfromDestRegs(&*I) and 
@@ -2694,17 +2699,17 @@ void JumpTargetManager::harvestStaticAddr(llvm::BasicBlock *thisBlock){
                                  !isCase2(&*I)
                   ))
               {
-                assign_gadge[pc].static_addr_block = thisBlock;
-                assign_gadge[pc].operation_block = nullptr;
+                assign_gadge[pos].second.static_addr_block = thisBlock;
+                assign_gadge[pos].second.operation_block = nullptr;
                 if(*ptc.isIndirect or *ptc.isIndirectJmp) 
-                    assign_gadge[pc].indirect = true;
-                harvestCodePointerInDataSegment(pc);
+                    assign_gadge[pos].second.indirect = true;
+                harvestCodePointerInDataSegment(pos);
               }else{
                 // There have global data by logical operations in thisBlock registers
-                auto result = getGlobalDatafromRegs(&*I,pc);
+                auto result = getGlobalDatafromRegs(&*I,pos);
                 if(!result){
-                  assign_gadge[pc].operation_block = nullptr;
-                  assign_gadge[pc].global_I = nullptr; 
+                  assign_gadge[pos].second.operation_block = nullptr;
+                  assign_gadge[pos].second.global_I = nullptr; 
                 }
               }
             }
@@ -2755,7 +2760,8 @@ void JumpTargetManager::handleGlobalDataGadget(llvm::BasicBlock *thisBlock, std:
           tmpOP = assign_gadge[i].second.op;
 
 	  assign_gadge[i].second.operation_block = thisBlock;
-          assign_gadge[i].second.global_I = &*it;
+          auto itt= dyn_cast<llvm::Instruction>(it); 
+          assign_gadge[i].second.global_I = itt;
           assign_gadge[i].second.op = reg;
           if(*ptc.isIndirect or *ptc.isIndirectJmp or getStaticAddrfromDestRegs(&*it)){
             assign_gadge[i].second.static_addr_block = thisBlock;
@@ -2770,7 +2776,7 @@ void JumpTargetManager::handleGlobalDataGadget(llvm::BasicBlock *thisBlock, std:
               if(assign_gadge[i].second.static_addr_block){
                 assign_gadge[i].second.static_global_I = tmpI;
                 assign_gadge[i].second.static_op = tmpOP;
-                harvestCodePointerInDataSegment(baseGlobal,tmpI,tmpOP);
+                harvestCodePointerInDataSegment(i,tmpI,tmpOP);
               }
             }
             if(!result){
@@ -2787,18 +2793,17 @@ void JumpTargetManager::handleGlobalDataGadget(llvm::BasicBlock *thisBlock, std:
 }
 
 void JumpTargetManager::handleGlobalStaticAddr(void){
-  for(const auto &base:assign_gadge){
+  for(auto base:assign_gadge){
     if(base.second.operation_block==nullptr and base.second.static_addr_block==nullptr){
-      for(const auto &staticIt:assign_gadge){
-        if(staticIt.second.static_addr_block){
+      for(unsigned staticIt=0; staticIt<assign_gadge.size(); staticIt++){
+        if(assign_gadge[staticIt].second.static_addr_block){
           auto reserve = base.second.global_addr;
-          auto baseGlobal = staticIt.second.global_addr;
-          if(staticIt.second.operation_block){
-            auto tmpI = staticIt.second.static_global_I;
-            auto tmpOP = staticIt.second.static_op;
-            harvestCodePointerInDataSegment(baseGlobal,reserve,tmpI,tmpOP);
+          if(assign_gadge[staticIt].second.operation_block){
+            auto tmpI = assign_gadge[staticIt].second.static_global_I;
+            auto tmpOP = assign_gadge[staticIt].second.static_op;
+            harvestCodePointerInDataSegment(staticIt,reserve,tmpI,tmpOP);
           }
-          harvestCodePointerInDataSegment(baseGlobal,reserve);
+          harvestCodePointerInDataSegment(staticIt,reserve);
         }
       }
     }
@@ -2852,10 +2857,17 @@ bool JumpTargetManager::haveDef2OP(llvm::Instruction *I, uint32_t op){
   return false;
 }
 
-int64_t JumpTargetManager::isRecordGadgetBlock(uint64_t base, llvm::BasicBlock *gadget){
-  bool have = false;
+bool JumpTargetManager::isRecordGlobalBase(uint64_t base){
   for(auto g:assign_gadge){
-    if(g.second.operation_block==gadget){
+    if(g.first==base)
+      return true;
+  }
+  return false;
+}
+
+int64_t JumpTargetManager::isRecordGadgetBlock(uint64_t base, llvm::BasicBlock *gadget){
+  for(auto g:assign_gadge){
+    if(g.second.operation_block==gadget)
       return -2;
   }
   
@@ -2960,21 +2972,21 @@ bool JumpTargetManager::haveBinaryOperation(llvm::Instruction *I){
 void JumpTargetManager::haveGlobalDatainRegs(std::map<uint32_t, uint64_t> &GloData){
   for(int i=0; i<16; i++){
     if(isGlobalData(ptc.regs[i])){
-      std::map<uint64_t, AssignGadge>::iterator TargetIt = assign_gadge.find(ptc.regs[i]);
-      if(TargetIt != assign_gadge.end()){  
+      if(isRecordGlobalBase(ptc.regs[i])){  
         std::map<uint32_t, uint64_t>::iterator Target = GloData.find(i);
         if(Target==GloData.end())
           GloData[i] = ptc.regs[i];
       }
       else{
-        assign_gadge[ptc.regs[i]] = AssignGadge(ptc.regs[i]);
+        AssignGadge AG(ptc.regs[i]);
+        assign_gadge.push_back({ptc.regs[i],AG});
         GloData[i] = ptc.regs[i];
       }
     }
   }  
 }
 
-bool JumpTargetManager::getGlobalDatafromRegs(llvm::Instruction *I, uint64_t preI){
+bool JumpTargetManager::getGlobalDatafromRegs(llvm::Instruction *I, int64_t pre){
   bool result =false; 
   BasicBlock::iterator it(I);
   BasicBlock::iterator end = I->getParent()->end();
@@ -3009,8 +3021,8 @@ bool JumpTargetManager::getGlobalDatafromRegs(llvm::Instruction *I, uint64_t pre
                 continue;
               if(isGlobalData(ptc.regs[op])){
                 if(!isRecordGlobalBase(ptc.regs[op])){
-	          AssignGadge AG(ptc.regs[op])
-                  AG.pre = preI;
+	          AssignGadge AG(ptc.regs[op]);
+                  AG.pre = pre;
 		  assign_gadge.push_back({ptc.regs[op],AG});
                   result = true;
                 }
