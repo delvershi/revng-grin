@@ -327,6 +327,7 @@ public:
   //std::vector<uint64_t, AssignGadge> assign_gadge;
   std::map<uint64_t,uint32_t> AllGlobalAddr;
   std::map<llvm::BasicBlock *,uint32_t> AllGadget;
+  std::map<llvm::BasicBlock *,uint32_t> AllStaticGadget;
   class AssignGadge{
   public:
    AssignGadge():

@@ -1300,6 +1300,22 @@ JumpTargetManager::registerJT(uint64_t PC, JTReason::Values Reason) {
       NewBlock = ContainingBlock;
     } else {
       revng_assert(I != nullptr && I->getIterator() != ContainingBlock->end());
+  
+      std::map<llvm::BasicBlock *,uint32_t>::iterator TargetG = AllGadget.find(ContainingBlock);     
+      std::map<llvm::BasicBlock *,uint32_t>::iterator TargetS = AllStaticGadget.find(ContainingBlock); 
+      if(TargetG != AllGadget.end() or TargetS!=AllStaticGadget.end()){
+        for(auto &g : assign_gadge){
+          if(g.second.operation_block == ContainingBlock or
+             g.second.static_addr_block == ContainingBlock){
+            g.second.operation_block  = nullptr;
+            g.second.static_addr_block = nullptr;
+            g.second.global_I = nullptr;
+            g.second.static_global_I = nullptr;
+          }
+        }
+        AllGadget.erase(ContainingBlock);
+        AllStaticGadget.erase(ContainingBlock);
+      }
       NewBlock = ContainingBlock->splitBasicBlock(I);
     }
 
@@ -2417,11 +2433,11 @@ void JumpTargetManager::runGlobalGadget(uint64_t basePC,
                                         uint32_t op,
                                         bool indirect,
                                         std::vector<uint64_t> &tmpGlobal){
-    if(gadget==nullptr)
-      return;
-    if((int64_t)(global_I->getParent() - 0)<0xffffffff)
+    if(gadget==nullptr or global_I==nullptr)
       return;
     auto thisAddr = getInstructionPC(&*(gadget->begin()));
+    if(thisAddr==0)
+      return;
     auto current_pc = getInstructionPC(global_I);
     std::vector<uint64_t> tempVec; 
     std::vector<uint64_t> &tempVec1 = tempVec;
@@ -2435,6 +2451,8 @@ void JumpTargetManager::runGlobalGadget(uint64_t basePC,
     bool recover = false;
     if(current_pc != thisAddr){
       std::tie(opt,virtualAddr) = getLastOperandandNextPC(&*(gadget->begin()));
+      if(virtualAddr==0)
+        return;
     } 
     if(current_pc == thisAddr or opt==UndefineOP or opt==R_ESP){
       /* If the instruction to operate global data is entry address,
@@ -2702,6 +2720,7 @@ void JumpTargetManager::harvestStaticAddr(llvm::BasicBlock *thisBlock){
               {
                 assign_gadge[pos].second.static_addr_block = thisBlock;
                 assign_gadge[pos].second.operation_block = nullptr;
+                AllStaticGadget[thisBlock] = 1;
                 if(*ptc.isIndirect or *ptc.isIndirectJmp) 
                     assign_gadge[pos].second.indirect = true;
                 harvestCodePointerInDataSegment(pos);
@@ -2770,6 +2789,7 @@ void JumpTargetManager::handleGlobalDataGadget(llvm::BasicBlock *thisBlock, std:
           if(*ptc.isIndirect or *ptc.isIndirectJmp or getStaticAddrfromDestRegs(&*it)){
             assign_gadge[i].second.static_addr_block = thisBlock;
             assign_gadge[i].second.operation_block = nullptr;
+            AllStaticGadget[thisBlock] = 1;
             if(*ptc.isIndirect or *ptc.isIndirectJmp)
               assign_gadge[i].second.indirect = true;  
             harvestCodePointerInDataSegment(i);
@@ -3030,8 +3050,8 @@ bool JumpTargetManager::getGlobalDatafromRegs(llvm::Instruction *I, int64_t pre)
                   AG.pre = pre;
 		  assign_gadge.push_back({ptc.regs[op],AG});
                   AllGlobalAddr[ptc.regs[op]] = 1;
-                  result = true;
                 }
+                result = true;
               }
             }
         }
