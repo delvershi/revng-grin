@@ -845,7 +845,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       ptc_instruction_list_malloc(InstructionList.get()); 
       errs()<<"Nop execute!\n";
     } 
-    if(!traverseFLAG or !JumpTargets.haveBB)
+    if((!traverseFLAG and JumpTargets.haveBB) or !JumpTargets.haveBB)
       JumpTargets.haveGlobalDatainRegs(GloData);
 
     if(!JumpTargets.haveBB){
@@ -1079,11 +1079,10 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
 
     //if(!JumpTargets.haveBB and *ptc.isIndirect)
     //  JumpTargets.handleIndirectCall(BlockBRs,tmpVA, StaticAddrFlag);
-
     //if(!JumpTargets.haveBB and *ptc.isIndirectJmp)
     //  JumpTargets.handleIndirectJmp(BlockBRs,tmpVA, StaticAddrFlag);
  
-    if(!traverseFLAG or !JumpTargets.haveBB)
+    if((!traverseFLAG and JumpTargets.haveBB) or !JumpTargets.haveBB)
         JumpTargets.haveGlobalDatainRegs(GloData);
     if(!traverseFLAG){
     if(DynamicVirtualAddress){

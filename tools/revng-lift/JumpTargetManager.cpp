@@ -2687,6 +2687,7 @@ void JumpTargetManager::harvestStaticAddr(llvm::BasicBlock *thisBlock){
           if(isGlobalData(pc) and TargetIt==JumpTableBase.end()){
             AssignGadge AG(pc);
             assign_gadge.push_back({pc,AG});
+            AllGlobalAddr[pc] = 1;
             int64_t pos = assign_gadge.size()-1; 
             if(haveBinaryOperation(&*I)){
               assign_gadge[pos].second.operation_block = thisBlock;
@@ -2707,6 +2708,8 @@ void JumpTargetManager::harvestStaticAddr(llvm::BasicBlock *thisBlock){
               }else{
                 // There have global data by logical operations in thisBlock registers
                 auto result = getGlobalDatafromRegs(&*I,pos);
+                if(result)
+                  AllGadget[thisBlock] = 1;
                 if(!result){
                   assign_gadge[pos].second.operation_block = nullptr;
                   assign_gadge[pos].second.global_I = nullptr; 
@@ -2751,6 +2754,7 @@ void JumpTargetManager::handleGlobalDataGadget(llvm::BasicBlock *thisBlock, std:
 	  if(i==-1){
 	    AssignGadge AG(baseGlobal);
 	    assign_gadge.push_back({baseGlobal,AG});
+            AllGlobalAddr[baseGlobal] = 1;
 	    i = assign_gadge.size()-1;
 	  }
           uint32_t tmpOP = UndefineOP;
@@ -2778,6 +2782,7 @@ void JumpTargetManager::handleGlobalDataGadget(llvm::BasicBlock *thisBlock, std:
                 assign_gadge[i].second.static_op = tmpOP;
                 harvestCodePointerInDataSegment(i,tmpI,tmpOP);
               }
+              AllGadget[thisBlock] = 1;
             }
             if(!result){
               assign_gadge[i].second.operation_block = tmpBB;
@@ -2858,18 +2863,17 @@ bool JumpTargetManager::haveDef2OP(llvm::Instruction *I, uint32_t op){
 }
 
 bool JumpTargetManager::isRecordGlobalBase(uint64_t base){
-  for(auto g:assign_gadge){
-    if(g.first==base)
+  std::map<uint64_t,uint32_t>::iterator Target = AllGlobalAddr.find(base);
+  if(Target != AllGlobalAddr.end())
       return true;
-  }
+  
   return false;
 }
 
 int64_t JumpTargetManager::isRecordGadgetBlock(uint64_t base, llvm::BasicBlock *gadget){
-  for(auto g:assign_gadge){
-    if(g.second.operation_block==gadget)
+  std::map<llvm::BasicBlock *,uint32_t>::iterator Target = AllGadget.find(gadget);
+  if(Target!=AllGadget.end())
       return -2;
-  }
   
   for(unsigned i=0; i<assign_gadge.size(); i++){
     if(assign_gadge[i].first==base){
@@ -2980,6 +2984,7 @@ void JumpTargetManager::haveGlobalDatainRegs(std::map<uint32_t, uint64_t> &GloDa
       else{
         AssignGadge AG(ptc.regs[i]);
         assign_gadge.push_back({ptc.regs[i],AG});
+        AllGlobalAddr[ptc.regs[i]] = 1;
         GloData[i] = ptc.regs[i];
       }
     }
@@ -3024,6 +3029,7 @@ bool JumpTargetManager::getGlobalDatafromRegs(llvm::Instruction *I, int64_t pre)
 	          AssignGadge AG(ptc.regs[op]);
                   AG.pre = pre;
 		  assign_gadge.push_back({ptc.regs[op],AG});
+                  AllGlobalAddr[ptc.regs[op]] = 1;
                   result = true;
                 }
               }

@@ -325,6 +325,8 @@ public:
   void handleGlobalDataGadget(llvm::BasicBlock *thisBlock, std::map<uint32_t, uint64_t> &GloData);
   void handleGlobalStaticAddr(void);
   //std::vector<uint64_t, AssignGadge> assign_gadge;
+  std::map<uint64_t,uint32_t> AllGlobalAddr;
+  std::map<llvm::BasicBlock *,uint32_t> AllGadget;
   class AssignGadge{
   public:
    AssignGadge():
