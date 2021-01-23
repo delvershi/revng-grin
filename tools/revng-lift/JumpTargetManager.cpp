@@ -2786,7 +2786,7 @@ void JumpTargetManager::handleGlobalDataGadget(llvm::BasicBlock *thisBlock,std::
           auto itt= dyn_cast<llvm::Instruction>(it); 
           assign_gadge[i].second.global_I = itt;
           assign_gadge[i].second.op = reg;
-          if(*ptc.isIndirect or *ptc.isIndirectJmp or getStaticAddrfromDestRegs1(&*it)){
+          if(*ptc.isIndirect or *ptc.isIndirectJmp or getStaticAddrfromDestRegs(&*it)){
             assign_gadge[i].second.static_addr_block = thisBlock;
             assign_gadge[i].second.operation_block = nullptr;
             AllStaticGadget[thisBlock] = 1;
