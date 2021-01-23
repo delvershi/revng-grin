@@ -845,7 +845,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       ptc_instruction_list_malloc(InstructionList.get()); 
       errs()<<"Nop execute!\n";
     } 
-    if((!traverseFLAG and JumpTargets.haveBB) or !JumpTargets.haveBB)
+    if(!traverseFLAG or !JumpTargets.haveBB)
       JumpTargets.haveGlobalDatainRegs(GloData);
 
     if(!JumpTargets.haveBB){
@@ -1007,12 +1007,10 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       JumpTargets.handleGlobalDataGadget(BlockBRs,GloData); 
       GloData.clear();
     }
-      
     }////?end if(!JumpTargets.haveBB)
 
     // Obtain a new program counter to translate
     std::tie(VirtualAddress, Entry) = JumpTargets.peek();
-
 
     if(*ptc.isCall and BlockBRs){
       if(!JumpTargets.isDataSegmAddr(ptc.regs[R_ESP]) and StaticAddrFlag){
@@ -1082,8 +1080,6 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     //if(!JumpTargets.haveBB and *ptc.isIndirectJmp)
     //  JumpTargets.handleIndirectJmp(BlockBRs,tmpVA, StaticAddrFlag);
  
-    if((!traverseFLAG and JumpTargets.haveBB) or !JumpTargets.haveBB)
-        JumpTargets.haveGlobalDatainRegs(GloData);
     if(!traverseFLAG){
     if(DynamicVirtualAddress){
       auto tmpBB = JumpTargets.registerJT(DynamicVirtualAddress,JTReason::GlobalData);
@@ -1165,6 +1161,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
         // If have translated BB, give Entry an arbitrary value
         Entry = tmpBB;
         VirtualAddress = DynamicVirtualAddress;
+        GloData.clear();
       }
       else{
         std::tie(VirtualAddress, Entry) = JumpTargets.peek();
@@ -1190,6 +1187,8 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
       DynamicVirtualAddress = 0;
 
     }////?end if(traverseFLAG)
+    if(!traverseFLAG or !JumpTargets.haveBB)
+        JumpTargets.haveGlobalDatainRegs(GloData);
     
     if(Entry==nullptr){
       BlockPCFlag = JumpTargets.handleStaticAddr();

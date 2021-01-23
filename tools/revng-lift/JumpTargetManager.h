@@ -280,6 +280,7 @@ public:
   bool isCase1(llvm::Instruction *I, uint64_t global);
   bool isCase2(llvm::Instruction *I);
   bool getStaticAddrfromDestRegs(llvm::Instruction *I);
+  bool getStaticAddrfromDestRegs1(llvm::Instruction *I);
   uint64_t getStaticAddrfromDestRegs(llvm::BasicBlock *thisBlock, uint64_t bound);
   bool getGlobalDatafromRegs(llvm::Instruction *I, int64_t pre);
   uint64_t getGlobalDatafromDestRegs(llvm::BasicBlock *thisBlock);
@@ -339,7 +340,8 @@ public:
      static_addr_block(nullptr),
      static_global_I(nullptr),
      static_op(UndefineOP),
-     indirect(false) {}
+     indirect(false),
+     end(true) {}
    AssignGadge(uint64_t addr):
      global_addr(addr),
      pre(-1),
@@ -349,7 +351,8 @@ public:
      static_addr_block(nullptr),
      static_global_I(nullptr),
      static_op(UndefineOP),
-     indirect(false) {}
+     indirect(false),
+     end(true) {}
 
    uint64_t global_addr;
    int64_t pre;
@@ -361,6 +364,7 @@ public:
    llvm::Instruction * static_global_I;
    uint32_t static_op;
    bool indirect;
+   bool end;
  };
  
 
