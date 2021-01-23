@@ -2548,6 +2548,9 @@ void JumpTargetManager::ConstOffsetExec(llvm::BasicBlock *gadget,
       if(have==false){
         tempVec.push_back(data);
         BaseAddr <<"  data:    0x"<< std::hex << data <<"\n";
+        std::map<uint64_t,uint32_t>::iterator Target = AllGloCandidataAddr.find(data-1);
+        if(Target == AllGloCandidataAddr.end())
+          AllGloCandidataAddr[data] = 1;
       }
       pagesize++;
       if(pagesize>256)
@@ -2632,6 +2635,9 @@ void JumpTargetManager::VarOffsetExec(llvm::BasicBlock *gadget,
       if(have==false){
         tempVec.push_back(data); 
         BaseAddr <<"  data    0x"<< std::hex << data <<"\n";
+        std::map<uint64_t,uint32_t>::iterator Target = AllGloCandidataAddr.find(data-1);
+        if(Target == AllGloCandidataAddr.end())
+          AllGloCandidataAddr[data] = 1;
       }
       pagesize++;
       if(pagesize>256)
@@ -2833,6 +2839,22 @@ void JumpTargetManager::handleGlobalStaticAddr(void){
         }
       }
     
+  }
+
+  for(auto base:AllGloCandidataAddr){
+
+      for(unsigned staticIt=0; staticIt<assign_gadge.size(); staticIt++){
+        if(assign_gadge[staticIt].second.end){
+          auto reserve = base.first;
+          if(assign_gadge[staticIt].second.operation_block){
+            auto tmpI = assign_gadge[staticIt].second.static_global_I;
+            auto tmpOP = assign_gadge[staticIt].second.static_op;
+            harvestCodePointerInDataSegment(staticIt,reserve,tmpI,tmpOP);
+          }
+          harvestCodePointerInDataSegment(staticIt,reserve);
+        }
+      }
+
   }  
 }
 
