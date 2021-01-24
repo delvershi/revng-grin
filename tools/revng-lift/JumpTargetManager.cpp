@@ -61,8 +61,10 @@ cl::opt<bool> FAST("fast",
 cl::opt<bool> SUPERFAST("super-fast",
                        cl::desc("fast rewriting"),
                        cl::cat(MainCategory));
-
-
+cl::opt<int> ChainLoop("chain-loop",
+                       cl::desc("the loops of gadget chains"),
+                       cl::init(1),
+                       cl::cat(MainCategory));
 
 cl::opt<bool> NoOSRA("no-osra", cl::desc(" OSRA"), cl::cat(MainCategory));
 cl::alias A1("O",
@@ -468,6 +470,7 @@ JumpTargetManager::JumpTargetManager(Function *TheFunction,
   haveBB = 0;
   elf_name = nullptr;
   range = 0;
+  isRecordCandidataAddr = false;
  
   auto PointerPath = "GlobalPointer.log";
   std::ofstream PointerAddrInfoStream(PointerPath);
@@ -531,6 +534,7 @@ JumpTargetManager::JumpTargetManager(Function *TheFunction,
   // getOption<uint32_t>(Options, "max-recurse-depth")->setInitialValue(10);
   haveBB = 0;
   range = 0;
+  isRecordCandidataAddr = false;
  
   auto PointerPath = "GlobalPointer.log";
   std::ofstream PointerAddrInfoStream(PointerPath);
@@ -2335,6 +2339,11 @@ void JumpTargetManager::harvestCodePointerInDataSegment(int64_t pos,llvm::Instru
     auto indirect = assign_gadge[pos].second.indirect;
     runGlobalGadget(assign_gadge[pos].first,gadget,oper,global_I,op,indirect,tmpGlobal1);
   }
+  auto Path = "GlobalPointer.log";
+  std::ofstream BaseAddr;
+  BaseAddr.open(Path,std::ofstream::out | std::ofstream::app);
+  BaseAddr <<" \n";
+  BaseAddr.close();
 }
 
 void JumpTargetManager::harvestCodePointerInDataSegment(int64_t pos,uint64_t reserve,llvm::Instruction *tmpI, uint32_t tmpOP){
@@ -2371,6 +2380,11 @@ void JumpTargetManager::harvestCodePointerInDataSegment(int64_t pos,uint64_t res
     auto indirect = assign_gadge[pos].second.indirect;
     runGlobalGadget(assign_gadge[pos].first,gadget,oper,global_I,op,indirect,tmpGlobal1);
   }
+  auto Path = "GlobalPointer.log";
+  std::ofstream BaseAddr;
+  BaseAddr.open(Path,std::ofstream::out | std::ofstream::app);
+  BaseAddr <<" \n";
+  BaseAddr.close();
 }
 
 void JumpTargetManager::harvestCodePointerInDataSegment(int64_t pos){
@@ -2396,6 +2410,11 @@ void JumpTargetManager::harvestCodePointerInDataSegment(int64_t pos){
     auto indirect = assign_gadge[*rit].second.indirect;
     runGlobalGadget(assign_gadge[*rit].first,gadget,oper,global_I,op,indirect,tmpGlobal1);
   }
+  auto Path = "GlobalPointer.log";
+  std::ofstream BaseAddr;
+  BaseAddr.open(Path,std::ofstream::out | std::ofstream::app);
+  BaseAddr <<" \n";
+  BaseAddr.close();
 }
 
 void JumpTargetManager::harvestCodePointerInDataSegment(int64_t pos, uint64_t reserve){
@@ -2424,6 +2443,12 @@ void JumpTargetManager::harvestCodePointerInDataSegment(int64_t pos, uint64_t re
     runGlobalGadget(assign_gadge[*rit].second.global_addr,gadget,oper,global_I,op,indirect,tmpGlobal1);
   }
   assign_gadge[GadgeChain.back()].second.global_addr = back;
+
+  auto Path = "GlobalPointer.log";
+  std::ofstream BaseAddr;
+  BaseAddr.open(Path,std::ofstream::out | std::ofstream::app);
+  BaseAddr <<" \n";
+  BaseAddr.close();
 }
 
 void JumpTargetManager::runGlobalGadget(uint64_t basePC,
@@ -2548,9 +2573,18 @@ void JumpTargetManager::ConstOffsetExec(llvm::BasicBlock *gadget,
       if(have==false){
         tempVec.push_back(data);
         BaseAddr <<"  data:    0x"<< std::hex << data <<"\n";
-        std::map<uint64_t,uint32_t>::iterator Target = AllGloCandidataAddr.find(data-1);
-        if(Target == AllGloCandidataAddr.end())
+        if(isRecordCandidataAddr){
+          std::map<uint64_t,uint32_t>::iterator Target1 = AllGloCandidataAddr.find(data-1);
+          std::map<uint64_t,uint32_t>::iterator Target2 = AllGloCandidataAddr.find(data-2);
+          std::map<uint64_t,uint32_t>::iterator Target3 = AllGloCandidataAddr.find(data-3);
+          if(Target1 != AllGloCandidataAddr.end() or 
+             Target2 != AllGloCandidataAddr.end() or
+             Target3 != AllGloCandidataAddr.end())
+            break;
+          if(!isGlobalDataNoRO(data))  
+            break;
           AllGloCandidataAddr[data] = 1;
+        }
       }
       pagesize++;
       if(pagesize>256)
@@ -2635,9 +2669,18 @@ void JumpTargetManager::VarOffsetExec(llvm::BasicBlock *gadget,
       if(have==false){
         tempVec.push_back(data); 
         BaseAddr <<"  data    0x"<< std::hex << data <<"\n";
-        std::map<uint64_t,uint32_t>::iterator Target = AllGloCandidataAddr.find(data-1);
-        if(Target == AllGloCandidataAddr.end())
+        if(isRecordCandidataAddr){
+          std::map<uint64_t,uint32_t>::iterator Target1 = AllGloCandidataAddr.find(data-1);
+          std::map<uint64_t,uint32_t>::iterator Target2 = AllGloCandidataAddr.find(data-2);
+          std::map<uint64_t,uint32_t>::iterator Target3 = AllGloCandidataAddr.find(data-3);
+          if(Target1 != AllGloCandidataAddr.end() or 
+             Target2 != AllGloCandidataAddr.end() or
+             Target3 != AllGloCandidataAddr.end())
+            break;
+          if(!isGlobalDataNoRO(data))  
+            break;
           AllGloCandidataAddr[data] = 1;
+        }
       }
       pagesize++;
       if(pagesize>256)
@@ -2712,6 +2755,8 @@ void JumpTargetManager::harvestStaticAddr(llvm::BasicBlock *thisBlock){
             AssignGadge AG(pc);
             assign_gadge.push_back({pc,AG});
             AllGlobalAddr[pc] = 1;
+            if(isGlobalDataNoRO(pc))
+              AllUnexploreGlobalAddr[pc] = 1;
             int64_t pos = assign_gadge.size()-1; 
             if(haveBinaryOperation(&*I)){
               assign_gadge[pos].second.operation_block = thisBlock;
@@ -2792,7 +2837,7 @@ void JumpTargetManager::handleGlobalDataGadget(llvm::BasicBlock *thisBlock,std::
           auto itt= dyn_cast<llvm::Instruction>(it); 
           assign_gadge[i].second.global_I = itt;
           assign_gadge[i].second.op = reg;
-          if(*ptc.isIndirect or *ptc.isIndirectJmp or getStaticAddrfromDestRegs(&*it)){
+          if(*ptc.isIndirect or *ptc.isIndirectJmp or getStaticAddrfromDestRegs1(&*it,baseGlobal)){
             assign_gadge[i].second.static_addr_block = thisBlock;
             assign_gadge[i].second.operation_block = nullptr;
             AllStaticGadget[thisBlock] = 1;
@@ -2825,8 +2870,9 @@ void JumpTargetManager::handleGlobalDataGadget(llvm::BasicBlock *thisBlock,std::
 }
 
 void JumpTargetManager::handleGlobalStaticAddr(void){
-  for(auto base:AllGlobalAddr){
-   
+  isRecordCandidataAddr = true;
+  for(auto base:AllUnexploreGlobalAddr){
+      
       for(unsigned staticIt=0; staticIt<assign_gadge.size(); staticIt++){
         if(assign_gadge[staticIt].second.end){
           auto reserve = base.first;
@@ -2841,8 +2887,9 @@ void JumpTargetManager::handleGlobalStaticAddr(void){
     
   }
 
+  if(ChainLoop>0){
   for(auto base:AllGloCandidataAddr){
-
+    
       for(unsigned staticIt=0; staticIt<assign_gadge.size(); staticIt++){
         if(assign_gadge[staticIt].second.end){
           auto reserve = base.first;
@@ -2854,14 +2901,23 @@ void JumpTargetManager::handleGlobalStaticAddr(void){
           harvestCodePointerInDataSegment(staticIt,reserve);
         }
       }
-
-  }  
+    
+  }
+    ChainLoop = ChainLoop-1;  
+  }
 }
 
 bool JumpTargetManager::isGlobalData(uint64_t pc){
   if(DataSegmStartAddr<pc and pc<DataSegmEndAddr)
     return true;
   if(ro_StartAddr<pc and pc<ro_EndAddr)
+    return true;
+ 
+  return false;
+}
+
+bool JumpTargetManager::isGlobalDataNoRO(uint64_t pc){
+  if(DataSegmStartAddr<pc and pc<DataSegmEndAddr)
     return true;
  
   return false;
@@ -3255,7 +3311,7 @@ bool JumpTargetManager::isCase2(llvm::Instruction *I){
   return false;
 }
 
-bool JumpTargetManager::getStaticAddrfromDestRegs1(llvm::Instruction *I){
+bool JumpTargetManager::getStaticAddrfromDestRegs1(llvm::Instruction *I,uint64_t global){
   BasicBlock::iterator it(I);
   BasicBlock::iterator end = I->getParent()->end();
   BasicBlock::iterator lastInst(I->getParent()->back());
@@ -3288,7 +3344,7 @@ bool JumpTargetManager::getStaticAddrfromDestRegs1(llvm::Instruction *I){
               auto op = REGLABLE(number);
               if(op==UndefineOP)
                   continue;
-              if(ptc.regs[op]==0 and flag)
+              if(isGlobalDataNoRO(global) and ptc.regs[op]==0 and flag)
                 return true;
               if(isExecutableAddress(ptc.regs[op]))
                 return true;
