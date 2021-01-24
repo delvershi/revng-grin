@@ -2513,7 +2513,7 @@ void JumpTargetManager::runGlobalGadget(uint64_t basePC,
     for(auto base:tmpGlobal){
       if(op!=UndefineOP)
         ptc.regs[op] = base;
-      VarOffsetExec(gadget,thisAddr,virtualAddr,current_pc,oper,op,opt,indirect,crash,tempVec1);
+      VarOffsetExec(gadget,thisAddr,virtualAddr,current_pc,oper,global_I,op,opt,indirect,crash,tempVec1);
       crash++;
     }
     tmpGlobal.clear();
@@ -2595,7 +2595,7 @@ void JumpTargetManager::ConstOffsetExec(llvm::BasicBlock *gadget,
     }
     // Static addresses stored in registers.
     if(!indirect)
-      tmpPC = getStaticAddrfromDestRegs(gadget,current_pc);
+      tmpPC = getStaticAddrfromDestRegs(global_I,current_pc);
     pagesize++;
     if(!haveDef2OP(global_I,op) or pagesize>256)
       break;
@@ -2622,6 +2622,7 @@ void JumpTargetManager::VarOffsetExec(llvm::BasicBlock *gadget,
                                       uint64_t virtualAddr,
                                       uint64_t current_pc,
                                       bool oper,
+                                      llvm::Instruction *global_I,
                                       uint32_t op,
                                       uint32_t opt,
                                       bool indirect,
@@ -2689,7 +2690,7 @@ void JumpTargetManager::VarOffsetExec(llvm::BasicBlock *gadget,
     }
     // Static addresses stored in registers.
     if(!indirect)
-      tmpPC = getStaticAddrfromDestRegs(gadget,current_pc);    
+      tmpPC = getStaticAddrfromDestRegs(global_I,current_pc);    
     pagesize++;
     if(pagesize>256)
       break;
@@ -3429,32 +3430,56 @@ bool JumpTargetManager::getStaticAddrfromDestRegs(llvm::Instruction *I){
   return false;
 }
 
-uint64_t JumpTargetManager::getStaticAddrfromDestRegs(llvm::BasicBlock *thisBlock, uint64_t bound){
-  BasicBlock::iterator it(thisBlock->begin());
-  BasicBlock::iterator end(thisBlock->end());
-  
-  revng_assert(bound!=0);
-  for(;it!=end;it++){
-    //Only look for dest register.
-    if(it->getOpcode()==Instruction::Store){
-      auto store = dyn_cast<llvm::StoreInst>(it);
-      auto v = store->getPointerOperand();
-      if(dyn_cast<Constant>(v)){
-        StringRef name = v->getName();
-        auto number = StrToInt(name.data());
-        auto op = REGLABLE(number); 
-        if(op==UndefineOP) 
-          continue;
-        if(isExecutableAddress(ptc.regs[op])){
-          auto addr = getInstructionPC(&*it);
-          if(addr >= bound)
-            return ptc.regs[op]; 
-          continue;
-        }
-      }     
-    }
+uint64_t JumpTargetManager::getStaticAddrfromDestRegs(llvm::Instruction *I, uint64_t bound){
+  BasicBlock::iterator it(I);
+  BasicBlock::iterator end = I->getParent()->end();
+  BasicBlock::iterator lastInst(I->getParent()->back());
+
+  auto v = dyn_cast<llvm::Value>(I);
+  if(I->getOpcode()==Instruction::Store){
+    auto store = dyn_cast<llvm::StoreInst>(I);
+    v = store->getPointerOperand();
   }
-  return 0;
+
+  it++;
+  for(; it!=end; it++){ 
+    switch(it->getOpcode()){
+      case llvm::Instruction::Call:
+        break;
+      case llvm::Instruction::Load:{
+        auto load = dyn_cast<llvm::LoadInst>(it);
+	if((load->getPointerOperand() - v) == 0)
+	    v = dyn_cast<Value>(it);
+        break;
+      }
+      case llvm::Instruction::Store:{
+        auto store = dyn_cast<llvm::StoreInst>(it);
+        if((store->getValueOperand() - v) == 0){
+	    v = store->getPointerOperand();
+            if(dyn_cast<Constant>(v)){
+              StringRef name = v->getName();
+              auto number = StrToInt(name.data());
+              auto op = REGLABLE(number);
+              if(op==UndefineOP)
+                  continue;
+              return ptc.regs[op];
+            }
+        }
+	break;
+      }
+      default:{
+        auto instr = dyn_cast<Instruction>(it);
+        for(Use &u : instr->operands()){
+            Value *InstV = u.get();
+            if((InstV - v) == 0){
+	      v = dyn_cast<Value>(instr);
+              break; 
+            }
+        }
+      }  
+    }
+  }//??end for
+  return 1;
 }
 
 bool JumpTargetManager::isIllegalStaticAddr(uint64_t pc){
