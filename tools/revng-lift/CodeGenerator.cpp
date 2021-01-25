@@ -1000,7 +1000,7 @@ void CodeGenerator::translate(uint64_t VirtualAddress) {
     }
     if(*ptc.isRet)
       JumpTargets.harvestRetBlocks(*ptc.isRet,NextPC);
-    if(*ptc.isDirectJmp or *ptc.isIndirectJmp or *ptc.isCall)
+    if(*ptc.isDirectJmp or *ptc.isIndirectJmp or *ptc.isIndirect)
       JumpTargets.harvestNextAddrofBr(NextPC);
 
     if(!GloData.empty()){

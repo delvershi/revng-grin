@@ -3505,10 +3505,22 @@ void JumpTargetManager::harvestNextAddrofBr(uint64_t blockNext){
 //        StaticAddrs[blockNext] = true;
 //      }
 //  }
-  if(Statistics and *ptc.isDirectJmp){
+  if(Statistics){
+    if(*ptc.isDirectJmp){
       IndirectBlocksMap::iterator it = DirectJmpBlocks.find(*ptc.isDirectJmp);
       if(it == DirectJmpBlocks.end())
           DirectJmpBlocks[*ptc.isDirectJmp] = 1;
+    }
+    if(*ptc.isIndirectJmp){
+      IndirectBlocksMap::iterator it = IndirectJmpBlocks.find(*ptc.isIndirectJmp);
+      if(it == IndirectJmpBlocks.end())
+          IndirectJmpBlocks[*ptc.isIndirectJmp] = 1;
+    }
+    if(*ptc.isIndirect){
+      IndirectBlocksMap::iterator it = IndirectCallBlocks.find(*ptc.isIndirect);
+      if(it == IndirectCallBlocks.end())
+          IndirectCallBlocks[*ptc.isIndirect] = 1;
+    }
   }
 }
 
