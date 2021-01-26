@@ -2483,7 +2483,7 @@ void JumpTargetManager::runGlobalGadget(uint64_t basePC,
       /* If the instruction to operate global data is entry address,
        * we consider that no instruction operates offset, and offset value
        * has been designated in global_I. */
-      if(isDataSegmAddr(ptc.regs[R_ESP])){
+      if(ptc.is_stack_addr(ptc.regs[R_ESP])){
         ptc.storeStack();
         recover = true;
       }
@@ -2505,7 +2505,7 @@ void JumpTargetManager::runGlobalGadget(uint64_t basePC,
     /* If the instruction to operate global data isn't entry address of block, 
      * then we consider all instructions before this instruction will be the instruction
      * to operate offset value. */
-    if(isDataSegmAddr(ptc.regs[R_ESP])){
+    if(ptc.is_stack_addr(ptc.regs[R_ESP])){
       ptc.storeStack();
       recover = true;
     }
@@ -4250,11 +4250,11 @@ void JumpTargetManager::harvestBTBasicBlock(llvm::BasicBlock *thisBlock,
         return;
   }
   if(!haveTranslatedPC(destAddr, 0)){
-      if(!isDataSegmAddr(ptc.regs[R_ESP]) and isDataSegmAddr(ptc.regs[R_EBP]))
+      if(!ptc.is_stack_addr(ptc.regs[R_ESP]) and ptc.is_stack_addr(ptc.regs[R_EBP]))
           ptc.regs[R_ESP] = ptc.regs[R_EBP];
       //if(isDataSegmAddr(ptc.regs[R_ESP]) and !isDataSegmAddr(ptc.regs[R_EBP]))
       //    ptc.regs[R_EBP] = ptc.regs[R_ESP] + 256;
-      if(!isDataSegmAddr(ptc.regs[R_ESP]) and !isDataSegmAddr(ptc.regs[R_EBP])){
+      if(!ptc.is_stack_addr(ptc.regs[R_ESP]) and !ptc.is_stack_addr(ptc.regs[R_EBP])){
           ptc.regs[R_ESP] = *ptc.ElfStartStack - 512;
           ptc.regs[R_EBP] = ptc.regs[R_ESP] + 256;
       }
@@ -5075,11 +5075,11 @@ void JumpTargetManager::harvestbranchBasicBlock(uint64_t nextAddr,
 	}
 	if(!isRecord){
           /* Recording current CPU state */
-          if(!isDataSegmAddr(ptc.regs[R_ESP]) and isDataSegmAddr(ptc.regs[R_EBP]))
+          if(!ptc.is_stack_addr(ptc.regs[R_ESP]) and ptc.is_stack_addr(ptc.regs[R_EBP]))
               ptc.regs[R_ESP] = ptc.regs[R_EBP];
 	  //if(isDataSegmAddr(ptc.regs[R_ESP]) and !isDataSegmAddr(ptc.regs[R_EBP]))
 	  //    ptc.regs[R_EBP] = ptc.regs[R_ESP] + 256;
-          if(!isDataSegmAddr(ptc.regs[R_ESP]) and !isDataSegmAddr(ptc.regs[R_EBP])){
+          if(!ptc.is_stack_addr(ptc.regs[R_ESP]) and !ptc.is_stack_addr(ptc.regs[R_EBP])){
 	      ptc.regs[R_ESP] = *ptc.ElfStartStack - 512;
 	      ptc.regs[R_EBP] = ptc.regs[R_ESP] + 256;
           }
