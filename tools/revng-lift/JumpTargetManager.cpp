@@ -2581,9 +2581,11 @@ void JumpTargetManager::ConstOffsetExec(llvm::BasicBlock *gadget,
           std::map<uint64_t,uint32_t>::iterator Target1 = AllGloCandidataAddr.find(data-1);
           std::map<uint64_t,uint32_t>::iterator Target2 = AllGloCandidataAddr.find(data-2);
           std::map<uint64_t,uint32_t>::iterator Target3 = AllGloCandidataAddr.find(data-3);
+	  std::map<uint64_t,uint32_t>::iterator Target4 = AllGloCandidataAddr.find(data-4);
           if(Target1 != AllGloCandidataAddr.end() or 
              Target2 != AllGloCandidataAddr.end() or
-             Target3 != AllGloCandidataAddr.end())
+             Target3 != AllGloCandidataAddr.end() or
+	     Target4 != AllGloCandidataAddr.end())
             break;
           if(!isGlobalDataNoRO(data))  
             break;
@@ -2678,9 +2680,11 @@ void JumpTargetManager::VarOffsetExec(llvm::BasicBlock *gadget,
           std::map<uint64_t,uint32_t>::iterator Target1 = AllGloCandidataAddr.find(data-1);
           std::map<uint64_t,uint32_t>::iterator Target2 = AllGloCandidataAddr.find(data-2);
           std::map<uint64_t,uint32_t>::iterator Target3 = AllGloCandidataAddr.find(data-3);
+	  std::map<uint64_t,uint32_t>::iterator Target4 = AllGloCandidataAddr.find(data-4);
           if(Target1 != AllGloCandidataAddr.end() or 
              Target2 != AllGloCandidataAddr.end() or
-             Target3 != AllGloCandidataAddr.end())
+             Target3 != AllGloCandidataAddr.end() or
+	     Target4 != AllGloCandidataAddr.end())
             break;
           if(!isGlobalDataNoRO(data))  
             break;
