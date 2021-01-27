@@ -2888,22 +2888,25 @@ void JumpTargetManager::handleGlobalStaticAddr(void){
     
   }
 
-  if(ChainLoop>0){
-  for(auto base:AllGloCandidataAddr){
-    
-      for(unsigned staticIt=0; staticIt<assign_gadge.size(); staticIt++){
-        if(assign_gadge[staticIt].second.end){
-          auto reserve = base.first;
-          if(assign_gadge[staticIt].second.operation_block){
-            auto tmpI = assign_gadge[staticIt].second.static_global_I;
-            auto tmpOP = assign_gadge[staticIt].second.static_op;
-            harvestCodePointerInDataSegment(staticIt,reserve,tmpI,tmpOP);
+  std::map<uint64_t,uint32_t> CandidataAddr;
+  while(ChainLoop>0){
+    CandidataAddr = AllGloCandidataAddr;
+    AllGloCandidataAddr.clear();
+    for(auto base:CandidataAddr){
+      
+        for(unsigned staticIt=0; staticIt<assign_gadge.size(); staticIt++){
+          if(assign_gadge[staticIt].second.end){
+            auto reserve = base.first;
+            if(assign_gadge[staticIt].second.operation_block){
+              auto tmpI = assign_gadge[staticIt].second.static_global_I;
+              auto tmpOP = assign_gadge[staticIt].second.static_op;
+              harvestCodePointerInDataSegment(staticIt,reserve,tmpI,tmpOP);
+            }
+            harvestCodePointerInDataSegment(staticIt,reserve);
           }
-          harvestCodePointerInDataSegment(staticIt,reserve);
         }
-      }
-    
-  }
+      
+    }
     ChainLoop = ChainLoop-1;  
   }
 }
