@@ -65,6 +65,10 @@ cl::opt<int> ChainLoop("chain-loop",
                        cl::desc("the loops of gadget chains"),
                        cl::init(1),
                        cl::cat(MainCategory));
+cl::opt<size_t> LoopNums("loop-nums",
+                       cl::desc("the number of loop of each gadget"),
+                       cl::init(256),
+                       cl::cat(MainCategory));
 
 cl::opt<bool> NoOSRA("no-osra", cl::desc(" OSRA"), cl::cat(MainCategory));
 cl::alias A1("O",
@@ -2587,7 +2591,7 @@ void JumpTargetManager::ConstOffsetExec(llvm::BasicBlock *gadget,
         }
       }
       pagesize++;
-      if(pagesize>256)
+      if(pagesize>LoopNums)
         break;
       if(!haveDef2OP(global_I,op))
         break;
@@ -2597,7 +2601,7 @@ void JumpTargetManager::ConstOffsetExec(llvm::BasicBlock *gadget,
     if(!indirect)
       tmpPC = getStaticAddrfromDestRegs(global_I,current_pc);
     pagesize++;
-    if(!haveDef2OP(global_I,op) or pagesize>256)
+    if(!haveDef2OP(global_I,op) or pagesize>LoopNums)
       break;
     if(tmpPC==0)
       continue;
@@ -2684,7 +2688,7 @@ void JumpTargetManager::VarOffsetExec(llvm::BasicBlock *gadget,
         }
       }
       pagesize++;
-      if(pagesize>256)
+      if(pagesize>LoopNums)
         break;
       continue;
     }
@@ -2692,7 +2696,7 @@ void JumpTargetManager::VarOffsetExec(llvm::BasicBlock *gadget,
     if(!indirect)
       tmpPC = getStaticAddrfromDestRegs(global_I,current_pc);    
     pagesize++;
-    if(pagesize>256)
+    if(pagesize>LoopNums)
       break;
     if(tmpPC==0)
       continue; 
