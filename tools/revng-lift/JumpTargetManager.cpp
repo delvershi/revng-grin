@@ -65,7 +65,7 @@ cl::opt<int> ChainLoop("chain-loop",
                        cl::desc("the loops of gadget chains"),
                        cl::init(1),
                        cl::cat(MainCategory));
-cl::opt<size_t> LoopNums("loop-nums",
+cl::opt<unsigned int> LoopNums("loop-nums",
                        cl::desc("the number of loop of each gadget"),
                        cl::init(256),
                        cl::cat(MainCategory));
