@@ -3033,6 +3033,7 @@ bool JumpTargetManager::haveBinaryOperation(llvm::Instruction *I){
   }
 
   bool flag = false;
+  bool inttoptrflag = false;
   it++;
   for(; it!=end; it++){ 
     switch(it->getOpcode()){
@@ -3055,7 +3056,7 @@ bool JumpTargetManager::haveBinaryOperation(llvm::Instruction *I){
       case llvm::Instruction::Load:{
         auto load = dyn_cast<llvm::LoadInst>(it);
 	if((load->getPointerOperand() - v) == 0){
-	    if(!flag and dyn_cast<Constant>(v)){
+	    if(!flag and !inttoptrflag and dyn_cast<Constant>(v)){
               StringRef name = v->getName();
               auto number = StrToInt(name.data());
               auto reg = REGLABLE(number);
@@ -3078,6 +3079,14 @@ bool JumpTargetManager::haveBinaryOperation(llvm::Instruction *I){
             }
         }
 	break;
+      }
+      case llvm::Instruction::IntToPtr:{
+        auto inttoptrI = dyn_cast<Instruction>(it);
+  	if((inttoptrI->getOperand(0) - v) == 0){
+  	    inttoptrflag = true;
+            v = dyn_cast<Value>(inttoptrI);
+        }
+  	break;
       }
       default:{
         auto instr = dyn_cast<Instruction>(it);
