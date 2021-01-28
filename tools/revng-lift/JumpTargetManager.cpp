@@ -3057,8 +3057,8 @@ bool JumpTargetManager::haveBinaryOperation(llvm::Instruction *I){
         auto load = dyn_cast<llvm::LoadInst>(it);
 	if((load->getPointerOperand() - v) == 0)
 	    v = dyn_cast<Value>(it);
-        if(!flag and !inttoptrflag and dyn_cast<Constant>(v)){
-            StringRef name = v->getName();
+        if(!flag and !inttoptrflag and dyn_cast<Constant>(load->getPointerOperand())){
+            StringRef name = load->getPointerOperand()->getName();
             auto number = StrToInt(name.data());
             auto reg = REGLABLE(number);
             if(reg!=UndefineOP){
