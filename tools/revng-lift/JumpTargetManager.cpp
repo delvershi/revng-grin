@@ -3055,17 +3055,16 @@ bool JumpTargetManager::haveBinaryOperation(llvm::Instruction *I){
         break;
       case llvm::Instruction::Load:{
         auto load = dyn_cast<llvm::LoadInst>(it);
-	if((load->getPointerOperand() - v) == 0){
-	    if(!flag and !inttoptrflag and dyn_cast<Constant>(v)){
-              StringRef name = v->getName();
-              auto number = StrToInt(name.data());
-              auto reg = REGLABLE(number);
-              if(reg!=UndefineOP){
-	        if(isExecutableAddress(ptc.regs[reg]))
-		  return false;
-	      }
-	    }
+	if((load->getPointerOperand() - v) == 0)
 	    v = dyn_cast<Value>(it);
+        if(!flag and !inttoptrflag and dyn_cast<Constant>(v)){
+            StringRef name = v->getName();
+            auto number = StrToInt(name.data());
+            auto reg = REGLABLE(number);
+            if(reg!=UndefineOP){
+	      if(isExecutableAddress(ptc.regs[reg]))
+		  return false;
+	    }
 	}
         break;
       }
