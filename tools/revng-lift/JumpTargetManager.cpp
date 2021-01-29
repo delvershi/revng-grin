@@ -2895,6 +2895,7 @@ void JumpTargetManager::handleGlobalStaticAddr(void){
       }
     
   }
+  AllUnexploreGlobalAddr.clear();
 
   std::map<uint64_t,uint32_t> CandidataAddr;
   while(ChainLoop>0){
