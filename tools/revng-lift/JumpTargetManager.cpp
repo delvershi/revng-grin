@@ -3955,7 +3955,7 @@ uint32_t JumpTargetManager::getOffsetReg(llvm::Instruction *I){
       if(dyn_cast<Constant>(v)){
         StringRef name = v->getName();
 	auto number = StrToInt(name.data());
-	op = REGLABLE(number);
+	auto op = REGLABLE(number);
 	if(flag and op!=UndefineOP)
 	  return op;
       }
