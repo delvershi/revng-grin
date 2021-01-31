@@ -61,6 +61,10 @@ cl::opt<bool> FAST("fast",
 cl::opt<bool> SUPERFAST("super-fast",
                        cl::desc("fast rewriting"),
                        cl::cat(MainCategory));
+cl::opt<bool> VirtualTable("virtual-table",
+                	   cl::desc("harvest C++ virtual table"),
+	        	   cl::cat(MainCategory));
+
 cl::opt<int> ChainLoop("chain-loop",
                        cl::desc("the loops of gadget chains"),
                        cl::init(1),
@@ -2106,6 +2110,19 @@ void JumpTargetManager::harvestBlockPCs(std::vector<uint64_t> &BlockPCs){
   }
 }
 
+void JumpTargetManager::harvestVirtualTableAddr(llvm::BasicBlock *thisBlock, uint64_t base){
+  for(size_t n = 0; ;n++){
+    uint64_t addr = (uint64_t)(base + (n << 3));
+    addr = *((uint64_t *)addr);
+    if(addr==0)
+      continue;
+    if(isExecutableAddress(addr)){
+      auto thisAddr = getInstructionPC(&*(thisBlock->begin()));
+      harvestBTBasicBlock(thisBlock,thisAddr,addr); 
+    }else
+      break;
+  }
+}
 
 void JumpTargetManager::registerJumpTable(llvm::BasicBlock *thisBlock, uint64_t thisAddr, int64_t base, int64_t offset){
   if(isExecutableAddress((uint64_t)base))
@@ -2758,6 +2775,11 @@ void JumpTargetManager::harvestStaticAddr(llvm::BasicBlock *thisBlock){
         auto v = store->getValueOperand();
         if(dyn_cast<ConstantInt>(v)){
           auto pc = getLimitedValue(v);
+	  //Harvest virtual function table targets
+	  if(VirtualTable){
+	    if(isROData(pc))
+	      harvestVirtualTableAddr(thisBlock, pc);
+	  }
           // Harvest entry addresses stored in data segment
           StaticAddrsMap::iterator TargetIt = JumpTableBase.find(pc);
           if(isGlobalData(pc) and TargetIt==JumpTableBase.end()){
@@ -2918,6 +2940,15 @@ void JumpTargetManager::handleGlobalStaticAddr(void){
     }
     ChainLoop = ChainLoop-1;  
   }
+}
+
+bool JumpTargetManager::isROData(uint64_t pc){
+  if(ro_StartAddr==pc)
+    return true;
+  if(ro_StartAddr<pc and pc<ro_EndAddr)
+    return true;
+
+  return false;
 }
 
 bool JumpTargetManager::isGlobalData(uint64_t pc){

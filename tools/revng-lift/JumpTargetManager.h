@@ -234,6 +234,7 @@ public:
   StaticAddrsMap UnexploreStaticAddr;
   void harvestStaticAddr(llvm::BasicBlock *thisBlock);
   void harvestJumpTableAddr(llvm::BasicBlock *thisBlock, uint64_t thisAddr);
+  void harvestVirtualTableAddr(llvm::BasicBlock *thisBlock, uint64_t base); 
   int64_t GetConst(llvm::Instruction *I, llvm::Value *v);
   void registerJumpTable(llvm::BasicBlock *thisBlock, uint64_t thisAddr, int64_t base, int64_t offset);
   bool handleStaticAddr(void);
@@ -316,6 +317,7 @@ public:
                      bool indirect,
                      uint32_t crash,
                      std::vector<uint64_t>& tempVec);
+  bool isROData(uint64_t pc);
   bool isGlobalData(uint64_t pc);
   bool isGlobalDataNoRO(uint64_t pc);
   bool isJumpTabType(llvm::Instruction *I);
