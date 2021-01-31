@@ -2499,6 +2499,13 @@ void JumpTargetManager::runGlobalGadget(uint64_t basePC,
       std::tie(opt,virtualAddr) = getLastOperandandNextPC(&*(gadget->begin()));
       if(virtualAddr==0)
         return;
+    }
+    if(current_pc == thisAddr){
+      opt = getOffsetReg(global_I);
+      if(opt!=UndefineOP){
+        virtualAddr = current_pc;
+	thisAddr = 0;
+      }
     } 
     if(current_pc == thisAddr or opt==UndefineOP or opt==R_ESP){
       /* If the instruction to operate global data is entry address,
@@ -2526,6 +2533,8 @@ void JumpTargetManager::runGlobalGadget(uint64_t basePC,
     /* If the instruction to operate global data isn't entry address of block, 
      * then we consider all instructions before this instruction will be the instruction
      * to operate offset value. */
+    if(thisAddr==0)
+      thisAddr = current_pc;
     if(ptc.is_stack_addr(ptc.regs[R_ESP])){
       ptc.storeStack();
       recover = true;
@@ -3931,6 +3940,28 @@ std::pair<uint32_t,uint64_t> JumpTargetManager::getLastOperandandNextPC(llvm::In
   }
  
   return std::make_pair(op,addr);
+}
+
+uint32_t JumpTargetManager::getOffsetReg(llvm::Instruction *I){
+  BasicBlock::reverse_iterator it(I);
+  BasicBlock::reverse_iterator rend = I->getParent()->rend();
+  bool flag = false;
+  for(; it!=rend; it++){
+    if(it->getOpcode() == Instruction::Shl)
+      flag = true;
+    if(it->getOpcode() == Instruction::Load){
+      auto load = dyn_cast<LoadInst>(&*it);
+      auto v = load->getPointerOperand();
+      if(dyn_cast<Constant>(v)){
+        StringRef name = v->getName();
+	auto number = StrToInt(name.data());
+	op = REGLABLE(number);
+	if(flag and op!=UndefineOP)
+	  return op;
+      }
+    }
+  }
+  return UndefineOP;
 }
 
 uint64_t JumpTargetManager::getInstructionPC(llvm::Instruction *I){

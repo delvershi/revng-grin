@@ -286,6 +286,7 @@ public:
   bool getGlobalDatafromRegs(llvm::Instruction *I, int64_t pre);
   uint64_t getGlobalDatafromDestRegs(llvm::BasicBlock *thisBlock);
   std::pair<uint32_t,uint64_t> getLastOperandandNextPC(llvm::Instruction *I);
+  uint32_t getOffsetReg(llvm::Instruction *I);
   void harvestCodePointerInDataSegment(int64_t pos);
   void harvestCodePointerInDataSegment(int64_t pos, llvm::Instruction *tmpI, uint32_t tmpOP);
   void harvestCodePointerInDataSegment(int64_t pos,uint64_t reserve,llvm::Instruction *tmpI, uint32_t tmpOP);
