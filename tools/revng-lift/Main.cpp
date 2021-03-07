@@ -190,16 +190,28 @@ int main(int argc, const char *argv[]) {
   HideUnrelatedOptions({ &MainCategory });
   ParseCommandLineOptions(argc, argv);
   installStatistics();
-
   BinaryFile TheBinary(InputPath, BaseAddress);
 
+  //BinaryFile TheBinary(InputPath, 0x4000000000);
+  //BinaryFile TheBinary(InputPath, 0x50000000);
   findFiles(TheBinary.architecture().name());
 
   // Load the appropriate libtyncode version
   LibraryPointer PTCLibrary;
   if (loadPTCLibrary(PTCLibrary) != EXIT_SUCCESS)
     return EXIT_FAILURE;
-
+  /**********************************************
+   *@syy if the binary is dynamic,make sure TheBinary.EntryPoint
+   *is set as the correct address
+   *********************************************/
+  if(TheBinary.entryPoint() != ptc.binary_EP)
+  {
+	printf("The EntryPoint is error!");
+  }
+  /****************
+   * @syy if the binary is dynamic, run the loader first.
+   * ****************/
+  ptc.run_loader(ptc.binary_EP);
   // Translate everything
   Architecture TargetArchitecture;
   llvm::LLVMContext RevambGlobalContext;

@@ -234,7 +234,7 @@ public:
   bool handleStaticAddr(void);
   void harvestBlockPCs(std::vector<uint64_t> &BlockPCs);
   void StaticToUnexplore(void);
-  void CallNextToStaticAddr(uint32_t PC);
+  void CallNextToStaticAddr(uint64_t PC);
 
   std::vector<uint64_t> IllegalStaticAddrs;
   bool isIllegalStaticAddr(uint64_t pc);

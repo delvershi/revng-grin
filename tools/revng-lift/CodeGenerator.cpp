@@ -291,6 +291,9 @@ CodeGenerator::CodeGenerator(BinaryFile &Binary,
       Segment.Variable->setSection("." + Name);
   
       // Write the linking info CSV
+      //LinkingInfoStream << "." << Name << ",0x" << std::hex
+      //                  << Segment.StartVirtualAddress%0x10000000+0x50000000 << ",0x" << std::hex
+      //                  << Segment.EndVirtualAddress%0x10000000+0x50000000 << "\n";
       LinkingInfoStream << "." << Name << ",0x" << std::hex
                         << Segment.StartVirtualAddress << ",0x" << std::hex
                         << Segment.EndVirtualAddress << "\n";
@@ -1359,9 +1362,13 @@ void CodeGenerator::embeddedData(){
     Variable->setSection("." + NameStream.str());
      
     // Write the linking info CSV
+	// @syy 
+    //LinkingInfoStream << "." << NameStream.str() << ",0x" << std::hex
+    //                << embedded.first%0x10000000+0x50000000 << ",0x" << std::hex
+    //                << (embedded.first+embedded.second)%0x10000000+0x50000000 << "\n";
     LinkingInfoStream << "." << NameStream.str() << ",0x" << std::hex
                       << embedded.first << ",0x" << std::hex
-                      << embedded.first+embedded.second << "\n";
+                      << (embedded.first+embedded.second) << "\n";
   }
   LinkingInfoStream.close();
  

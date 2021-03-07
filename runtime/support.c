@@ -244,15 +244,16 @@ void g_free(void *memory) {
     return free(memory);
 }
 
-void unknownPC() {
-  int arg;
+void unknownPC(uint64_t pc) {
+  /*int arg;
   const char *error = "Unknown PC\n";
   write(2, error, strlen(error));
   for (arg = 0; arg < saved_argc; arg++) {
     write(2, saved_argv[arg], strlen(saved_argv[arg]));
     write(2, " ", 1);
   }
-  write(2, "\n", 1);
+  write(2, "\n", 1);*/
+  fprintf(stderr,"PC: %lx \n",pc); 
   abort();
 }
 
@@ -358,6 +359,7 @@ void newpc(uint64_t pc,
            uint32_t is_first,
            uint8_t *vars,
            ...) {
+	printf("PC: %lx\n",pc);
 }
 
 #endif
@@ -366,7 +368,7 @@ void newpc(uint64_t pc,
 // if so serialize and jump
 bool is_executable(uint64_t pc) {
   assert(segments_count != 0);
-  printf("PC: %lx\n",pc);
+  //printf("PC: %lx\n",pc);
 
   // Check if the pc is inside one of the executable segments
   for (int i = 0; i < segments_count; i++)

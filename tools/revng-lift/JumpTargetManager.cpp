@@ -1291,10 +1291,12 @@ void JumpTargetManager::createDispatcher(Function *OutputFunction,
   Builder.SetInsertPoint(DispatcherFail);
 
   Module *TheModule = TheFunction->getParent();
-  auto *UnknownPCTy = FunctionType::get(Type::getVoidTy(Context), {}, false);
+  Value *PC = Builder.CreateLoad(pcReg());
+  auto *UnknownPCTy = FunctionType::get(Type::getVoidTy(Context), {PC->getType()
+		  }, false);
   Constant *UnknownPC = TheModule->getOrInsertFunction("unknownPC",
                                                        UnknownPCTy);
-  Builder.CreateCall(cast<Function>(UnknownPC));
+  Builder.CreateCall(cast<Function>(UnknownPC), {PC});
   auto *FailUnreachable = Builder.CreateUnreachable();
   FailUnreachable->setMetadata("revng.block.type",
                                QMD.tuple((uint32_t) DispatcherFailureBlock));
@@ -2339,10 +2341,10 @@ void JumpTargetManager::StaticToUnexplore(void){
    for(auto& PC : StaticAddrs){
     BlockMap::iterator TargetIt = JumpTargets.find(PC.first);
     BlockMap::iterator upper;
-    upper = JumpTargets.upper_bound(PC.first);
-    if(TargetIt == JumpTargets.end() && upper != JumpTargets.end()
+    //upper = JumpTargets.upper_bound(PC.first);
+    if(TargetIt == JumpTargets.end()
       	     && !isIllegalStaticAddr(PC.first)){
-      errs()<<format_hex(upper->first,0)<<"  :first\n";
+      //errs()<<format_hex(upper->first,0)<<"  :first\n";
       errs()<<format_hex(PC.first,0)<<" <- static address\n";  
       UnexploreStaticAddr[PC.first] = PC.second;
     }
@@ -2387,7 +2389,7 @@ void JumpTargetManager::handleEmbeddedDataAddr(std::map<uint64_t,size_t> &Embedd
   IllAccessAddr.clear();
 }
 
-void JumpTargetManager::CallNextToStaticAddr(uint32_t PC){
+void JumpTargetManager::CallNextToStaticAddr(uint64_t PC){
   BasicBlock * Block = obtainJTBB(PC,JTReason::DirectJump);
   BasicBlock::iterator it = Block->begin();
   BasicBlock::iterator end = Block->end();
